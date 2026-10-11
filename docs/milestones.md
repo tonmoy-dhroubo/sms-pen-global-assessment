@@ -19,7 +19,7 @@ waiting on a decision.
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
 | M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
 | M08 | App shell and shared UI | M07 | Done | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
-| M09 | Students: list, create, record, status | M08 | In review | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
+| M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
 | M10 | Fees and payments | M09 | Not started | | |
 | M11 | Staff dashboard | M10 | Not started | | |
 | M12 | Assessments (staff) | M09 | Not started | | |
@@ -523,7 +523,9 @@ Tasks:
       reported as dropped (with a reason).
 - [ ] Accessibility: keyboard-only walkthrough of each workflow; labels; focus states; contrast in both themes;
       run an automated check (axe) on the main pages.
-- [ ] Responsive check at 375 px, 768 px, 1280 px.
+- [ ] Responsive check at 375 px, 768 px, 1280 px. Known item from M09: the student list's five filters stack
+      tall at ~960 px and the fee column scrolls out of view; lay filters out in one row on wide screens and keep
+      the fee badge visible.
 - [ ] Empty, loading and error states for every list and panel.
 - [ ] (Could) One Playwright test covering: staff records a payment → student sees the updated balance; student
       uploads → staff sees the submission; staff publishes → student sees the result.

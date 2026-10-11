@@ -330,3 +330,19 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     navigation); route handlers keep `requireStaff()` / `requireStudent()`.
   - Copy: late badge "Late · 2 days"; reason dialogs require 1–500 characters.
   - A "Change role" entry (clears the session, back to `/`) is added to M16.
+
+## D-032: Student workflow details settled in M09
+
+- Date: 2026-10-12
+- Decision (accepted from the M09 report during the overnight review, D-025):
+  - The Student ID year is the start year of the session chosen on the form (DB-015), not the creation date.
+  - `yearOfStudy` cannot exceed the programme's `durationYears`.
+  - Status changes: version conflict (409) is checked first, then whether the transition is allowed (422
+    `BUSINESS_RULE`, `rule: "STATUS_TRANSITION"`, also for same-status requests), then a missing required reason
+    (400 on the `reason` field).
+  - A programme change returns a `PROGRAMME_CHANGED` warning; existing charges are never recalculated.
+  - A PATCH that changes nothing returns the record without bumping `version`.
+  - The duplicate check runs on create only, across all statuses; an email clash is reported first.
+  - Fee states: "outstanding" = owes money but nothing is due yet; "overdue" is separate; no charges = "paid".
+  - The fee-state filter loads charges/payments for the filtered set and applies the M04 rule in memory (~100 ms
+    for 1,000 students). Fine for a registry of a few thousand; beyond ~10,000 it would move into a SQL view.
