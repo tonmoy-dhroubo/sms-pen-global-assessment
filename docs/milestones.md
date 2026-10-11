@@ -226,21 +226,21 @@ Verification: migrate on a fresh DB; `prisma validate`; a short script or psql s
 edge-cases.md.
 
 Tasks:
-- [ ] `money.ts`: decimal arithmetic (never floats), BDT formatting with lakh grouping (`৳1,25,000.00`), parsing
+- [x] `money.ts`: decimal arithmetic (never floats), BDT formatting with lakh grouping (`৳1,25,000.00`), parsing
       user input.
-- [ ] `time.ts`: "now" injectable for tests; Asia/Dhaka date helpers; `sessionFor(date)` (July start);
+- [x] `time.ts`: "now" injectable for tests; Asia/Dhaka date helpers; `sessionFor(date)` (July start);
       `formatDate`, `formatDateTime`, relative "in 2 days" / "3 days ago".
-- [ ] `student-number.ts`: format and parse `SMS-YYYY-NNNN`; widen beyond 9999 without breaking (e.g. `SMS-2026-10000`).
-- [ ] `status.ts`: transition matrix; which transitions need a reason.
-- [ ] `fees.ts`: `feeSummary(charges, payments, today)` → charged, waived, paid, balance, credit, overdue amount,
+- [x] `student-number.ts`: format and parse `SMS-YYYY-NNNN`; widen beyond 9999 without breaking (e.g. `SMS-2026-10000`).
+- [x] `status.ts`: transition matrix; which transitions need a reason.
+- [x] `fees.ts`: `feeSummary(charges, payments, today)` → charged, waived, paid, balance, credit, overdue amount,
       oldest overdue days, ageing bucket (`1-30`, `31-60`, `60+`), next due date; voided payments ignored.
-- [ ] `deadlines.ts`: effective deadline (extension aware), `isLate`, `lateBy` (human: "5 hours", "2 days").
-- [ ] `submission-rules.ts`: `canUpload(student, assessment, existingSubmission, now)` → allowed or a reason code
+- [x] `deadlines.ts`: effective deadline (extension aware), `isLate`, `lateBy` (human: "5 hours", "2 days").
+- [x] `submission-rules.ts`: `canUpload(student, assessment, existingSubmission, now)` → allowed or a reason code
       (`NOT_ENROLLED`, `MODULE_NOT_IN_PROGRAMME`, `CLOSED`, `ON_TIME_LOCKED`).
-- [ ] `marks.ts`: validate (0–100, ≤ 1 decimal); classify with half-up rounding (DB-019); NS → Fail.
-- [ ] `publish.ts`: build the publish preview (counts, missing marks, students with overdue fees).
-- [ ] `duplicates.ts`: name normalisation (case, accents, extra spaces) for the duplicate check.
-- [ ] Tests for all of the above, including boundaries: marks 39.4/39.5/40/59.4/59.5/69.4/69.5/70/0/100/100.1/
+- [x] `marks.ts`: validate (0–100, ≤ 1 decimal); classify with half-up rounding (DB-019); NS → Fail.
+- [x] `publish.ts`: build the publish preview (counts, missing marks, students with overdue fees).
+- [x] `duplicates.ts`: name normalisation (case, accents, extra spaces) for the duplicate check.
+- [x] Tests for all of the above, including boundaries: marks 39.4/39.5/40/59.4/59.5/69.4/69.5/70/0/100/100.1/
       −1/40.25; payments exactly equal, greater and less than balance; overdue at 0, 1, 30, 31, 60, 61 days;
       deadlines at exactly the deadline second; session rollover on 30 Jun / 1 Jul in Dhaka time.
 
