@@ -125,7 +125,12 @@ describe("countLateFlagChanges", () => {
 
   it("treats arriving exactly at the new deadline as on time", () => {
     expect(
-      countLateFlagChanges([{ studentId: "b", lastSubmittedAt: hours(2) }], new Map(), old, hours(2)),
+      countLateFlagChanges(
+        [{ studentId: "b", lastSubmittedAt: hours(2) }],
+        new Map(),
+        old,
+        hours(2),
+      ),
     ).toBe(1);
   });
 });

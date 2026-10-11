@@ -1,9 +1,6 @@
 import { route } from "@/lib/api/handler";
 import { getAssessment, updateAssessment } from "@/lib/services/assessments";
-import {
-  updateAssessmentSchema,
-  type UpdateAssessmentInput,
-} from "@/lib/validation/assessments";
+import { updateAssessmentSchema, type UpdateAssessmentInput } from "@/lib/validation/assessments";
 
 type Params = { id: string };
 
