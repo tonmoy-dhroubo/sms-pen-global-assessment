@@ -15,7 +15,7 @@ waiting on a decision.
 | M02 | Local infrastructure (Docker, env) | M01 | Done | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
 | M03 | Prisma schema and first migration | M02 | Done | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
-| M05 | API foundation, roles and test harness | M04 | In progress | m05-api-foundation | |
+| M05 | API foundation, roles and test harness | M04 | In review | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Not started | | |
 | M07 | Seed data and reset | M06 | Not started | | |
 | M08 | App shell and shared UI | M07 | Not started | | |
