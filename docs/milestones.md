@@ -17,7 +17,7 @@ waiting on a decision.
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
-| M07 | Seed data and reset | M06 | Not started | | |
+| M07 | Seed data and reset | M06 | In progress | m07-seed-data | |
 | M08 | App shell and shared UI | M07 | Not started | | |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
 | M10 | Fees and payments | M09 | Not started | | |
@@ -313,7 +313,7 @@ Verification: `npm run test:integration`.
 **References:** db/seed-plan.md, D-022, DB-004, DB-015, DB-017, DB-018.
 
 Tasks:
-- [ ] `lib/services/student-number.ts`: transactional allocator (upsert-increment on `STUDENT_ID_SEQUENCE`), with an
+- [x] `lib/services/student-number.ts`: transactional allocator (upsert-increment on `STUDENT_ID_SEQUENCE`), with an
       integration test creating 20 students concurrently and getting 20 distinct, gap-free numbers.
 - [ ] Fixture files in `db/seed/fixtures/`: small valid PDF and DOCX.
 - [ ] `db/seed/index.ts`: builds staff, programmes, fee schedules (current and earlier sessions), modules,
