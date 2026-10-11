@@ -25,3 +25,7 @@ Thumbs.db
 # Test output
 playwright-report/
 test-results/
+
+# Misc
+*.pem
+.vercel

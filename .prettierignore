@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo
+# Prose docs are hand-formatted; Prettier covers code and config only.
+docs/
+db/
+.claude/
+.github/pull_request_template.md
+*.md
