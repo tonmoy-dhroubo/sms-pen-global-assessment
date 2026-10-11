@@ -284,8 +284,8 @@ async function loadDetail(client: Client, id: string, now: Date): Promise<Assess
 }
 
 async function assertModuleExists(client: Pick<PrismaClient, "module">, moduleId: string) {
-  const module = await client.module.findUnique({ where: { id: moduleId }, select: { id: true } });
-  if (!module) throw ValidationError.field("moduleId", "Choose a module.");
+  const found = await client.module.findUnique({ where: { id: moduleId }, select: { id: true } });
+  if (!found) throw ValidationError.field("moduleId", "Choose a module.");
 }
 
 // --- List -----------------------------------------------------------------------------------------------------------

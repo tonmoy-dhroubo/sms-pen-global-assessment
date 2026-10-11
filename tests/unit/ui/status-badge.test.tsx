@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import { BADGES, StatusBadge, badgeDefinition } from "@/components/shared/status-badge";
 import type { StatusBadgeProps } from "@/components/shared/status-badge";
 
-// docs/pages.md "Status badges": every group and value, its text label and its tone.
+// docs/pages.md "Status badges": every group and value, its text label and its tone. The assessment group (open / past
+// deadline / closed) is the open/closed badge of `/staff/assessments`, added in M12.
 const SPEC = [
   ["enrolment", "ENROLLED", "Enrolled", "green"],
   ["enrolment", "DEFERRED", "Deferred", "amber"],
@@ -19,6 +20,9 @@ const SPEC = [
   ["submission", "LATE", "Late", "amber"],
   ["submission", "NOT_SUBMITTED", "Not submitted", "grey"],
   ["submission", "CLOSED", "Closed", "grey"],
+  ["assessment", "open", "Open", "green"],
+  ["assessment", "past-deadline", "Past deadline", "amber"],
+  ["assessment", "closed", "Closed", "grey"],
   ["result", "DRAFT", "Draft", "grey"],
   ["result", "PUBLISHED", "Published", "blue"],
   ["result", "WITHHELD", "Withheld", "amber"],
@@ -38,7 +42,7 @@ describe("StatusBadge", () => {
     expect(badge.getAttribute("data-group")).toBe(group);
   });
 
-  it("covers exactly the values in pages.md and nothing else", () => {
+  it("covers exactly the values listed above and nothing else", () => {
     const defined = Object.entries(BADGES).flatMap(([group, values]) =>
       Object.keys(values).map((value) => `${group}/${value}`),
     );

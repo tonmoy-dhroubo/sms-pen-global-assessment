@@ -44,6 +44,15 @@ export const deadlineSchema = z
 
 // --- The form (Dhaka date and time) -------------------------------------------------------------------------------
 
+/** The instant a Dhaka date and time mean, or `null` while either is missing or not real. */
+function localInstant(date: string, time: string): Date | null {
+  try {
+    return zonedTimeToInstant({ date, time });
+  } catch {
+    return null;
+  }
+}
+
 export const deadlineDateSchema = z
   .string({ required_error: "Choose the deadline date." })
   .superRefine((value, ctx) => {
@@ -64,10 +73,9 @@ export const assessmentFormSchema = z
     deadlineTime: deadlineTimeSchema,
   })
   .superRefine((value, ctx) => {
-    // Date and time are each valid here; the pair must also land inside the range the API accepts.
-    if (calendarDateProblem(value.deadlineDate, "") || !isLocalTime(value.deadlineTime)) return;
-    const instant = zonedTimeToInstant({ date: value.deadlineDate, time: value.deadlineTime });
-    if (instant < EARLIEST_DEADLINE || instant >= LATEST_DEADLINE) {
+    // Once date and time are each valid, the pair must also land inside the range the API accepts.
+    const instant = localInstant(value.deadlineDate, value.deadlineTime);
+    if (instant && (instant < EARLIEST_DEADLINE || instant >= LATEST_DEADLINE)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["deadlineDate"],

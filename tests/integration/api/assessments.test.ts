@@ -56,13 +56,13 @@ async function staff() {
   return createStaff();
 }
 
-/** A module taught in one fresh programme, with a staff member to act as. */
+/** A mod taught in one fresh programme, with a staff member to act as. */
 async function setup() {
   const person = await staff();
   const programme = await createProgramme();
-  const module = await createModule();
-  await linkModule(programme.id, module.id);
-  return { person, programme, module, cookie: asStaff(person.id) };
+  const mod = await createModule();
+  await linkModule(programme.id, mod.id);
+  return { person, programme, mod, cookie: asStaff(person.id) };
 }
 
 function patch(id: string, cookie: string, body: unknown) {
@@ -159,14 +159,14 @@ describe("create", () => {
   }
 
   it("creates an assessment, stores the deadline in UTC and answers the detail with version 1", async () => {
-    const { module, cookie, person } = await setup();
+    const { mod, cookie, person } = await setup();
     const deadline = new Date(Date.now() + 3 * DAY).toISOString();
-    const result = await create(cookie, { moduleId: module.id, title: "  Essay   1 ", deadline });
+    const result = await create(cookie, { moduleId: mod.id, title: "  Essay   1 ", deadline });
 
     expect(result.status).toBe(201);
     expect(result.body).toMatchObject({
       title: "Essay 1",
-      module: { id: module.id, code: module.code, title: module.title },
+      module: { id: mod.id, code: mod.code, title: mod.title },
       deadline,
       closedAt: null,
       state: "open",
@@ -181,9 +181,9 @@ describe("create", () => {
   });
 
   it("reads an offset deadline as the same instant in UTC (23:59 Dhaka is 17:59Z)", async () => {
-    const { module, cookie } = await setup();
+    const { mod, cookie } = await setup();
     const result = await create(cookie, {
-      moduleId: module.id,
+      moduleId: mod.id,
       title: "Offset",
       deadline: "2031-10-11T23:59:00+06:00",
     });
@@ -192,9 +192,9 @@ describe("create", () => {
   });
 
   it("accepts a deadline in the past (back-entry) and warns DEADLINE_IN_PAST", async () => {
-    const { module, cookie } = await setup();
+    const { mod, cookie } = await setup();
     const result = await create(cookie, {
-      moduleId: module.id,
+      moduleId: mod.id,
       title: "Old assessment",
       deadline: "2020-01-15T17:59:00Z",
     });
@@ -205,27 +205,27 @@ describe("create", () => {
     ]);
   });
 
-  it("rejects an unknown module, a missing title and a deadline without an offset", async () => {
-    const { module, cookie } = await setup();
+  it("rejects an unknown mod, a missing title and a deadline without an offset", async () => {
+    const { mod, cookie } = await setup();
     const deadline = DEADLINE_ISO;
 
     const unknown = await create(cookie, { moduleId: UNKNOWN_ID, title: "x", deadline });
     expect(unknown.status).toBe(400);
     expect(unknown.body.error.details).toMatchObject({
-      fieldErrors: { moduleId: ["Choose a module."] },
+      fieldErrors: { moduleId: ["Choose a mod."] },
     });
 
     const malformed = await create(cookie, { moduleId: "not-a-uuid", title: "x", deadline });
     expect(malformed.status).toBe(400);
 
-    const noTitle = await create(cookie, { moduleId: module.id, title: "   ", deadline });
+    const noTitle = await create(cookie, { moduleId: mod.id, title: "   ", deadline });
     expect(noTitle.status).toBe(400);
     expect(noTitle.body.error.details).toMatchObject({
       fieldErrors: { title: ["Enter a title."] },
     });
 
     const naive = await create(cookie, {
-      moduleId: module.id,
+      moduleId: mod.id,
       title: "x",
       deadline: "2026-10-11T23:59:00",
     });
@@ -235,7 +235,7 @@ describe("create", () => {
     });
 
     const absurd = await create(cookie, {
-      moduleId: module.id,
+      moduleId: mod.id,
       title: "x",
       deadline: "0026-10-11T23:59:00Z",
     });
@@ -249,7 +249,7 @@ describe("create", () => {
 
 describe("eligibility and counts", () => {
   /**
-   * One assessment (deadline 5 days ago) on a module taught in P1. P2 does not include the module.
+   * One assessment (deadline 5 days ago) on a mod taught in P1. P2 does not include the mod.
    *   s1 Enrolled P1, on time, mark published      s2 Enrolled P1, late, extended to on time, mark draft
    *   s3 Enrolled P1, never submitted, NS mark     s4 Deferred P1, never submitted        (not eligible)
    *   s5 Withdrawn P1, submitted on time           s6 Enrolled P2, never submitted        (not eligible)
@@ -259,11 +259,11 @@ describe("eligibility and counts", () => {
     const person = await staff();
     const p1 = await createProgramme();
     const p2 = await createProgramme();
-    const module = await createModule();
-    await linkModule(p1.id, module.id);
+    const mod = await createModule();
+    await linkModule(p1.id, mod.id);
     const deadline = at(-5 * DAY);
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       deadline,
     });
@@ -303,10 +303,10 @@ describe("eligibility and counts", () => {
     });
     await createMark({ assessmentId: assessment.id, studentId: s.s2.id, enteredById: person.id });
     await createMark({ assessmentId: assessment.id, studentId: s.s3.id, enteredById: person.id });
-    return { person, assessment, cookie: asStaff(person.id), module, p1, p2, s, deadline };
+    return { person, assessment, cookie: asStaff(person.id), mod, p1, p2, s, deadline };
   }
 
-  it("counts eligible students (enrolled in a programme with the module, plus anyone who submitted), submissions, late, marked and published", async () => {
+  it("counts eligible students (enrolled in a programme with the mod, plus anyone who submitted), submissions, late, marked and published", async () => {
     const { assessment } = await scenario();
     const list = await listAssessments(assessmentListQuerySchema.parse({}), clock);
 
@@ -352,7 +352,7 @@ describe("eligibility and counts", () => {
     ]);
     const byId = new Map(result.body.items.map((r) => [r.student.id, r]));
     expect(byId.has(s.s4.id)).toBe(false); // deferred, never submitted
-    expect(byId.has(s.s6.id)).toBe(false); // programme does not include the module
+    expect(byId.has(s.s6.id)).toBe(false); // programme does not include the mod
 
     expect(byId.get(s.s1.id)).toMatchObject({ eligible: true, status: "ON_TIME", lateBy: null });
     expect(byId.get(s.s3.id)).toMatchObject({
@@ -438,9 +438,9 @@ describe("eligibility and counts", () => {
 
   it("filters the list by state: open, past-deadline (not closed) and closed", async () => {
     const person = await staff();
-    const module = await createModule();
+    const mod = await createModule();
     const make = (title: string, deadline: Date, closedAt: Date | null = null) =>
-      createAssessment({ moduleId: module.id, createdById: person.id, title, deadline, closedAt });
+      createAssessment({ moduleId: mod.id, createdById: person.id, title, deadline, closedAt });
     await make("Open soon", at(2 * DAY));
     await make("At the instant", at(0)); // arriving exactly at the deadline is still on time: open
     await make("Passed, not closed", at(-1 * DAY));
@@ -467,7 +467,7 @@ describe("eligibility and counts", () => {
     expect(states.get("Closed late")).toBe("closed");
   });
 
-  it("filters by module, sorts and pages, and rejects bad query values", async () => {
+  it("filters by mod, sorts and pages, and rejects bad query values", async () => {
     const { person, cookie } = await setup();
     const m1 = await createModule({ code: "AAA100" });
     const m2 = await createModule({ code: "ZZZ100" });
@@ -508,7 +508,7 @@ describe("eligibility and counts", () => {
       "Gamma",
       "Alpha",
     ]);
-    expect((await get("?sort=module&pageSize=2")).body.items.map((i) => i.module.code)).toEqual([
+    expect((await get("?sort=mod&pageSize=2")).body.items.map((i) => i.module.code)).toEqual([
       "AAA100",
       "AAA100",
     ]);
@@ -549,10 +549,10 @@ describe("query count", () => {
     const person = await staff();
     const programme = await createProgramme();
     for (let a = 0; a < assessments; a++) {
-      const module = await createModule();
-      await linkModule(programme.id, module.id);
+      const mod = await createModule();
+      await linkModule(programme.id, mod.id);
       const assessment = await createAssessment({
-        moduleId: module.id,
+        moduleId: mod.id,
         createdById: person.id,
         deadline: at(-2 * DAY),
       });
@@ -603,9 +603,9 @@ describe("query count", () => {
 
 describe("update", () => {
   it("changes the title, bumps the version and answers the new detail", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       title: "Old",
       deadline: at(2 * DAY),
@@ -618,9 +618,9 @@ describe("update", () => {
   });
 
   it("leaves the record and its version alone when nothing actually changes", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       title: "Same",
       deadline: at(2 * DAY),
@@ -629,7 +629,7 @@ describe("update", () => {
     const result = await patch(assessment.id, cookie, {
       title: "Same",
       deadline: assessment.deadline.toISOString(),
-      moduleId: module.id,
+      moduleId: mod.id,
       version: 1,
     });
     expect(result.status).toBe(200);
@@ -638,9 +638,9 @@ describe("update", () => {
   });
 
   it("answers 409 VERSION_CONFLICT with the current version for a stale edit, and changes nothing", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       title: "Original",
       deadline: at(2 * DAY),
@@ -661,9 +661,9 @@ describe("update", () => {
   });
 
   it("lets exactly one of two simultaneous edits through", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       deadline: at(2 * DAY),
     });
@@ -675,8 +675,8 @@ describe("update", () => {
   });
 
   it("requires a version and at least one field, and a real deadline", async () => {
-    const { person, module, cookie } = await setup();
-    const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    const { person, mod, cookie } = await setup();
+    const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
 
     const noVersion = await patch(assessment.id, cookie, { title: "x" });
     expect(noVersion.status).toBe(400);
@@ -696,10 +696,10 @@ describe("update", () => {
   describe("deadline change recalculates late flags", () => {
     /** Four submissions around a deadline 1 day ahead of NOW; the fourth student has an extension. */
     async function withSubmissions() {
-      const { person, programme, module, cookie } = await setup();
+      const { person, programme, mod, cookie } = await setup();
       const deadline = at(-1 * DAY);
       const assessment = await createAssessment({
-        moduleId: module.id,
+        moduleId: mod.id,
         createdById: person.id,
         deadline,
       });
@@ -799,9 +799,9 @@ describe("update", () => {
     });
 
     it("adds no warning for an assessment without submissions, or when only the title changes", async () => {
-      const { person, module, cookie } = await setup();
+      const { person, mod, cookie } = await setup();
       const empty = await createAssessment({
-        moduleId: module.id,
+        moduleId: mod.id,
         createdById: person.id,
         deadline: at(DAY),
       });
@@ -820,9 +820,9 @@ describe("update", () => {
 
   describe("changing the module", () => {
     it("is allowed while nobody has submitted", async () => {
-      const { person, module, cookie } = await setup();
+      const { person, mod, cookie } = await setup();
       const other = await createModule();
-      const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+      const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
       const result = await patch(assessment.id, cookie, { moduleId: other.id, version: 1 });
       expect(result.status).toBe(200);
       expect(result.body.module.id).toBe(other.id);
@@ -830,10 +830,10 @@ describe("update", () => {
     });
 
     it("is refused with 422 ASSESSMENT_HAS_SUBMISSIONS once someone has submitted, and nothing changes", async () => {
-      const { person, programme, module, cookie } = await setup();
+      const { person, programme, mod, cookie } = await setup();
       const other = await createModule();
       const assessment = await createAssessment({
-        moduleId: module.id,
+        moduleId: mod.id,
         createdById: person.id,
         title: "Keep",
       });
@@ -855,30 +855,30 @@ describe("update", () => {
         details: { rule: "ASSESSMENT_HAS_SUBMISSIONS", submissions: 1 },
       });
       const stored = await db.assessment.findUniqueOrThrow({ where: { id: assessment.id } });
-      expect(stored).toMatchObject({ moduleId: module.id, title: "Keep", version: 1 });
+      expect(stored).toMatchObject({ moduleId: mod.id, title: "Keep", version: 1 });
 
-      // Sending the module it already has is not a change, so it is fine.
+      // Sending the mod it already has is not a change, so it is fine.
       expect(
-        (await patch(assessment.id, cookie, { moduleId: module.id, title: "Renamed", version: 1 }))
+        (await patch(assessment.id, cookie, { moduleId: mod.id, title: "Renamed", version: 1 }))
           .status,
       ).toBe(200);
     });
 
-    it("rejects a module that does not exist", async () => {
-      const { person, module, cookie } = await setup();
-      const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    it("rejects a mod that does not exist", async () => {
+      const { person, mod, cookie } = await setup();
+      const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
       const result = await patch(assessment.id, cookie, { moduleId: UNKNOWN_ID, version: 1 });
       expect(result.status).toBe(400);
       expect(result.body.error.details).toMatchObject({
-        fieldErrors: { moduleId: ["Choose a module."] },
+        fieldErrors: { moduleId: ["Choose a mod."] },
       });
     });
   });
 
   it("still lets a closed assessment be edited", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       closedAt: at(-DAY),
     });
@@ -900,9 +900,9 @@ describe("close and reopen", () => {
     });
 
   it("closes an open assessment: closedAt is now, the state is closed, the version moves", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       deadline: at(2 * DAY),
     });
@@ -917,15 +917,15 @@ describe("close and reopen", () => {
   });
 
   it("uses the clock for closedAt when called through the service", async () => {
-    const { person, module } = await setup();
-    const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    const { person, mod } = await setup();
+    const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
     const closed = await closeAssessment(assessment.id, clock);
     expect(closed.closedAt).toBe(NOW.toISOString());
   });
 
   it("refuses to close twice with 422 ALREADY_CLOSED and keeps the first closing time", async () => {
-    const { person, module, cookie } = await setup();
-    const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    const { person, mod, cookie } = await setup();
+    const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
     const first = await post(closeRoute, "close", assessment.id, cookie);
     const again = await post(closeRoute, "close", assessment.id, cookie);
 
@@ -940,8 +940,8 @@ describe("close and reopen", () => {
   });
 
   it("lets exactly one of two simultaneous closes succeed", async () => {
-    const { person, module, cookie } = await setup();
-    const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    const { person, mod, cookie } = await setup();
+    const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
     const results = await Promise.all([
       post(closeRoute, "close", assessment.id, cookie),
       post(closeRoute, "close", assessment.id, cookie),
@@ -950,9 +950,9 @@ describe("close and reopen", () => {
   });
 
   it("reopens a closed assessment, and refuses to reopen one that is not closed with 422 NOT_CLOSED", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       deadline: at(2 * DAY),
       closedAt: at(-HOUR),
@@ -974,9 +974,9 @@ describe("close and reopen", () => {
   });
 
   it("brings back past-deadline (not open) when the deadline has gone by, and closing again works", async () => {
-    const { person, module } = await setup();
+    const { person, mod } = await setup();
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: person.id,
       deadline: at(-2 * DAY),
       closedAt: at(-DAY),
@@ -987,11 +987,11 @@ describe("close and reopen", () => {
   });
 
   it("returns 404 for an assessment that does not exist, and makes an open edit form stale", async () => {
-    const { person, module, cookie } = await setup();
+    const { person, mod, cookie } = await setup();
     expect((await post(closeRoute, "close", UNKNOWN_ID, cookie)).status).toBe(404);
     expect((await post(reopenRoute, "reopen", "not-a-uuid", cookie)).status).toBe(404);
 
-    const assessment = await createAssessment({ moduleId: module.id, createdById: person.id });
+    const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
     await post(closeRoute, "close", assessment.id, cookie);
     const stale = await patch(assessment.id, cookie, { title: "From an old form", version: 1 });
     expect(stale.status).toBe(409);
