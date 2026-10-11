@@ -160,3 +160,65 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Why: Requested by the user. Staff use the app all day, and shadcn makes theming nearly free.
 - Implementation notes: no flash of the wrong theme on load; status badges and chart colours need dark variants that
   keep readable contrast; never rely on colour alone (badges always carry a text label).
+
+## D-018: Locale — Bangladesh time and Taka
+
+- Date: 2026-10-12
+- Decision: Time zone `Asia/Dhaka` (UTC+6, no daylight saving) for deadlines, "today", overdue and display.
+  Currency BDT, shown as `৳1,25,000.00` with South Asian (lakh/crore) grouping and English digits. Dates shown as
+  `11 Oct 2026`, date-times as `11 Oct 2026, 23:59`. Academic sessions run July–June and are labelled `2026-27`.
+- Why: Requested by the user; PEN Global's registry operates in Bangladesh.
+- Notes: Supersedes the £ and Western names used in the early mockup; the mockup is a layout reference only.
+
+## D-019: Git workflow — a branch and pull request per milestone
+
+- Date: 2026-10-12
+- Decision:
+  - Code changes go through a branch and PR per milestone: branch `mNN-short-slug` (e.g. `m03-prisma-schema`), PR
+    titled `MNN: <milestone title>`, body from the PR template (summary, checklist, verification output,
+    screenshots for UI, edge cases ticked).
+  - Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`).
+  - CI (lint, type-check, tests, Prisma validate) must pass. The user reviews; after approval the PR is
+    squash-merged and the branch deleted.
+  - Planning and docs-only changes made in the main session may be committed straight to `main`.
+- Why: Requested "whatever looks professional". PRs show process to graders and give a natural review point after
+  each milestone.
+
+## D-020: Role switcher details
+
+- Date: 2026-10-12
+- Decision: A header dropdown ("Viewing as: …") lists the seeded staff and a searchable student list. Switching
+  sets a signed, HTTP-only cookie (HMAC with `SESSION_SECRET`) and lands on `/staff` or `/student`. A missing or
+  invalid cookie (e.g. the student no longer exists) sends the user to `/`, the role picker.
+- Why: Lets reviewers move between views instantly while access control stays server-side and tamper-resistant.
+
+## D-021: Build in milestones, one at a time
+
+- Date: 2026-10-12
+- Decision: The build follows [milestones.md](milestones.md). The `coder` agent takes exactly one milestone at a
+  time on its own branch, opens a PR, updates the tracker, and stops to report. The next milestone starts only after
+  the user has reviewed and the PR is merged. A milestone is done only when its acceptance criteria and the
+  Definition of Done in the tracker are met.
+- Why: Requested by the user: no one-shot implementation; reviewable steps with a report after each.
+
+## D-022: Demo data — 30 students, dates relative to seed time
+
+- Date: 2026-10-12
+- Decision: Seed 30 students across 3 programmes, 8 modules and 10 assessments, with personas chosen to show every
+  edge case ([db/seed-plan.md](../db/seed-plan.md)). All dates are computed relative to when the seed runs.
+- Why: A busier dashboard reads like a real registry, and relative dates keep "overdue by 20 days" and "due in
+  2 days" true whenever a reviewer runs the seed.
+
+## D-023: Late-upload timing — the moment the file arrives
+
+- Date: 2026-10-12
+- Decision: A submission's time is when the uploaded file finished arriving in storage (verified at confirm),
+  not when the upload started. Students are told this next to the upload button.
+- Why: It is the only timestamp the server can trust, and it is the common rule in university systems. Telling
+  students up front avoids disputes.
+
+## D-024: Edge-case priorities accepted
+
+- Date: 2026-10-12
+- Decision: The Must / Should / Could split in [edge-cases.md](edge-cases.md) is accepted as proposed.
+- Why: The user delegated the remaining open choices to Claude's recommendations.

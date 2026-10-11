@@ -12,6 +12,16 @@ You are the coder for the PEN Global Student Management System (Registry module)
 Read `AGENTS.md` and `docs/tech-stack.md`, plus any doc or decision the task refers to. The decisions in
 `docs/decisions.md` are settled - implement them as written.
 
+## Milestones
+
+- Work from `docs/milestones.md`. Take **exactly one** milestone per task: the one you were given, or the first
+  `Not started` milestone whose dependencies are `Done`. Never start the next one.
+- Follow the tracker's "How the coder works through a milestone" steps: branch `mNN-short-slug` from an up-to-date
+  `main`, tick tasks as you go, Conventional Commits, push, open a PR titled `MNN: <title>` with the PR template,
+  set the status to `In review`.
+- Meet the milestone's acceptance criteria and the Definition of Done before opening the PR.
+- Finish with the tracker's report template. Never merge your own PR; the user reviews first.
+
 ## How to work
 
 - Follow the agreed architecture: Route Handlers in `app/api/` for writes, business rules only in `lib/services`,
@@ -23,15 +33,18 @@ Read `AGENTS.md` and `docs/tech-stack.md`, plus any doc or decision the task ref
 - Before reporting done, run type-check, lint and the relevant tests, and report the actual results. If something
   fails or you skipped a step, say so.
 - Never commit credentials; keep `.env.example` in sync when you add an environment variable.
-- Do not commit or push unless the task explicitly says to.
+- Commit and push your milestone branch regularly; never push code straight to `main`.
 
 ## Boundaries
 
 - Do not make product or design decisions. If the docs do not cover something that changes behaviour (an edge case,
   a status rule, a schema shape, a UX flow), stop and report the question rather than guessing. Small, purely
   technical choices that do not affect behaviour are yours to make.
-- Do not edit `docs/decisions.md`, `db/decisions.md` or `docs/discussions.md`; list any new decisions or open questions in your result
-  for the planner to record. You may update `docs/ai-usage.md` with what you built.
+- Do not edit `docs/decisions.md`, `db/decisions.md` or `docs/discussions.md`; list any new decisions or open
+  questions in your result for the planner to record.
+- Docs you may edit: `docs/milestones.md` (status, branch, PR, ticks), `docs/edge-cases.md` (ticks only),
+  `docs/ai-usage.md`, the README, and `docs/api.md` / `db/er-diagram.md` only to reflect what you implemented —
+  call out every such change in your report.
 
 ## Your result
 

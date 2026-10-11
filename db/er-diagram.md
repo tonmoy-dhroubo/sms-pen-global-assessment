@@ -1,9 +1,10 @@
 # ER diagram
 
-> **Status: draft.** Assumes the proposed answers in [decisions.md](decisions.md) (DB-009 to DB-014).
-> Update this diagram whenever `schema.prisma` changes; the schema is the source of truth once it exists.
+> **Status: agreed design, not yet implemented.** Reflects DB-001 to DB-020 in [decisions.md](decisions.md).
+> Once `schema.prisma` exists it becomes the source of truth; keep this diagram in sync with it.
 
-A rendered export is in [er-diagram.png](er-diagram.png); re-export it when the diagram changes.
+A rendered export is in [er-diagram.png](er-diagram.png). **It is out of date** (it predates DB-015 to DB-020);
+re-export it from the Mermaid source below.
 
 Notation: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more.
 `PK` primary key, `FK` foreign key, `UK` unique.
@@ -22,6 +23,8 @@ erDiagram
   STUDENT ||--o{ SUBMISSION : makes
   ASSESSMENT ||--o{ SUBMISSION : receives
   SUBMISSION ||--|{ SUBMISSION_FILE : versions
+  STUDENT ||--o{ PENDING_UPLOAD : starts
+  ASSESSMENT ||--o{ PENDING_UPLOAD : awaits
   STUDENT ||--o{ MARK : receives
   ASSESSMENT ||--o{ MARK : "graded in"
   MARK ||--o{ MARK_CHANGE : "audit trail"
@@ -34,20 +37,21 @@ erDiagram
 
   PROGRAMME {
     uuid id PK
-    string code UK "e.g. BSC-COMP"
+    string code UK "e.g. BSC-CSE"
     string name
     int durationYears
   }
   PROGRAMME_FEE {
     uuid id PK
     uuid programmeId FK
-    string academicYear "2026/27; unique with programmeId"
-    decimal amount "numeric(12,2)"
+    string academicYear "2026-27; unique with programmeId + instalment"
+    int instalment "1, 2, ..."
+    decimal amount "numeric(12,2), BDT"
     date dueDate
   }
   MODULE {
     uuid id PK
-    string code UK "e.g. CS101"
+    string code UK "e.g. CSE101"
     string title
   }
   PROGRAMME_MODULE {
@@ -58,17 +62,18 @@ erDiagram
     uuid id PK
     string studentNumber UK "SMS-2026-0001"
     string fullName
-    string email UK "case-insensitive"
+    string email UK "lower-cased"
     date dateOfBirth
     uuid programmeId FK
-    string academicYear "session, e.g. 2026/27"
-    int yearOfStudy "1, 2, 3"
+    string academicYear "current session, e.g. 2026-27"
+    int yearOfStudy "1, 2, 3, 4"
     enum status "ENROLLED, DEFERRED, WITHDRAWN, COMPLETED"
+    int version "optimistic locking"
     timestamptz createdAt
     timestamptz updatedAt
   }
   STUDENT_ID_SEQUENCE {
-    int year PK
+    int year PK "session start year"
     int lastValue "incremented in a transaction"
   }
   STATUS_CHANGE {
@@ -84,14 +89,16 @@ erDiagram
     uuid id PK
     string fullName
     string email UK
+    string jobTitle "e.g. Registry Officer"
   }
   FEE_CHARGE {
     uuid id PK
     uuid studentId FK
-    uuid programmeFeeId FK "nullable for manual adjustments"
+    uuid programmeFeeId FK "null for adjustments and waivers"
+    enum kind "PROGRAMME_FEE, ADJUSTMENT, WAIVER"
     string academicYear
-    string description "e.g. Tuition 2026/27, instalment 1"
-    decimal amount "copied, not linked"
+    string description "e.g. Tuition 2026-27, instalment 1"
+    decimal amount "copied; negative for WAIVER"
     date dueDate
     timestamptz createdAt
   }
@@ -99,6 +106,7 @@ erDiagram
     uuid id PK
     uuid studentId FK
     decimal amount "> 0"
+    enum method "BANK_TRANSFER, CASH, BKASH, NAGAD, CARD"
     date paidAt
     string reference UK
     uuid recordedById FK
@@ -112,6 +120,7 @@ erDiagram
     string title
     timestamptz deadline
     timestamptz closedAt "no uploads at all after this"
+    int version
     uuid createdById FK
   }
   EXTENSION {
@@ -120,6 +129,14 @@ erDiagram
     uuid studentId FK
     timestamptz newDeadline
     string reason
+  }
+  PENDING_UPLOAD {
+    uuid id PK
+    uuid assessmentId FK
+    uuid studentId FK
+    string objectKey UK
+    timestamptz expiresAt
+    timestamptz confirmedAt "null until confirmed"
   }
   SUBMISSION {
     uuid id PK
@@ -135,22 +152,26 @@ erDiagram
     string originalName
     string mimeType "PDF or DOCX"
     int sizeBytes
-    timestamptz uploadedAt
+    string sha256 "receipt fingerprint"
+    timestamptz uploadedAt "when the file arrived"
   }
   MARK {
     uuid id PK
     uuid assessmentId FK "unique with studentId"
     uuid studentId FK
-    decimal mark "0-100, numeric(5,2)"
+    decimal mark "0-100, 1 dp; null when non-submission"
+    boolean isNonSubmission
     enum releaseStatus "DRAFT, PUBLISHED, WITHHELD"
     string withheldReason
     timestamptz publishedAt
+    int version
     uuid enteredById FK
     timestamptz updatedAt
   }
   MARK_CHANGE {
     uuid id PK
     uuid markId FK
+    string change "MARK, PUBLISH, WITHHOLD, UNPUBLISH"
     decimal oldMark
     decimal newMark
     string reason "required once published"
@@ -162,7 +183,8 @@ erDiagram
 ## Notes
 
 - `EXTENSION` is a stretch goal (DB-014).
-- `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004).
+- `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004, DB-015).
 - `MARK` and `SUBMISSION` are not linked directly. Both are keyed on (assessment, student), so a mark can exist
-  without a submission, e.g. 0 for work that was never handed in.
+  without a submission (e.g. a non-submission).
+- `PENDING_UPLOAD` backs the three-step upload flow (D-013, DB-017); unconfirmed rows past `expiresAt` are cleaned up.
 - Values such as balance, overdue, late and classification are calculated, not stored — see [README.md](README.md).

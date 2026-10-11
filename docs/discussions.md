@@ -16,13 +16,13 @@ as resolved with the decision ID.
 - **Supabase presigned URLs (verify when building uploads).** D-013 relies on presigned `PUT`/`GET` URLs from
   Supabase's S3-compatible endpoint. Confirm this works with the AWS SDK presigner and that CORS can be set for the
   Vercel origin. Fallback: use Supabase's own signed upload URLs in the hosted storage adapter only.
-- **Colour palette.** Neutral base with one accent, or PEN Global's green branding?
-- **Command search (cmdk).** Global "find a student by name or ID" palette for staff — include or skip?
-- **Edge cases.** Checklist in [edge-cases.md](edge-cases.md); three open questions at its end (priority split,
-  late-upload timing, mark rounding).
-- **Data model.** Draft ER diagram in [db/er-diagram.md](../db/er-diagram.md). Awaiting confirmation of the
-  proposed answers DB-009 to DB-014 in [db/decisions.md](../db/decisions.md).
+- **Colour palette.** Neutral base with one accent, or PEN Global's green branding? Until decided, use the mockup's
+  dark green accent (`#2F6B3F`) as a single CSS variable so it is a one-line change.
 
 ## Resolved
 
-_None yet._
+- **Command search** → header quick search with `Ctrl+K` for staff (milestone M16).
+- **Edge-case questions** → D-023, D-024, DB-019.
+- **Data model questions** → DB-009 to DB-020.
+- **Locale, Student ID year, seed size, pages, API, role switcher, git workflow, build plan** → D-018 to D-022,
+  DB-015, [pages.md](pages.md), [api.md](api.md), [milestones.md](milestones.md).

@@ -26,7 +26,10 @@ This file stays short. All details, reasoning and discussion live in [`docs/`](d
 | --- | --- |
 | [docs/requirements.md](docs/requirements.md) | The brief in our own words: scope, deliverables, how it is graded |
 | [docs/tech-stack.md](docs/tech-stack.md) | Agreed stack, local services, app layering, uploads and roles |
-| [db/](db/README.md) | Database: ER diagram, DB decisions (`DB-NNN`), and later the Prisma schema, migrations and seed scripts |
+| [db/](db/README.md) | Database: ER diagram, DB decisions (`DB-NNN`), seed plan, and later the Prisma schema, migrations and seed scripts |
+| [docs/milestones.md](docs/milestones.md) | **Build plan and tracker.** One milestone at a time; process, Definition of Done, report template |
+| [docs/pages.md](docs/pages.md) | Every route: who sees it, what it shows, what you can do |
+| [docs/api.md](docs/api.md) | API contract: conventions, error format, every endpoint |
 | [docs/edge-cases.md](docs/edge-cases.md) | Checklist of edge cases and extras to build, by priority (Must / Should / Could) |
 | [docs/decisions.md](docs/decisions.md) | Decision log: what we chose, why, and what we rejected |
 | [docs/discussions.md](docs/discussions.md) | Open questions and discussion notes that are not yet decisions |
@@ -52,5 +55,8 @@ Two Claude Code subagents are defined in `.claude/agents/`:
 - **Log AI usage.** Note meaningful AI contributions in `docs/ai-usage.md` — the README summary is built from it.
 - **The original brief PDF is not committed** (it is marked not for distribution and is in `.gitignore`).
   Refer to `docs/requirements.md` instead, and do not paste the brief's text verbatim into the repo.
-- **Commit and push often.** After each meaningful chunk of work, commit everything and push to `main`.
+- **Commit and push often.** After each meaningful chunk of work, commit and push. Code goes through a branch and PR
+  per milestone (`mNN-slug`, Conventional Commits, squash merge after the user approves); planning and docs-only
+  changes may go straight to `main` (D-019).
+- **Build one milestone at a time** following [docs/milestones.md](docs/milestones.md), then stop and report (D-021).
 - Default branch is `main`.

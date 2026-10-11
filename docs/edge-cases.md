@@ -4,7 +4,7 @@ Edge cases and stand-out extras to handle during the build. Tick items off as th
 "Feature intuition" (handling cases the brief did not name) is 30% of the grade, so this list matters.
 
 **Priority:** **M** = Must, **S** = Should (cheap stand-outs), **C** = Could (if time allows).
-The proposed split is not yet confirmed — see [Open questions](#open-questions).
+Split accepted (D-024). Each item is built in the milestone named in [milestones.md](milestones.md).
 
 ## Enrolment
 
@@ -33,8 +33,8 @@ The proposed split is not yet confirmed — see [Open questions](#open-questions
 
 ## Submissions
 
-- [ ] **M** — Upload started before the deadline but finished after it: submission time rule decided and shown to
-  students up front (open question 2).
+- [ ] **M** — Upload started before the deadline but finished after it: submission time is when the file arrives
+  (D-023), and students are told this next to the upload button.
 - [ ] **M** — Only server time counts; deadlines show their time zone and a countdown.
 - [ ] **M** — Deadline changed after submissions: late flags recalculate automatically (derived, not stored).
 - [ ] **M** — File checks: PDF/DOCX verified by content, not just extension; empty files rejected; macro-enabled
@@ -50,8 +50,8 @@ The proposed split is not yet confirmed — see [Open questions](#open-questions
 
 ## Marks and results
 
-- [ ] **M** — Mark must be 0–100; decimal and boundary handling decided (open question 3) and covered by tests at
-  39.5 / 40 / 59.5 / 60 / 69.5 / 70.
+- [ ] **M** — Mark must be 0–100 with at most one decimal; classification rounds half-up first (DB-019), covered by
+  tests at 39.4 / 39.5 / 40 / 59.4 / 59.5 / 60 / 69.4 / 69.5 / 70.
 - [ ] **M** — Work never submitted: explicit non-submission (NS), not a silent 0.
 - [ ] **M** — Late flag visible to staff while marking; no automatic penalty.
 - [ ] **M** — Changing a published mark requires a reason; recorded in `MARK_CHANGE`.
@@ -77,9 +77,8 @@ The proposed split is not yet confirmed — see [Open questions](#open-questions
 - [ ] **C** — Printable fee statement and marksheet (print stylesheet).
 - [ ] **C** — Per-student deadline extensions (DB-014).
 
-## Open questions
+## Resolved questions
 
-1. Is the Must / Should / Could split above right?
-2. **Late uploads:** is the submission time when the file arrives (recommended), or when the upload began?
-3. **Decimal marks:** classify on the raw mark (39.5 = Fail), or round first (39.5 → 40 = Pass)? UK universities
-   usually round.
+1. Priority split — accepted as proposed (D-024).
+2. Late uploads — submission time is when the file arrives (D-023).
+3. Decimal marks — one decimal allowed; round half-up before classifying (DB-019).

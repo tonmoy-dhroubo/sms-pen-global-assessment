@@ -36,9 +36,13 @@ Only environment variables differ between the two. Expected variables (final lis
 
 - `DATABASE_URL` — app connection (Neon: pooled URL)
 - `DIRECT_URL` — migrations (Neon: direct URL; locally the same as `DATABASE_URL`)
+- `TEST_DATABASE_URL` — separate database for integration tests (local and CI only)
 - `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
+- `S3_PUBLIC_ENDPOINT` — browser-reachable storage host for presigned URLs, if different from `S3_ENDPOINT`
 - `S3_FORCE_PATH_STYLE` — `true` for both MinIO and Supabase
-- `APP_TIMEZONE` — the time zone used to display dates and judge deadlines
+- `APP_TIMEZONE` — `Asia/Dhaka`; used to display dates and judge deadlines (D-018)
+- `SESSION_SECRET` — signs the role cookie (D-020)
+- `MAX_UPLOAD_MB` — submission size limit (default 20)
 - `DEMO_MODE` — shows the demo banner on the hosted environment
 
 ## Local services
