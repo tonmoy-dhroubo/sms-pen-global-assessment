@@ -435,7 +435,7 @@ export async function confirmUpload(
 
   const outcome: Outcome = await db.$transaction(async (tx) => {
     // One confirm at a time per student and assessment: a second one waits here, then finds the first one's work.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`submission:${assessmentId}:${studentId}`}, 0))`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`submission:${assessmentId}:${studentId}`}, 0))`;
 
     const fresh = await tx.pendingUpload.findUnique({
       where: { id: pending.id },
