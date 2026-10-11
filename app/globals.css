@@ -39,6 +39,17 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-brand: var(--brand);
+  --color-tone-green: var(--tone-green-bg);
+  --color-tone-green-foreground: var(--tone-green-fg);
+  --color-tone-amber: var(--tone-amber-bg);
+  --color-tone-amber-foreground: var(--tone-amber-fg);
+  --color-tone-grey: var(--tone-grey-bg);
+  --color-tone-grey-foreground: var(--tone-grey-fg);
+  --color-tone-blue: var(--tone-blue-bg);
+  --color-tone-blue-foreground: var(--tone-blue-fg);
+  --color-tone-red: var(--tone-red-bg);
+  --color-tone-red-foreground: var(--tone-red-fg);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,14 +60,17 @@
 }
 
 :root {
+  /* The one accent colour (docs/discussions.md "Colour palette"). Change this line to re-theme the app. */
+  --brand: #2f6b3f;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -66,7 +80,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--brand);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -75,12 +89,25 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in oklab, var(--brand) 10%, white);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: var(--brand);
+
+  /* Status badge tones (D-017): background / text pairs, each at least 4.5:1 (tested in tests/unit/ui). Plain hex so
+     the contrast test can read them. */
+  --tone-green-bg: #dcfce7;
+  --tone-green-fg: #14532d;
+  --tone-amber-bg: #fef3c7;
+  --tone-amber-fg: #78350f;
+  --tone-grey-bg: #f4f4f5;
+  --tone-grey-fg: #3f3f46;
+  --tone-blue-bg: #dbeafe;
+  --tone-blue-fg: #1e3a8a;
+  --tone-red-bg: #fee2e2;
+  --tone-red-fg: #7f1d1d;
 }
 
 .dark {
@@ -90,8 +117,9 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  /* The brand lightened so it stands out on dark surfaces. */
+  --primary: color-mix(in oklab, var(--brand) 55%, white);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -101,7 +129,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: color-mix(in oklab, var(--brand) 55%, white);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -109,12 +137,23 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: color-mix(in oklab, var(--brand) 55%, white);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: color-mix(in oklab, var(--brand) 55%, white);
+
+  --tone-green-bg: #14532d;
+  --tone-green-fg: #bbf7d0;
+  --tone-amber-bg: #78350f;
+  --tone-amber-fg: #fde68a;
+  --tone-grey-bg: #3f3f46;
+  --tone-grey-fg: #e4e4e7;
+  --tone-blue-bg: #1e3a8a;
+  --tone-blue-fg: #bfdbfe;
+  --tone-red-bg: #7f1d1d;
+  --tone-red-fg: #fecaca;
 }
 
 @layer base {
