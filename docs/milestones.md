@@ -414,10 +414,10 @@ Acceptance criteria and edge cases: all Fees items in edge-cases.md ticked (debt
 **References:** pages.md (`/staff`), api.md (Dashboard), seed-plan.md (expected figures).
 
 Tasks:
-- [ ] `GET /api/dashboard` with KPI counts, overdue list with ageing buckets, needs-attention items.
-- [ ] UI: KPI cards, ageing breakdown (small bar or segmented summary using shadcn Charts), overdue table with
+- [x] `GET /api/dashboard` with KPI counts, overdue list with ageing buckets, needs-attention items.
+- [x] UI: KPI cards, ageing breakdown (small bar or segmented summary using shadcn Charts), overdue table with
       "Record payment", needs-attention list linking to the right record or assessment.
-- [ ] Efficient queries (no per-student loops); tested.
+- [x] Efficient queries (no per-student loops); tested.
 
 Acceptance criteria: after `npm run db:reset`, every figure matches the "expected" table in seed-plan.md.
 

@@ -173,6 +173,59 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 | --- | --- | --- | --- |
 | GET | `/api/dashboard` | Staff | KPI counts, overdue list with ageing, needs-attention items (see pages.md) |
 
+**Shape** (settled in M11; money as strings, timestamps ISO 8601 UTC):
+
+```json
+{
+  "generatedAt": "2026-10-12T04:00:00.000Z",
+  "today": "2026-10-12",
+  "kpis": {
+    "students": { "enrolled": 21, "deferred": 3, "withdrawn": 3, "completed": 3 },
+    "outstanding": { "amount": "1755000.00", "students": 10 },
+    "overdue": { "students": 8, "amount": "1115000.00" },
+    "lateSubmissions": { "count": 5, "windowDays": 14, "since": "2026-09-28T04:00:00.000Z" },
+    "resultsAwaitingPublication": { "draftMarks": 27, "assessments": 2, "withheldMarks": 2 }
+  },
+  "ageing": [
+    { "bucket": "1-30", "students": 4, "amount": "615000.00" },
+    { "bucket": "31-60", "students": 2, "amount": "210000.00" },
+    { "bucket": "60+", "students": 2, "amount": "290000.00" }
+  ],
+  "overdue": {
+    "total": 8,
+    "items": [
+      { "id": "…", "studentNumber": "SMS-2025-0029", "fullName": "Habib Ullah",
+        "programme": { "id": "…", "code": "BA-ENG", "name": "BA (Hons) in English" },
+        "status": "WITHDRAWN", "overdueAmount": "90000.00", "balance": "90000.00",
+        "oldestOverdueDays": 375, "ageingBucket": "60+" }
+    ]
+  },
+  "needsAttention": {
+    "lateSubmissions": { "total": 5, "items": [
+      { "submissionId": "…", "student": { "id": "…", "studentNumber": "…", "fullName": "…" },
+        "assessment": { "id": "…", "title": "Essay 1", "module": { "id": "…", "code": "ENG101", "title": "…" } },
+        "submittedAt": "…", "deadline": "…", "lateBy": "2 days", "href": "/staff/assessments/…" } ] },
+    "withheldResults": { "total": 2, "items": [
+      { "markId": "…", "student": { "id": "…", "studentNumber": "…", "fullName": "…" },
+        "assessment": { "id": "…", "title": "Essay 1", "module": { "id": "…", "code": "ENG101", "title": "…" } },
+        "reason": "Outstanding fees", "href": "/staff/students/…" } ] },
+    "draftAssessments": { "total": 2, "items": [
+      { "assessment": { "id": "…", "title": "Quiz 1", "module": { "id": "…", "code": "MAT101", "title": "…" }, "deadline": "…" },
+        "draftMarks": 17, "href": "/staff/assessments/…" } ] }
+  }
+}
+```
+
+- **"Now" and "today":** the figures are computed for one instant (`generatedAt`, from the clock). `today` is that instant's calendar date in Asia/Dhaka, and every overdue figure is measured against it, so the dashboard agrees with the fee screens at any moment.
+- **Students:** counts by enrolment status over all students.
+- **Outstanding:** the sum of the positive balances (charged − waived − paid) of every student who owes anything, overdue or not yet due, whatever their enrolment status; `students` is how many owe. A credit is not netted off.
+- **Overdue and ageing:** the same fee rule as the student list and `GET /api/fees` (D-028): payments settle the oldest charge first, a student is overdue when a charge fell due before today and is not covered, and the bucket comes from the age of the oldest uncovered overdue charge. Withdrawn, deferred and completed students who still owe are included. `ageing` always lists the three buckets in order, zeros included; `amount` is the overdue amount of the students in the bucket.
+- **Overdue list:** at most 10 students, longest overdue first (ties: larger overdue amount, then id); `total` is everyone overdue. `balance` is the student's whole balance, which the record-payment dialog shows.
+- **Late submissions:** a submission whose latest file arrived (`lastSubmittedAt`) after the student's effective deadline (their extension if they have one, else the assessment's; D-023, DB-014) and within the last 14 days, counted in elapsed time up to `generatedAt` (`kpis.lateSubmissions.since` is the start of the window; a file arriving exactly then is included). `count` is all of them; the list holds the 10 most recent, each with `lateBy` in the largest whole unit ("5 hours", "2 days").
+- **Results:** `draftMarks` is the number of marks still in DRAFT (a non-submission counts) and `assessments` how many assessments they are spread across; `withheldMarks` is the number of marks currently WITHHELD. `draftAssessments` lists up to 10 assessments with drafts, the oldest deadline first, each with its draft count; `withheldResults` lists up to 10 withheld marks, most recently changed first, with the reason staff gave (`null` if none was recorded).
+- **Links:** every needs-attention item carries `href`, the page to act on it: the assessment for late submissions and drafts, the student record for a withheld result. (`/staff/assessments/{id}` is a placeholder page until M12.)
+- **Cost:** a fixed number of database queries (19 statements today), however many students there are; there are no per-student queries (tested with 5 and with 50 students).
+
 ## Assessments
 
 | Method | Path | Who | Purpose |
