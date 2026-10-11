@@ -17,7 +17,7 @@ waiting on a decision.
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
-| M07 | Seed data and reset | M06 | Not started | | |
+| M07 | Seed data and reset | M06 | In review | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
 | M08 | App shell and shared UI | M07 | Not started | | |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
 | M10 | Fees and payments | M09 | Not started | | |
@@ -313,21 +313,21 @@ Verification: `npm run test:integration`.
 **References:** db/seed-plan.md, D-022, DB-004, DB-015, DB-017, DB-018.
 
 Tasks:
-- [ ] `lib/services/student-number.ts`: transactional allocator (upsert-increment on `STUDENT_ID_SEQUENCE`), with an
+- [x] `lib/services/student-number.ts`: transactional allocator (upsert-increment on `STUDENT_ID_SEQUENCE`), with an
       integration test creating 20 students concurrently and getting 20 distinct, gap-free numbers.
-- [ ] Fixture files in `db/seed/fixtures/`: small valid PDF and DOCX.
-- [ ] `db/seed/index.ts`: builds staff, programmes, fee schedules (current and earlier sessions), modules,
+- [x] Fixture files in `db/seed/fixtures/`: small valid PDF and DOCX.
+- [x] `db/seed/index.ts`: builds staff, programmes, fee schedules (current and earlier sessions), modules,
       assessments, 30 students with charges, payments (incl. voided, bKash, Nagad), waivers, status histories,
       submissions with real uploaded files (incl. resubmission versions and late ones), marks (incl. boundaries, NS,
       draft/published/withheld, a post-publish change).
-- [ ] All dates relative to seed time `T` in Asia/Dhaka; deterministic RNG for filler.
-- [ ] Self-check at the end: recompute with the real rule functions and assert the expected facts from the seed plan
+- [x] All dates relative to seed time `T` in Asia/Dhaka; deterministic RNG for filler.
+- [x] Self-check at the end: recompute with the real rule functions and assert the expected facts from the seed plan
       (8 overdue with the right buckets, 1 credit, the late submissions, the withheld results, status totals).
       Fail with a clear message if anything differs.
-- [ ] Scripts: `db:seed`, `db:reset` (drop, migrate, empty the bucket, seed). `db:reset` uses its own guarded
+- [x] Scripts: `db:seed`, `db:reset` (drop, migrate, empty the bucket, seed). `db:reset` uses its own guarded
       drop of the `public` schema + `prisma migrate deploy` (not `prisma migrate reset`, DB-022) and refuses unless the
       database host is local (`localhost`/`127.0.0.1`/`::1`) or `--force` is passed.
-- [ ] Draft the "demo tour" list for the README from the personas (finalised in M18).
+- [x] Draft the "demo tour" list for the README from the personas (finalised in M18).
 
 Acceptance criteria:
 - `npm run db:reset` runs twice in a row with identical results and passes its self-check.

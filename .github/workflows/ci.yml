@@ -169,3 +169,83 @@ jobs:
       # Database constraints (tests/integration/db), the API (tests/integration/api) and storage
       # (tests/integration/storage) share one harness.
       - run: npm run test:integration
+
+  seed:
+    name: Seed data and reset (Postgres service container + MinIO)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: sms
+          POSTGRES_PASSWORD: sms
+          POSTGRES_DB: sms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sms -d sms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The same variables a developer's .env holds. `db:reset` refuses any database or storage endpoint that is not
+      # local, which both of these are. The `submissions` bucket does not exist yet: the seed creates it.
+      DATABASE_URL: postgresql://sms:sms@localhost:5432/sms
+      DIRECT_URL: postgresql://sms:sms@localhost:5432/sms
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: submissions
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+      SESSION_SECRET: ci-placeholder-session-secret-at-least-32-chars
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same MinIO step as the integration job (the image tag comes from docker-compose.yml, D-027).
+      - name: Start MinIO
+        run: |
+          image="$(grep -oE 'pgsty/minio:[^[:space:]]+' docker-compose.yml | head -n 1)"
+          echo "Starting $image"
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER="$S3_ACCESS_KEY_ID" -e MINIO_ROOT_PASSWORD="$S3_SECRET_ACCESS_KEY" \
+            "$image" server /data
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:9000/minio/health/ready; then echo "MinIO is ready"; exit 0; fi
+            sleep 1
+          done
+          docker logs minio
+          echo "MinIO did not become ready" >&2
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Drops the schema, applies the migrations, empties the bucket, seeds, and runs the seed's self-check against the
+      # real rule functions. A mismatch with db/seed-plan.md fails the build, so the seed cannot rot.
+      - name: Reset and seed (includes the self-check)
+        shell: bash
+        run: npm run db:reset | tee reset-1.log
+
+      - name: The seed refuses a database that already has data
+        shell: bash
+        run: |
+          if npm run db:seed; then
+            echo "db:seed should have refused to run on a populated database" >&2
+            exit 1
+          fi
+
+      - name: Reset again; the content is identical
+        shell: bash
+        run: |
+          npm run db:reset | tee reset-2.log
+          first="$(grep '^Seed fingerprint' reset-1.log)"
+          second="$(grep '^Seed fingerprint' reset-2.log)"
+          echo "first:  $first"
+          echo "second: $second"
+          test -n "$first" && test "$first" = "$second"

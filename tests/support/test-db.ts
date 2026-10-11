@@ -1,11 +1,14 @@
 import "dotenv/config";
-import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { Client } from "pg";
+import {
+  dropAndRecreateSchema as dropSchema,
+  migrateDeploy as migrate,
+  truncateAll,
+  withClient,
+} from "@/db/tools/database";
 
-// Database plumbing for the integration harness. Prisma 7 refuses `prisma migrate reset` when an AI agent runs it
-// (DB-022) and that guard is respected: the schema is dropped and re-created here, then `prisma migrate deploy`
-// applies the committed migrations.
+// Database plumbing for the integration harness. The generic pieces live in db/tools/database.ts (shared with
+// `npm run db:reset`); this file adds the strict test guard: the harness only ever touches a database whose name
+// ends in `_test` (DB-022).
 
 /** Throws unless the URL's database name ends in `_test`; returns the URL. */
 export function assertTestDatabase(url: string): string {
@@ -25,45 +28,15 @@ export function testDatabaseUrl(): string {
   return assertTestDatabase(url);
 }
 
-async function withClient<T>(url: string, run: (client: Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: url });
-  await client.connect();
-  try {
-    return await run(client);
-  } finally {
-    await client.end();
-  }
-}
-
-/** Drops everything in the `public` schema (tables, enums, functions, extensions) and creates it again. */
+/** Drops everything in the `public` schema and creates it again; refuses a database not named `*_test`. */
 export async function dropAndRecreateSchema(url: string = testDatabaseUrl()): Promise<void> {
-  assertTestDatabase(url); // guard whatever URL was passed in
-  await withClient(url, async (client) => {
-    await client.query("DROP SCHEMA IF EXISTS public CASCADE");
-    await client.query("CREATE SCHEMA public");
-  });
+  await dropSchema(url, assertTestDatabase); // guard whatever URL was passed in
 }
 
-/** Applies the committed migrations with the Prisma CLI (no shell, so it behaves the same on every OS). */
+/** Applies the committed migrations with the Prisma CLI. */
 export function migrateDeploy(url: string = testDatabaseUrl()): void {
-  const prismaCli = path.resolve("node_modules/prisma/build/index.js");
-  const result = spawnSync(process.execPath, [prismaCli, "migrate", "deploy"], {
-    env: { ...process.env, DIRECT_URL: url, DATABASE_URL: url },
-    encoding: "utf8",
-  });
-  if (result.status !== 0) {
-    throw new Error(`prisma migrate deploy failed:\n${result.stdout}\n${result.stderr}`);
-  }
+  assertTestDatabase(url);
+  migrate(url);
 }
 
-/** Empties every application table (all of `public` except Prisma's own migration table). */
-export async function truncateAll(client: Client): Promise<void> {
-  const { rows } = await client.query<{ tablename: string }>(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`,
-  );
-  if (rows.length === 0) return;
-  const tables = rows.map((row) => `"${row.tablename}"`).join(", ");
-  await client.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
-}
-
-export { withClient };
+export { truncateAll, withClient };
