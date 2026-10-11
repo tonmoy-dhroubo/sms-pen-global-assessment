@@ -10,7 +10,7 @@ waiting on a decision.
 
 | ID | Milestone | Depends on | Status | Branch | PR |
 | --- | --- | --- | --- | --- | --- |
-| M00 | Repository foundations | — | In progress | m00-repo-foundations | |
+| M00 | Repository foundations | — | In review | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Not started | | |
 | M02 | Local infrastructure (Docker, env) | M01 | Not started | | |
 | M03 | Prisma schema and first migration | M02 | Not started | | |
