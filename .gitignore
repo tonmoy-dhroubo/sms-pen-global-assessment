@@ -1,1 +1,27 @@
+# The assessment brief is not for distribution; never commit it.
 SMS_Technical_Assessment_ (1).pdf
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files (only .env.example is committed)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+
+# Test output
+playwright-report/
+test-results/
