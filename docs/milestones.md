@@ -22,7 +22,7 @@ waiting on a decision.
 | M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
 | M10 | Fees and payments | M09 | Done | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
 | M11 | Staff dashboard | M10 | Done | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
-| M12 | Assessments (staff) | M09 | In progress | m12-assessments-staff | |
+| M12 | Assessments (staff) | M09 | In review | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
 | M13 | Submissions (student upload flow) | M12 | Not started | | |
 | M14 | Marksheet and results | M13 | Not started | | |
 | M15 | Student portal | M14 | Not started | | |
