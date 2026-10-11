@@ -12,6 +12,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:db": "vitest run --config vitest.db.config.mts",
     "services:up": "docker compose up -d --wait",
     "services:down": "docker compose down",

@@ -47,6 +47,29 @@ jobs:
           S3_SECRET_ACCESS_KEY: ci-placeholder
           SESSION_SECRET: ci-placeholder-session-secret-at-least-32-chars
 
+  unit-tests:
+    name: Unit tests and coverage (TZ=${{ matrix.tz }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Domain rules must not depend on the machine's time zone (M04): run them in two very different zones.
+        tz: [UTC, America/New_York]
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      # Fails if coverage of lib/services/rules drops below 95% (lines and branches); see vitest.config.mts.
+      - run: npm run test:coverage
+
   migrations:
     name: Apply migrations and check constraints
     runs-on: ubuntu-latest

@@ -10,5 +10,19 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.{ts,tsx}", "lib/**/*.test.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      // M04 acceptance: the pure domain rules are covered at 95% or better (lines and branches).
+      // `types.ts` only holds type declarations, so there is nothing to execute.
+      include: ["lib/services/rules/**/*.ts"],
+      exclude: ["lib/services/rules/types.ts"],
+      thresholds: {
+        lines: 95,
+        branches: 95,
+        functions: 95,
+        statements: 95,
+      },
+    },
   },
 });
