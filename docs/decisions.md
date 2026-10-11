@@ -231,3 +231,19 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   starts the next milestone. Anything behaviour-affecting that the docs don't cover is parked for the user rather
   than decided. The user reviews merged PRs and reports in the morning.
 - Why: Chosen by the user before going to sleep, so work continues without blocking on review.
+
+## D-026: Cache Components off; M01 tooling notes
+
+- Date: 2026-10-12
+- Decision: `cacheComponents` and `partialPrefetching` are disabled in `next.config.ts`. Every page is per-user and
+  dynamic (signed role cookie, live database data), so classic dynamic rendering is simpler and avoids
+  Suspense/`"use cache"` requirements on every cookie or Prisma read.
+- Also recorded from M01:
+  - shadcn's `form` component no longer exists in the registry; forms use shadcn **`field`** with react-hook-form's
+    `Controller` and Zod resolvers.
+  - `lib/utils.ts` re-exports `cn` from the `cn` package (published by shadcn; replaces clsx + tailwind-merge).
+  - `agentRules: false` stops `next dev` editing AGENTS.md. Next.js 16 ships version-matched docs in
+    `node_modules/next/dist/docs/`; agents should consult them rather than rely on memory.
+  - `npm audit` reports high advisories in `braces` via `eslint-config-next` (dev-only, no non-downgrade fix);
+    accepted for now, re-checked in M17.
+- Why: Decided by Claude during the overnight review (D-025); purely technical, no behaviour change.
