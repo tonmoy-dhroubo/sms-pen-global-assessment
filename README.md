@@ -13,7 +13,7 @@ marksheet and results) with a Staff view and a Student view.
 
 ## Run locally
 
-> Draft: finalised at the end of the project. Database migrations and seed data arrive in M03 and M07.
+> Draft: finalised at the end of the project. Seed data arrives in M07.
 
 Prerequisites:
 
@@ -22,8 +22,9 @@ Prerequisites:
 
 ```bash
 cp .env.example .env     # local defaults work as-is
-npm ci                   # install dependencies
+npm ci                   # install dependencies (also generates the Prisma client)
 npm run services:up      # start Postgres + MinIO and wait until they are healthy
+npm run db:deploy        # create the database tables (apply the migrations)
 npm run dev              # http://localhost:3000
 ```
 
@@ -51,6 +52,12 @@ port (5432, 9000, 9001) is already in use, change it in `.env` (`POSTGRES_PORT`,
 | `npm run format` / `format:check`     | Prettier (write / check)                    |
 | `npm test` / `npm run test:watch`     | Vitest unit tests                           |
 | `npm run services:up` / `down` / `reset` | Local Docker services (see above) |
+| `npm run db:migrate`                  | Create and apply a migration after editing `db/schema.prisma` (dev) |
+| `npm run db:deploy`                   | Apply committed migrations (also what CI runs) |
+| `npm run db:generate` / `db:validate` | Regenerate the Prisma client / validate the schema |
+| `npm run db:drift`                    | Fail if the database differs from `db/schema.prisma` |
+| `npm run db:studio`                   | Prisma Studio, a browser UI for the data   |
+| `npm run test:db`                     | Database tests (constraints, search) against `sms_test` |
 
 The full README (every environment variable explained, demo tour and AI usage) is written at the end of the
 project.

@@ -7,8 +7,8 @@ Everything about the database lives here.
 | [er-diagram.md](er-diagram.md) | Mermaid ER diagram of all tables and relationships |
 | [decisions.md](decisions.md) | Database decisions (DB-NNN): keys, money, auditing and rules |
 | [seed-plan.md](seed-plan.md) | Demo data plan: 30 students, personas, relative dates |
-| `schema.prisma` | Prisma schema — the source of truth once written (not yet created) |
-| `migrations/` | Prisma migrations, committed (not yet created) |
+| `schema.prisma` | Prisma schema — the source of truth |
+| `migrations/` | Prisma migrations, committed. The first one also holds hand-written SQL: extensions, check constraints and the name-search index |
 | `seed/` | Seed and demo-reset scripts (not yet created) |
 
 Prisma's default folder is `prisma/`; `prisma.config.ts` at the repo root points it here instead (DB-008).

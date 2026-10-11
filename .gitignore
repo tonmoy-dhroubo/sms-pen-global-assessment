@@ -29,3 +29,6 @@ test-results/
 # Misc
 *.pem
 .vercel
+
+# Generated Prisma client (created by `npm install` via postinstall / `npm run db:generate`)
+lib/generated/

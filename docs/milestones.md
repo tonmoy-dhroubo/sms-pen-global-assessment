@@ -13,7 +13,7 @@ waiting on a decision.
 | M00 | Repository foundations | — | Done | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Done | m01-nextjs-scaffold | [#2](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/2) |
 | M02 | Local infrastructure (Docker, env) | M01 | Done | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
-| M03 | Prisma schema and first migration | M02 | Not started | | |
+| M03 | Prisma schema and first migration | M02 | In review | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
 | M04 | Domain rules and unit tests | M03 | Not started | | |
 | M05 | API foundation, roles and test harness | M04 | Not started | | |
 | M06 | Storage layer (S3 / MinIO) | M05 | Not started | | |
@@ -188,28 +188,28 @@ is denied.
 **References:** db/er-diagram.md, db/decisions.md (DB-001 to DB-020), db/README.md.
 
 Tasks:
-- [ ] Prisma (latest stable) with the `pg` driver adapter. `prisma.config.ts` at the root pointing to
+- [x] Prisma (latest stable) with the `pg` driver adapter. `prisma.config.ts` at the root pointing to
       `db/schema.prisma`, migrations in `db/migrations`, seed command `tsx db/seed/index.ts`.
-- [ ] Models, enums and relations exactly as the ER diagram, including `version`, `PENDING_UPLOAD`, `sha256`,
+- [x] Models, enums and relations exactly as the ER diagram, including `version`, `PENDING_UPLOAD`, `sha256`,
       `method`, `kind`, `instalment`, `isNonSubmission`, `MARK_CHANGE.change`.
-- [ ] Types: money `Decimal @db.Decimal(12,2)`; mark `Decimal @db.Decimal(4,1)`; calendar dates `@db.Date`;
+- [x] Types: money `Decimal @db.Decimal(12,2)`; mark `Decimal @db.Decimal(4,1)`; calendar dates `@db.Date`;
       timestamps `@db.Timestamptz(3)`; UUID ids with database defaults.
-- [ ] Unique constraints: `studentNumber`, `email`, programme/module `code`, payment `reference`, `objectKey`,
+- [x] Unique constraints: `studentNumber`, `email`, programme/module `code`, payment `reference`, `objectKey`,
       (`assessmentId`,`studentId`) on Submission, Mark, Extension; (`programmeId`,`academicYear`,`instalment`) on
       ProgrammeFee.
-- [ ] Check constraints added in the migration SQL: mark between 0 and 100; payment amount > 0; mark null exactly
+- [x] Check constraints added in the migration SQL: mark between 0 and 100; payment amount > 0; mark null exactly
       when `isNonSubmission`; WAIVER amounts negative, other charge kinds positive.
-- [ ] Postgres extensions `unaccent` and `pg_trgm` enabled in the migration; a trigram index on
+- [x] Postgres extensions `unaccent` and `pg_trgm` enabled in the migration; a trigram index on
       `unaccent(lower(fullName))` (immutable wrapper function) for search; plain indexes on foreign keys,
       `status`, `programmeId`, `dueDate`, `deadline`.
-- [ ] `onDelete` rules: `Restrict` for students, payments, marks and submissions (DB-005); `Cascade` only for
+- [x] `onDelete` rules: `Restrict` for students, payments, marks and submissions (DB-005); `Cascade` only for
       `PROGRAMME_MODULE`.
-- [ ] `lib/db.ts`: Prisma client singleton (safe with Next.js hot reload).
-- [ ] npm scripts: `db:migrate` (dev), `db:deploy`, `db:generate`, `db:validate`, `db:studio`.
-- [ ] Add `npx prisma validate` to CI.
-- [ ] Make sure `next build` still passes in CI without a `.env` once `lib/db` imports `lib/env` (give the CI build step
+- [x] `lib/db.ts`: Prisma client singleton (safe with Next.js hot reload).
+- [x] npm scripts: `db:migrate` (dev), `db:deploy`, `db:generate`, `db:validate`, `db:studio`.
+- [x] Add `npx prisma validate` to CI.
+- [x] Make sure `next build` still passes in CI without a `.env` once `lib/db` imports `lib/env` (give the CI build step
       dummy values, or parse env lazily) — flagged in the M02 report.
-- [ ] Update db/er-diagram.md if anything had to differ, with the reason in db/decisions.md (via the report).
+- [x] Update db/er-diagram.md if anything had to differ, with the reason in db/decisions.md (via the report).
 
 Acceptance criteria:
 - `npm run db:migrate` on an empty database applies cleanly; running it again reports nothing to do.
