@@ -109,7 +109,7 @@ jobs:
         run: npm run db:drift
 
   integration-tests:
-    name: Integration tests (Postgres service container)
+    name: Integration tests (Postgres service container + MinIO)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -128,12 +128,37 @@ jobs:
           --health-retries 10
     env:
       # The harness (tests/support) refuses any database whose name does not end in "_test", drops and
-      # re-creates its schema, then runs `prisma migrate deploy`. MinIO joins this job in M06.
+      # re-creates its schema, then runs `prisma migrate deploy`. It also creates and empties the
+      # `submissions-test` bucket on MinIO (started below) and points the app at it, whatever S3_BUCKET says.
       TEST_DATABASE_URL: postgresql://sms:sms@localhost:5432/sms_test
       DATABASE_URL: postgresql://sms:sms@localhost:5432/sms_test
       DIRECT_URL: postgresql://sms:sms@localhost:5432/sms_test
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: submissions-test
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
     steps:
       - uses: actions/checkout@v4
+
+      # MinIO is a step rather than a service container: the pgsty/minio image has no usable default command
+      # (it needs `server /data`) and service containers cannot pass one. The image tag is read from
+      # docker-compose.yml so CI and local development always run the same version (D-027).
+      - name: Start MinIO
+        run: |
+          image="$(grep -oE 'pgsty/minio:[^[:space:]]+' docker-compose.yml | head -n 1)"
+          echo "Starting $image"
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER="$S3_ACCESS_KEY_ID" -e MINIO_ROOT_PASSWORD="$S3_SECRET_ACCESS_KEY" \
+            "$image" server /data
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:9000/minio/health/ready; then echo "MinIO is ready"; exit 0; fi
+            sleep 1
+          done
+          docker logs minio
+          echo "MinIO did not become ready" >&2
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -141,5 +166,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-      # Database constraints (tests/integration/db) and the API (tests/integration/api) share one harness.
+      # Database constraints (tests/integration/db), the API (tests/integration/api) and storage
+      # (tests/integration/storage) share one harness.
       - run: npm run test:integration
