@@ -10,7 +10,7 @@ waiting on a decision.
 
 | ID | Milestone | Depends on | Status | Branch | PR |
 | --- | --- | --- | --- | --- | --- |
-| M00 | Repository foundations | — | Not started | | |
+| M00 | Repository foundations | — | In review | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Not started | | |
 | M02 | Local infrastructure (Docker, env) | M01 | Not started | | |
 | M03 | Prisma schema and first migration | M02 | Not started | | |
@@ -98,16 +98,16 @@ MNN+1 — <title> (not started; waiting for review)
 **References:** D-019, tech-stack.md.
 
 Tasks:
-- [ ] `.gitattributes`: `* text=auto eol=lf`, binary rules for images, PDF and DOCX fixtures.
-- [ ] `.editorconfig` (2 spaces, LF, final newline, trim trailing whitespace).
-- [ ] `.nvmrc` pinned to the current Node.js LTS major; `engines.node` will match in M01.
-- [ ] `.gitignore`: keep the brief PDF entry; add `node_modules/`, `.next/`, `coverage/`, `.env`, `.env.*` (but not
+- [x] `.gitattributes`: `* text=auto eol=lf`, binary rules for images, PDF and DOCX fixtures.
+- [x] `.editorconfig` (2 spaces, LF, final newline, trim trailing whitespace).
+- [x] `.nvmrc` pinned to the current Node.js LTS major; `engines.node` will match in M01.
+- [x] `.gitignore`: keep the brief PDF entry; add `node_modules/`, `.next/`, `coverage/`, `.env`, `.env.*` (but not
       `.env.example`), `*.log`, `.DS_Store`, `playwright-report/`, `test-results/`.
-- [ ] `.github/pull_request_template.md`: summary, milestone link, task checklist, verification table, screenshots,
+- [x] `.github/pull_request_template.md`: summary, milestone link, task checklist, verification table, screenshots,
       edge cases ticked, deviations.
-- [ ] `README.md` skeleton: project name, one-paragraph description, "Status: in development", links to `AGENTS.md`
+- [x] `README.md` skeleton: project name, one-paragraph description, "Status: in development", links to `AGENTS.md`
       and `docs/`. (Fully written in M18.)
-- [ ] Re-normalise line endings of existing files after adding `.gitattributes`.
+- [x] Re-normalise line endings of existing files after adding `.gitattributes`.
 
 Acceptance criteria:
 - `git status` is clean after a fresh clone and checkout; no CRLF warnings.

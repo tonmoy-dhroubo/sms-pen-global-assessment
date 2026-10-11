@@ -15,3 +15,4 @@ For each entry note: what the AI did, which tool, and what we reviewed, changed 
 | 2026-10-11 | Claude Code | Compared component libraries and proposed the shadcn ecosystem plus status-badge conventions (D-016, D-017) | I required dark mode with a global toggle |
 | 2026-10-11 | Claude Design | Minimal 3-screen mockup (staff dashboard, student record, student view): https://claude.ai/artifact/X9EoHwpdQfjU2QKody2Eyy | Under review |
 | 2026-10-12 | Claude Code | Wrote the seed plan (30 personas), pages and routes, API contract, decisions D-018–D-024 and DB-015–DB-020, and the 20-milestone tracker | I set locale (Bangladesh, BDT), seed size, header role switcher and asked for milestone-by-milestone delivery; delegated the rest |
+| 2026-10-12 | Claude Code (coder agent) | Implemented M00: line-ending/editor config, `.nvmrc`, `.gitignore`, PR template and README skeleton on branch `m00-repo-foundations` | Reviewed in the PR before merge |
