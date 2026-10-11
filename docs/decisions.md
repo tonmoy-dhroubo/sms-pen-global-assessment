@@ -346,3 +346,18 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   - Fee states: "outstanding" = owes money but nothing is due yet; "overdue" is separate; no charges = "paid".
   - The fee-state filter loads charges/payments for the filtered set and applies the M04 rule in memory (~100 ms
     for 1,000 students). Fine for a registry of a few thousand; beyond ~10,000 it would move into a SQL view.
+
+## D-033: Fees workflow details settled in M10
+
+- Date: 2026-10-12
+- Decision (accepted from the M10 report during the overnight review, D-025; schema items in DB-024):
+  - Payments, adjustments and waivers are allowed for students of any status; a charge's session is the
+    student's current session; adjustment/waiver due dates may be in the past (due immediately).
+  - Warnings: `OVERPAYMENT` (payment larger than the balance, including when nothing is owed),
+    `WAIVER_EXCEEDS_BALANCE` (waiver larger than the balance — allowed, becomes credit),
+    `EXISTING_CHARGES_UNCHANGED` (on saving a fee schedule).
+  - Business-rule names: `PAYMENT_ALREADY_VOIDED`, `FEE_INSTALMENT_IN_USE`.
+  - Cash payments still need a reference: the dialog asks for the receipt number (e.g. `CASH-RCPT-0012`).
+  - `/api/fees` lists every student whose fee state is not "paid", whatever their enrolment status, sorted by
+    longest overdue first; `GET /api/programmes` and `/api/modules` return `{ items }` without paging.
+  - A fee schedule has 1–12 instalments; `/staff/programmes` offers the previous, current and next two sessions.

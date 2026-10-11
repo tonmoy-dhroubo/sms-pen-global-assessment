@@ -197,3 +197,19 @@ delegated the remaining open choices.
   - `db:seed` and `db:reset` refuse non-local database **or storage** targets unless `--force`. The seed prints a
     content fingerprint; two resets on the same day must match.
   - One seeded file keeps a Bengali name ("পোর্টফোলিও.pdf") to demonstrate non-ASCII downloads.
+
+## DB-024: Fee audit columns and reusable voided references (M10 review)
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision:
+  - `payments.voided_by_id` (staff) is set whenever a payment is voided; a CHECK keeps `voided_at` and
+    `voided_by_id` both null or both set. `fee_charges.created_by_id` (staff) records who added a charge,
+    adjustment or waiver (automatic programme-fee charges record the staff member who enrolled the student).
+  - Payment references are unique only among **non-voided** payments (partial unique index on the normalised
+    reference). A mistaken payment can be voided and re-recorded with the same bank reference.
+  - References are normalised: trimmed, inner spaces collapsed, upper-cased.
+  - Removing a fee-schedule instalment that students were already billed for is refused
+    (`FEE_INSTALMENT_IN_USE`); its amount and due date can still be edited, because charges keep their own copy.
+- Why: Every financial action needs a who-and-when (DB-005) for the activity timeline, and real bank references
+  repeat when a mistaken entry is corrected. Decided by Claude during the overnight review (D-025).
