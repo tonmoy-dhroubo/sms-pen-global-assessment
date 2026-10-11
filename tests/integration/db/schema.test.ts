@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
 // Proves the database-level rules that Prisma cannot express (check constraints, unique keys, restrict-on-delete,
@@ -10,30 +10,6 @@ const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error("TEST_DATABASE_URL is not set (see .env.example).");
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
-
-const TABLES = [
-  "mark_changes",
-  "marks",
-  "submission_files",
-  "submissions",
-  "pending_uploads",
-  "extensions",
-  "assessments",
-  "payments",
-  "fee_charges",
-  "status_changes",
-  "students",
-  "programme_modules",
-  "modules",
-  "programme_fees",
-  "programmes",
-  "staff",
-  "student_id_sequences",
-];
-
-async function truncateAll() {
-  await prisma.$executeRawUnsafe(`TRUNCATE ${TABLES.map((t) => `"${t}"`).join(", ")}`);
-}
 
 /** Builds the minimum graph the constraints hang off. */
 async function baseData() {
@@ -69,15 +45,11 @@ async function baseData() {
 type Base = Awaited<ReturnType<typeof baseData>>;
 let base: Base;
 
-beforeAll(async () => {
-  await truncateAll();
-});
+// The harness (tests/support/setup.ts) empties every table before each test, ahead of this hook.
 beforeEach(async () => {
-  await truncateAll();
   base = await baseData();
 });
 afterAll(async () => {
-  await truncateAll();
   await prisma.$disconnect();
 });
 

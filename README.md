@@ -57,7 +57,7 @@ port (5432, 9000, 9001) is already in use, change it in `.env` (`POSTGRES_PORT`,
 | `npm run db:generate` / `db:validate` | Regenerate the Prisma client / validate the schema |
 | `npm run db:drift`                    | Fail if the database differs from `db/schema.prisma` |
 | `npm run db:studio`                   | Prisma Studio, a browser UI for the data   |
-| `npm run test:db`                     | Database tests (constraints, search) against `sms_test` |
+| `npm run test:integration`            | API and database tests against the throw-away `sms_test` database (drops and re-creates its schema each run; needs `npm run services:up`) |
 
 The full README (every environment variable explained, demo tour and AI usage) is written at the end of the
 project.

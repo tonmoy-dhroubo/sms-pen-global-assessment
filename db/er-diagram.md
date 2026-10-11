@@ -186,7 +186,7 @@ erDiagram
   `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt`, `FEE_CHARGE.programmeFeeId`. Everything else is `NOT NULL`.
 - **Enums** (Postgres enum types): `EnrolmentStatus`, `FeeChargeKind`, `PaymentMethod`, `ReleaseStatus`, `MarkChangeType`
   (`MARK_CHANGE.change`).
-- **Database-level rules** (hand-written SQL in the first migration, proven by `npm run test:db`):
+- **Database-level rules** (hand-written SQL in the first migration, proven by `npm run test:integration`):
   - `MARK.mark` is between 0 and 100, and is null exactly when `isNonSubmission` is true.
   - `PAYMENT.amount` is greater than 0.
   - `FEE_CHARGE.amount` is negative for `WAIVER` and positive for every other kind.

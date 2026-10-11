@@ -22,6 +22,11 @@ with Zod schemas in `lib/validation/`, shared with the forms.
 - Each endpoint below lists who may call it: **Staff**, **Student**, or **Any** (either role).
 - No valid role → `401`. Wrong role → `403`. A student requesting another student's data → `404` (never reveal that
   the record exists).
+- "No valid role" means the cookie is missing, has a bad signature, is older than 7 days, or points at a staff member or
+  student that no longer exists. The role is checked before the request body or query is validated.
+- The cookie is `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when `NODE_ENV=production`. Pages under `/staff` and
+  `/student` are guarded by `proxy.ts` (signature, age and role only, no database lookup); Route Handlers and server code
+  re-verify and confirm the record still exists.
 
 ### Errors
 
@@ -47,7 +52,12 @@ Every error uses one shape:
 | 409 | `VERSION_CONFLICT` | Optimistic lock failed (DB-016) — `details.currentVersion` |
 | 409 | `DUPLICATE_WARNING` | Probable duplicate student; resend with `confirmDuplicate: true` to proceed — `details.matches` |
 | 422 | `BUSINESS_RULE` | Valid input that breaks a rule (e.g. upload after close, invalid status transition) — `details.rule` names it |
-| 500 | `INTERNAL_ERROR` | Unexpected; logged server-side, generic message to the client |
+| 500 | `INTERNAL_ERROR` | Unexpected; logged server-side with a request id, generic message to the client (`details.requestId`) |
+
+`details` is omitted when an error has none. A body that is not valid JSON is a `VALIDATION_ERROR` with
+`details.formErrors` (`details.fieldErrors` is then empty); nested fields use dotted paths (`instalments.0.amount`).
+Every response carries an `x-request-id` header (an incoming one is reused when it looks sane) and
+`Cache-Control: no-store`.
 
 ### Warnings
 
@@ -70,16 +80,22 @@ mismatch returns `409 VERSION_CONFLICT` (DB-016).
 
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/session` | Any / none | Current identity: `{ role: "staff", staff: {...} }`, `{ role: "student", student: {...} }` or `{ role: null }` |
-| PUT | `/api/session` | Anyone | Switch identity. Body `{ "role": "staff", "staffId": "…" }` or `{ "role": "student", "studentId": "…" }`. Unknown ID → 404 |
-| DELETE | `/api/session` | Anyone | Clear the cookie |
-| GET | `/api/session/options` | Anyone | Staff list and a searchable student list (`?q=`) for the role switcher |
+| GET | `/api/session` | Any / none | Current identity: `{ role: "staff", staff: {...} }`, `{ role: "student", student: {...} }` or `{ role: null }`. Always 200: a missing, invalid or dangling cookie is `{ role: null }` |
+| PUT | `/api/session` | Anyone | Switch identity. Body `{ "role": "staff", "staffId": "…" }` or `{ "role": "student", "studentId": "…" }`. Responds 200 with the same body as GET and sets the cookie. Unknown ID → 404 (no cookie set); malformed ID or role → 400 |
+| DELETE | `/api/session` | Anyone | Clear the cookie. 200 `{ role: null }`, whether or not there was a session |
+| GET | `/api/session/options` | Anyone | Staff list and a searchable student list for the role switcher. Query: `q` (name regardless of case and accents, DB-021, or part of the Student ID; max 100 chars), `limit` (default 20, max 50) |
+
+Profile objects: `staff` is `{ id, fullName, email, jobTitle }`; `student` is `{ id, studentNumber, fullName, email, status }`.
+
+`GET /api/session/options` responds `{ "staff": [{ "id", "fullName", "jobTitle" }], "students": { "items": [{ "id",
+"studentNumber", "fullName", "status" }], "total": 3 } }`. Staff are all listed, by name. Students are sorted by
+normalised name then Student ID, limited to `limit`; `total` counts every match. No emails or dates of birth are exposed.
 
 ## Health
 
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/health` | Anyone | `{ "db": "ok", "storage": "ok" }`; 503 if either is down |
+| GET | `/api/health` | Anyone | `{ "db": "ok", "storage": "ok" }`; 503 if either is down (`"down"` for the failing one). Until M06 only `db` is reported |
 
 ## Programmes and modules
 
@@ -168,9 +184,14 @@ Classification follows DB-019 and is computed on read.
 
 All scoped to the signed-in student; no IDs of other students are accepted.
 
+`GET /api/me` responds `{ "student": { id, studentNumber, fullName, email, dateOfBirth, programme: { id, code, name },
+academicYear, yearOfStudy, status }, "canSubmit": { "allowed": true, "reason": null, "message": null } }`. At this point
+`canSubmit` only reflects the enrolment status (`reason: "NOT_ENROLLED"` for Deferred, Withdrawn and Completed);
+per-assessment reasons (closed, deadline passed, module not in programme) belong to `/api/me/assessments`.
+
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/me` | Student | Profile and status, plus what they may do (`canSubmit`, with reason if not) |
+| GET | `/api/me` | Student | Profile and status, plus what they may do (`canSubmit`, with reason if not). Staff → 403 |
 | GET | `/api/me/fees` | Student | Summary, charges, non-voided payments |
 | GET | `/api/me/assessments` | Student | Assessments for their programme's modules with deadline, countdown data, own submission status |
 | GET | `/api/me/results` | Student | Published marks with classification; other results as `{ "status": "NOT_AVAILABLE" }` only |
