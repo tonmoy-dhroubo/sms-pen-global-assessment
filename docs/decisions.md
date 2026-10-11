@@ -263,3 +263,20 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Also accepted from M02: `server-only` dependency; optional `DIRECT_URL`, `TEST_DATABASE_URL`,
   `S3_PUBLIC_ENDPOINT`; defaults `APP_TIMEZONE=Asia/Dhaka`, `MAX_UPLOAD_MB=20`, `DEMO_MODE=false`;
   `SESSION_SECRET` ≥ 32 characters. The hosted demo (M19) must set a real secret.
+
+## D-028: Payments settle the oldest charge first; locale formatting independent of ICU
+
+- Date: 2026-10-12
+- Decision:
+  - Payments are not linked to specific charges. They settle charges in due-date order (oldest first). Overdue age
+    is measured from the oldest charge that is past due and not yet covered; the next due date is the first
+    uncovered charge due today or later. A charge due today is not overdue.
+  - BDT formatting (`৳1,25,000.00`) and date formatting (`11 Oct 2026`) are implemented by hand on top of
+    `Intl.formatToParts`/`decimal.js`, because no ICU locale on Node 24 produces the exact D-018 format.
+  - Rules never read the clock; `lib/services/clock.ts` provides `systemClock` and `fixedClock`.
+  - Accepted defaults from M04: a late submission can be replaced again after the deadline (only on-time
+    submissions are locked); durations use the largest whole unit ("2 days", "5 hours"); duplicate-name
+    normalisation strips Latin diacritics but keeps Bengali vowel signs.
+- Why: Oldest-first is how student accounts are normally settled and needs no payment-to-charge links. Recorded
+  from the M04 report during the overnight review (D-025). The seed plan was adjusted (personas 4 and 29) so the
+  60+ ageing examples hold under this rule.

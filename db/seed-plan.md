@@ -77,7 +77,7 @@ two 60+). Credit: **1**.
 | 1 | Ayesha Rahman | BSC-CSE | 1 | Enrolled | Instalment 1 paid; instalment 2 **outstanding, not yet due** | Model student: always on time, Distinction marks, published |
 | 2 | Tanvir Hasan | BSC-CSE | 1 | Enrolled | **Overdue 31–60**: paid 60,000 of instalment 1 | Late on A3 (2 days); results **withheld — outstanding fees** |
 | 3 | Nusrat Jahan | BSC-CSE | 1 | Enrolled | **Credit** of 5,000 (overpaid via bKash) | On time |
-| 4 | Arif Hossain | BSC-CSE | 2 | Enrolled | **Overdue 60+**: 40,000 unpaid from session `S-1`; current instalment 1 paid | Normal |
+| 4 | Arif Hossain | BSC-CSE | 2 | Enrolled | **Overdue 60+**: 40,000 still unpaid from session `S-1` and nothing paid yet this session (payments settle the oldest charge first, D-028, so the oldest unpaid charge sets the age) | Normal |
 | 5 | Farhana Akter | BSC-CSE | 2 | Enrolled | Paid | Late on A9 by 5 hours |
 | 6 | Rakib Islam | BSC-CSE | 1 | **Deferred** (medical; returns next session) | Instalment 1 paid | Cannot submit (A5 shows why) |
 | 7 | Sadia Chowdhury | BSC-CSE | 3 | Enrolled | Paid; one payment **voided** ("wrong amount entered") and re-recorded | Normal |
@@ -102,7 +102,7 @@ two 60+). Credit: **1**.
 | 26 | Moumita Das | BA-ENG | 1 | Enrolled | Paid | Distinction on A7, published |
 | 27 | Arnab Saha | BA-ENG | 3 | Enrolled | Paid | A7 **withheld — academic misconduct investigation** (non-fee reason) |
 | 28 | Priyanka Roy | BA-ENG | 1 | **Deferred** | Paid | Cannot submit |
-| 29 | Habib Ullah | BA-ENG | 2 | **Withdrawn** | **Overdue 60+**: owes from session `S-1` | — |
+| 29 | Habib Ullah | BA-ENG | 2 | **Withdrawn** | **Overdue 60+**: withdrew during session `S-1` owing 90,000 of that session's fee; no charges for the current session | — |
 | 30 | Samira Siddiqui | BA-ENG | 4 | **Completed** | All paid | Full published marksheet |
 
 Background marks for everyone else are deterministic filler in the 45–85 range.
