@@ -7,5 +7,5 @@ type Params = { id: string };
 // Staff only. Voids a payment with a reason; payments are never edited or deleted.
 export const POST = route<"staff", Params, undefined, VoidPaymentInput>(
   { access: "staff", body: voidPaymentSchema },
-  ({ params, body }) => voidPayment(params.id, body),
+  ({ params, body, identity }) => voidPayment(params.id, body, identity.staff.id),
 );

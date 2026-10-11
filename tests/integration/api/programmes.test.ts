@@ -362,6 +362,9 @@ describe("PUT /api/programmes/{id}/fees/{academicYear}", () => {
       );
       expect(created.status).toBe(201);
       expect(created.body.feeSummary.charged).toBe("250000.00");
+      // The automatic charges are credited to the staff member who enrolled the student.
+      const enrolled = await db.feeCharge.findMany({ where: { studentId: created.body.id } });
+      expect(enrolled.map((c) => c.createdById)).toEqual([staff.id, staff.id]);
       const charges = await db.feeCharge.findMany({
         where: { studentId: created.body.id },
         orderBy: { dueDate: "asc" },

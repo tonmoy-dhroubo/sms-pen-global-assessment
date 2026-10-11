@@ -28,6 +28,8 @@ erDiagram
   ASSESSMENT ||--o{ EXTENSION : allows
   STUDENT ||--o{ EXTENSION : granted
   STAFF ||--o{ PAYMENT : records
+  STAFF ||--o{ PAYMENT : voids
+  STAFF ||--o{ FEE_CHARGE : adds
   STAFF ||--o{ MARK : enters
   STAFF ||--o{ STATUS_CHANGE : makes
   STAFF ||--o{ ASSESSMENT : creates
@@ -98,6 +100,7 @@ erDiagram
     decimal amount "copied; negative for WAIVER"
     date dueDate
     timestamptz createdAt
+    uuid createdById FK "staff who added it"
   }
   PAYMENT {
     uuid id PK
@@ -105,10 +108,11 @@ erDiagram
     decimal amount "> 0"
     enum method "BANK_TRANSFER, CASH, BKASH, NAGAD, CARD"
     date paidAt
-    string reference UK
+    string reference "unique among payments that are not voided"
     uuid recordedById FK
     timestamptz recordedAt
     timestamptz voidedAt "never deleted, only voided"
+    uuid voidedById FK "set with voidedAt"
     string voidReason
   }
   ASSESSMENT {
@@ -182,14 +186,19 @@ erDiagram
 - **Naming in Prisma:** entities here are UPPER_SNAKE; models are PascalCase (`ProgrammeFee`), fields camelCase, tables
   plural snake_case (`programme_fees`) and columns snake_case (`programme_id`), mapped with `@@map` / `@map`.
 - **Nullable columns** the diagram leaves implicit: `STATUS_CHANGE.fromStatus` and `reason`, `ASSESSMENT.closedAt`,
-  `PAYMENT.voidedAt` / `voidReason`, `MARK.mark` / `withheldReason` / `publishedAt`, `MARK_CHANGE.oldMark` /
-  `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt`, `FEE_CHARGE.programmeFeeId`. Everything else is `NOT NULL`.
+  `PAYMENT.voidedAt` / `voidedById` / `voidReason`, `MARK.mark` / `withheldReason` / `publishedAt`, `MARK_CHANGE.oldMark` /
+  `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt`, `FEE_CHARGE.programmeFeeId`, `FEE_CHARGE.createdById` (null only for rows from before
+  the column existed). Everything else is `NOT NULL`.
 - **Enums** (Postgres enum types): `EnrolmentStatus`, `FeeChargeKind`, `PaymentMethod`, `ReleaseStatus`, `MarkChangeType`
   (`MARK_CHANGE.change`).
 - **Database-level rules** (hand-written SQL in the first migration, proven by `npm run test:integration`):
   - `MARK.mark` is between 0 and 100, and is null exactly when `isNonSubmission` is true.
   - `PAYMENT.amount` is greater than 0.
   - `FEE_CHARGE.amount` is negative for `WAIVER` and positive for every other kind.
+  - `PAYMENT.voidedAt` and `PAYMENT.voidedById` are both set or both null (second migration, DB-024).
+  - `PAYMENT.reference` is unique only among payments that are not voided: a partial unique index
+    `payments_reference_active_key ... WHERE voided_at IS NULL` (second migration, DB-024). Prisma declares it with
+    `@@unique([reference], where: raw(...))`, which needs the `partialIndexes` preview feature.
   - `immutable_unaccent(lower(student.full_name))` has a GIN trigram index (`unaccent` + `pg_trgm`); searches must use
     that exact expression to hit the index.
 - **Delete rules:** every relation is `ON DELETE RESTRICT` (DB-005) except `PROGRAMME_MODULE`, which cascades.

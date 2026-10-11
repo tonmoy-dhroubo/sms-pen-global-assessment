@@ -110,9 +110,10 @@ describe("seed", () => {
     async () => {
       await seedAt("2026-10-12T04:00:00Z");
       // Take away Nusrat's credit by voiding her overpayment: the plan says exactly one student is in credit.
+      const staff = await db.staff.findFirstOrThrow();
       await db.payment.updateMany({
         where: { student: { fullName: "Nusrat Jahan" }, amount: 165000 },
-        data: { voidedAt: new Date(), voidReason: "tampered by the test" },
+        data: { voidedAt: new Date(), voidedById: staff.id, voidReason: "tampered by the test" },
       });
       const error = await selfCheck({
         prisma: db,

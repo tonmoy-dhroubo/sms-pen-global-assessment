@@ -35,6 +35,8 @@ export interface ChargeDto {
   amount: string;
   dueDate: DateOnly;
   createdAt: string;
+  /** The staff member who added it; `null` for a charge from before this was recorded. */
+  createdBy: { id: string; fullName: string } | null;
 }
 
 export interface PaymentDto {
@@ -48,6 +50,8 @@ export interface PaymentDto {
   recordedAt: string;
   /** Set once the payment has been voided; a voided payment counts toward nothing. */
   voidedAt: string | null;
+  /** Who voided it; set exactly when `voidedAt` is. */
+  voidedBy: { id: string; fullName: string } | null;
   voidReason: string | null;
 }
 
@@ -62,6 +66,7 @@ export interface StudentFees {
 export interface ChargeResult {
   charge: ChargeDto;
   summary: FeeSummaryDto;
+  warnings: { code: string; message: string }[];
 }
 
 export interface VoidResult {
@@ -96,12 +101,12 @@ export interface BalanceList {
 
 // --- Mapping --------------------------------------------------------------------------------------------------------
 
-type ChargeRow = Prisma.FeeChargeGetPayload<object>;
-type PaymentRow = Prisma.PaymentGetPayload<{
-  include: { recordedBy: { select: { id: true; fullName: true } } };
-}>;
+const PERSON = { select: { id: true, fullName: true } } as const;
+const WITH_CREATOR = { createdBy: PERSON } as const;
+const WITH_STAFF = { recordedBy: PERSON, voidedBy: PERSON } as const;
 
-const WITH_RECORDER = { recordedBy: { select: { id: true, fullName: true } } } as const;
+type ChargeRow = Prisma.FeeChargeGetPayload<{ include: typeof WITH_CREATOR }>;
+type PaymentRow = Prisma.PaymentGetPayload<{ include: typeof WITH_STAFF }>;
 
 function toChargeDto(row: ChargeRow): ChargeDto {
   return {
@@ -112,6 +117,7 @@ function toChargeDto(row: ChargeRow): ChargeDto {
     amount: toApiString(row.amount),
     dueDate: toDateOnly(row.dueDate),
     createdAt: row.createdAt.toISOString(),
+    createdBy: row.createdBy,
   };
 }
 
@@ -126,6 +132,7 @@ function toPaymentDto(row: PaymentRow): PaymentDto {
     recordedBy: row.recordedBy,
     recordedAt: row.recordedAt.toISOString(),
     voidedAt: row.voidedAt ? row.voidedAt.toISOString() : null,
+    voidedBy: row.voidedBy,
     voidReason: row.voidReason,
   };
 }
@@ -158,11 +165,12 @@ export async function getStudentFees(
   const [charges, payments] = await Promise.all([
     db.feeCharge.findMany({
       where: { studentId },
+      include: WITH_CREATOR,
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     }),
     db.payment.findMany({
       where: { studentId },
-      include: WITH_RECORDER,
+      include: WITH_STAFF,
       orderBy: [{ paidAt: "desc" }, { recordedAt: "desc" }, { id: "asc" }],
     }),
   ]);
@@ -176,18 +184,30 @@ export async function getStudentFees(
 
 // --- Adjustments and waivers ----------------------------------------------------------------------------------------
 
+/** The warning for a waiver larger than what the student currently owes: the rest becomes a credit. */
+function waiverMessage(amount: Decimal, balance: Decimal): string {
+  return balance.greaterThan(0)
+    ? `This waiver is ${formatBdt(amount.minus(balance))} more than the balance of ${formatBdt(balance)}. The difference will show as credit.`
+    : `The student owes nothing at the moment, so this waiver of ${formatBdt(amount)} will show as credit.`;
+}
+
 /**
- * Adds an adjustment (more owed) or a waiver (less owed) to a student's account. Both are entered as a positive
- * amount; a waiver is stored negative (DB-022). The charge belongs to the student's current session. It is allowed for
- * a student of any status: a withdrawn student's account can still be corrected.
+ * Adds an adjustment (more owed) or a waiver (less owed) to a student's account, recorded against `actorId`. Both are
+ * entered as a positive amount; a waiver is stored negative (DB-022). The charge belongs to the student's current
+ * session. It is allowed for a student of any status: a withdrawn student's account can still be corrected. A waiver
+ * larger than the current balance is allowed, with a `WAIVER_EXCEEDS_BALANCE` warning.
  */
 export async function addCharge(
   studentId: string,
   input: CreateChargeInput,
+  actorId: string,
   clock: Clock = systemClock,
 ): Promise<ChargeResult> {
   const student = await requireStudent(studentId);
+  const today = todayIn(clock());
   const amount = new Decimal(input.amount);
+  const before = input.kind === "WAIVER" ? await summaryFor(studentId, today) : null;
+
   const row = await db.feeCharge.create({
     data: {
       studentId,
@@ -196,11 +216,18 @@ export async function addCharge(
       description: input.description,
       amount: (input.kind === "WAIVER" ? amount.negated() : amount).toFixed(2),
       dueDate: dateColumn(input.dueDate),
+      createdById: actorId,
     },
+    include: WITH_CREATOR,
   });
+  const warnings =
+    before && amount.greaterThan(before.balance)
+      ? [{ code: "WAIVER_EXCEEDS_BALANCE", message: waiverMessage(amount, before.balance) }]
+      : [];
   return {
     charge: toChargeDto(row),
-    summary: toFeeSummaryDto(await summaryFor(studentId, todayIn(clock()))),
+    summary: toFeeSummaryDto(await summaryFor(studentId, today)),
+    warnings,
   };
 }
 
@@ -214,16 +241,15 @@ function isReferenceClash(error: unknown): boolean {
 
 /** The payment already using a reference, as a 409 pointing at it (api.md "Errors"), or `null` when it is free. */
 async function referenceConflict(reference: string): Promise<ConflictError | null> {
-  const existing = await db.payment.findUnique({
-    where: { reference },
+  // Only payments that are not voided hold their reference: a voided one frees it (DB-024).
+  const existing = await db.payment.findFirst({
+    where: { reference, voidedAt: null },
     include: { student: { select: { id: true, studentNumber: true, fullName: true } } },
   });
   if (!existing) return null;
 
   const summary = `${formatBdt(existing.amount)} on ${formatDate(toDateOnly(existing.paidAt))} for ${existing.student.fullName} (${existing.student.studentNumber})`;
-  const message = existing.voidedAt
-    ? `The reference ${reference} was used for a payment of ${summary} that has since been voided. A reference can only be used once, so enter a different one.`
-    : `A payment with the reference ${reference} is already recorded: ${summary}.`;
+  const message = `A payment with the reference ${reference} is already recorded: ${summary}.`;
   return new ConflictError(message, {
     field: "reference",
     existing: {
@@ -232,7 +258,6 @@ async function referenceConflict(reference: string): Promise<ConflictError | nul
       student: existing.student,
       amount: toApiString(existing.amount),
       paidAt: toDateOnly(existing.paidAt),
-      voided: existing.voidedAt !== null,
     },
   });
 }
@@ -249,8 +274,9 @@ function overpaymentMessage(amount: Decimal, balance: Decimal): string {
 }
 
 /**
- * Records a payment. The reference is unique across all payments (a clash is a 409 whose `details.existing` points
- * at the payment that has it, whether or not two requests race: the unique index decides), the date may be today or
+ * Records a payment. The reference is unique among payments that are not voided (a clash is a 409 whose
+ * `details.existing` points at the payment that has it, whether or not two requests race: the partial unique index
+ * decides; a voided payment frees its reference), the date may be today or
  * earlier in Dhaka but not later, and a payment larger than the current balance succeeds with an `OVERPAYMENT`
  * warning. `actorId` is the staff member recording it.
  */
@@ -281,7 +307,7 @@ export async function recordPayment(
         reference: input.reference,
         recordedById: actorId,
       },
-      include: WITH_RECORDER,
+      include: WITH_STAFF,
     });
   } catch (error) {
     // Two identical submissions (a double click) both pass the check above; the unique index lets only one in.
@@ -303,12 +329,13 @@ export async function recordPayment(
 }
 
 /**
- * Voids a payment with a reason. The row stays (DB-005) but counts toward nothing from now on. Voiding a payment that
+ * Voids a payment with a reason, recorded against `actorId`. The row stays (DB-005) but counts toward nothing from now on. Voiding a payment that
  * is already voided is a 422; the conditional update means two simultaneous voids cannot both succeed.
  */
 export async function voidPayment(
   paymentId: string,
   input: VoidPaymentInput,
+  actorId: string,
   clock: Clock = systemClock,
 ): Promise<VoidResult> {
   assertKnownId(paymentId, "Payment");
@@ -320,7 +347,7 @@ export async function voidPayment(
 
   const updated = await db.payment.updateMany({
     where: { id: paymentId, voidedAt: null },
-    data: { voidedAt: clock(), voidReason: input.reason },
+    data: { voidedAt: clock(), voidedById: actorId, voidReason: input.reason },
   });
   if (updated.count === 0) {
     throw new BusinessRuleError("PAYMENT_ALREADY_VOIDED", "This payment has already been voided.");
@@ -328,7 +355,7 @@ export async function voidPayment(
 
   const row = await db.payment.findUniqueOrThrow({
     where: { id: paymentId },
-    include: WITH_RECORDER,
+    include: WITH_STAFF,
   });
   return {
     payment: toPaymentDto(row),

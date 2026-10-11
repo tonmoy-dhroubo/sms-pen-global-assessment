@@ -36,6 +36,11 @@ interface SummaryBody {
   feeState: string;
 }
 
+interface PersonBody {
+  id: string;
+  fullName: string;
+}
+
 interface PaymentBody {
   id: string;
   studentId: string;
@@ -43,9 +48,10 @@ interface PaymentBody {
   method: string;
   paidAt: string;
   reference: string;
-  recordedBy: { id: string; fullName: string };
+  recordedBy: PersonBody;
   recordedAt: string;
   voidedAt: string | null;
+  voidedBy: PersonBody | null;
   voidReason: string | null;
 }
 
@@ -57,6 +63,7 @@ interface ChargeBody {
   amount: string;
   dueDate: string;
   createdAt: string;
+  createdBy: PersonBody | null;
 }
 
 interface FeesBody {
@@ -104,7 +111,7 @@ function pay(cookie: string, studentId: string, body: unknown) {
 }
 
 function charge(cookie: string, studentId: string, body: unknown) {
-  return call<{ charge: ChargeBody; summary: SummaryBody } & ErrorBody>(chargeRoute, {
+  return call<{ charge: ChargeBody; summary: SummaryBody } & Warnings & ErrorBody>(chargeRoute, {
     method: "POST",
     path: `/api/students/${studentId}/charges`,
     cookie,
@@ -238,6 +245,7 @@ describe("GET /api/students/{id}/fees", () => {
     expect(body.payments[0]).toMatchObject({
       voidReason: "Entered by mistake",
       recordedBy: { id: staff.id, fullName: "Nusrat Jahan" },
+      voidedBy: { id: staff.id, fullName: "Nusrat Jahan" },
     });
   });
 
@@ -272,6 +280,7 @@ describe("POST /api/students/{id}/payments", () => {
       reference: "TRX-0001",
       recordedBy: { id: staff.id, fullName: "Nusrat Jahan" },
       voidedAt: null,
+      voidedBy: null,
       voidReason: null,
     });
     expect(body.summary).toMatchObject({
@@ -423,7 +432,6 @@ describe("POST /api/students/{id}/payments", () => {
           },
           amount: "7500.00",
           paidAt: shiftDays(-2),
-          voided: false,
         },
       });
       expect(await db.payment.count()).toBe(1);
@@ -451,16 +459,56 @@ describe("POST /api/students/{id}/payments", () => {
       });
     });
 
-    it("still blocks a reference whose payment has been voided, and says so", async () => {
+    it("frees the reference when its payment is voided, so the corrected payment can carry the same bank reference", async () => {
       const { student, cookie } = await setup();
-      const first = await pay(cookie, student.id, paymentBody());
-      await voidIt(cookie, first.body.payment.id, { reason: "Wrong amount" });
-      const { status, body } = await pay(cookie, student.id, paymentBody());
-      expect(status).toBe(409);
-      expect(body.error.message).toContain("voided");
-      expect(body.error.details).toMatchObject({
-        existing: { id: first.body.payment.id, voided: true },
+      const wrong = await pay(cookie, student.id, paymentBody({ amount: "1000.00" }));
+      await voidIt(cookie, wrong.body.payment.id, { reason: "Wrong amount" });
+
+      const corrected = await pay(cookie, student.id, paymentBody({ amount: "5000.00" }));
+      expect(corrected.status).toBe(201);
+      expect(corrected.body.payment.reference).toBe("TRX-0001");
+
+      // Both rows exist with the same reference; only the live one holds it, and a third attempt now clashes with it.
+      expect(await db.payment.count({ where: { reference: "TRX-0001" } })).toBe(2);
+      const third = await pay(cookie, student.id, paymentBody());
+      expect(third.status).toBe(409);
+      expect(third.body.error.details).toMatchObject({
+        existing: { id: corrected.body.payment.id, amount: "5000.00" },
       });
+
+      // Voiding the corrected one frees it again.
+      await voidIt(cookie, corrected.body.payment.id, { reason: "Entered twice" });
+      expect((await pay(cookie, student.id, paymentBody())).status).toBe(201);
+    });
+
+    it("lets exactly one of several simultaneous submissions of a freed reference through", async () => {
+      const { student, cookie } = await setup();
+      const wrong = await pay(cookie, student.id, paymentBody({ reference: "REUSE-1" }));
+      await voidIt(cookie, wrong.body.payment.id, { reason: "Wrong amount" });
+      const results = await Promise.all(
+        Array.from({ length: 4 }, () =>
+          pay(cookie, student.id, paymentBody({ reference: "reuse-1" })),
+        ),
+      );
+      expect(results.map((r) => r.status).sort()).toEqual([201, 409, 409, 409]);
+      expect(await db.payment.count({ where: { reference: "REUSE-1", voidedAt: null } })).toBe(1);
+    });
+
+    it("is refused by the database as well: two live payments cannot share a reference", async () => {
+      const { student, staff } = await setup();
+      const make = () =>
+        db.payment.create({
+          data: {
+            studentId: student.id,
+            amount: "10.00",
+            method: "CASH",
+            paidAt: new Date(`${TODAY}T00:00:00.000Z`),
+            reference: "DB-DUP",
+            recordedById: staff.id,
+          },
+        });
+      await make();
+      await expect(make()).rejects.toMatchObject({ code: "P2002" });
     });
 
     it("lets exactly one of two simultaneous identical submissions through (double click)", async () => {
@@ -551,6 +599,45 @@ describe("POST /api/payments/{id}/void", () => {
     expect(listed.body.summary.paid).toBe("0.00");
   });
 
+  it("records who voided it, which can be someone other than who recorded it", async () => {
+    const { student, staff, cookie } = await setup();
+    const other = await createStaff({ fullName: "Fatema Begum" });
+    const made = await pay(cookie, student.id, paymentBody());
+    expect(made.body.payment.voidedBy).toBeNull();
+
+    const { body } = await voidIt(asStaff(other.id), made.body.payment.id, {
+      reason: "Entered twice",
+    });
+    expect(body.payment).toMatchObject({
+      recordedBy: { id: staff.id },
+      voidedBy: { id: other.id, fullName: "Fatema Begum" },
+    });
+    const listed = await fees(cookie, student.id);
+    expect(listed.body.payments[0]!.voidedBy).toEqual({ id: other.id, fullName: "Fatema Begum" });
+    expect(
+      (await db.payment.findUniqueOrThrow({ where: { id: made.body.payment.id } })).voidedById,
+    ).toBe(other.id);
+  });
+
+  it("is backed by a database check: voided_at and voided_by_id are both set or both null", async () => {
+    const { student, staff } = await setup();
+    const base = {
+      studentId: student.id,
+      amount: "10.00",
+      method: "CASH" as const,
+      paidAt: new Date(`${TODAY}T00:00:00.000Z`),
+      recordedById: staff.id,
+    };
+    await expect(
+      db.payment.create({
+        data: { ...base, reference: "CHK-1", voidedAt: new Date(), voidReason: "x" },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db.payment.create({ data: { ...base, reference: "CHK-2", voidedById: staff.id } }),
+    ).rejects.toThrow();
+  });
+
   it("requires a reason", async () => {
     const { student, cookie } = await setup();
     const made = await pay(cookie, student.id, paymentBody());
@@ -633,6 +720,67 @@ describe("POST /api/students/{id}/charges", () => {
 
     const row = await db.feeCharge.findUniqueOrThrow({ where: { id: waiver.body.charge.id } });
     expect(row.amount.toFixed(2)).toBe("-20000.00");
+  });
+
+  it("records who added the charge and returns it, also when listing the fees", async () => {
+    const { student, staff, cookie } = await setup();
+    const { body } = await charge(cookie, student.id, {
+      kind: "ADJUSTMENT",
+      description: "Fee difference",
+      amount: "100",
+      dueDate: TODAY,
+    });
+    expect(body.charge.createdBy).toEqual({ id: staff.id, fullName: "Nusrat Jahan" });
+    expect(
+      (await db.feeCharge.findUniqueOrThrow({ where: { id: body.charge.id } })).createdById,
+    ).toBe(staff.id);
+    const listed = await fees(cookie, student.id);
+    expect(listed.body.charges[0]!.createdBy).toEqual({ id: staff.id, fullName: "Nusrat Jahan" });
+  });
+
+  describe("waiver larger than the balance", () => {
+    const waiver = (amount: string) => ({
+      kind: "WAIVER",
+      description: "Scholarship",
+      amount,
+      dueDate: TODAY,
+    });
+
+    it("is allowed, with a WAIVER_EXCEEDS_BALANCE warning, and the rest shows as credit", async () => {
+      const { student, cookie } = await setup();
+      await createFeeCharge({ studentId: student.id, amount: "10000.00", dueDate: shiftDays(10) });
+      const { status, body } = await charge(cookie, student.id, waiver("12500"));
+      expect(status).toBe(201);
+      expect(body.warnings).toEqual([
+        {
+          code: "WAIVER_EXCEEDS_BALANCE",
+          message: expect.stringContaining("৳2,500.00 more than the balance of ৳10,000.00"),
+        },
+      ]);
+      expect(body.summary).toMatchObject({ feeState: "credit", credit: "2500.00" });
+    });
+
+    it("does not warn for a waiver equal to or smaller than the balance", async () => {
+      const { student, cookie } = await setup();
+      await createFeeCharge({ studentId: student.id, amount: "10000.00", dueDate: shiftDays(10) });
+      expect((await charge(cookie, student.id, waiver("9999.99"))).body.warnings).toBeUndefined();
+      const exact = await charge(cookie, student.id, waiver("0.01"));
+      expect(exact.body.warnings).toBeUndefined();
+      expect(exact.body.summary.feeState).toBe("paid");
+    });
+
+    it("warns when the student owes nothing, and never for an adjustment", async () => {
+      const { student, cookie } = await setup();
+      const none = await charge(cookie, student.id, waiver("500"));
+      expect(none.body.warnings).toEqual([
+        { code: "WAIVER_EXCEEDS_BALANCE", message: expect.stringContaining("owes nothing") },
+      ]);
+      const adjustment = await charge(cookie, student.id, {
+        ...waiver("999999"),
+        kind: "ADJUSTMENT",
+      });
+      expect(adjustment.body.warnings).toBeUndefined();
+    });
   });
 
   it("lets a backdated adjustment make a student overdue", async () => {
