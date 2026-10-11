@@ -258,22 +258,22 @@ Verification: `npm test -- --coverage`.
 **References:** api.md (Conventions, Session, Health), D-005, D-008, D-020.
 
 Tasks:
-- [ ] `lib/api/handler.ts`: wraps Route Handlers — parses and validates input with Zod, maps errors to the standard
+- [x] `lib/api/handler.ts`: wraps Route Handlers — parses and validates input with Zod, maps errors to the standard
       error shape and status codes, attaches `warnings`, logs unexpected errors with a request id.
-- [ ] Error classes: `ValidationError`, `NotFoundError`, `ForbiddenError`, `ConflictError`, `VersionConflictError`,
+- [x] Error classes: `ValidationError`, `NotFoundError`, `ForbiddenError`, `ConflictError`, `VersionConflictError`,
       `DuplicateWarning`, `BusinessRuleError`.
-- [ ] `lib/session.ts`: sign and verify the role cookie (HMAC, HTTP-only, `SameSite=Lax`, `Secure` in production);
+- [x] `lib/session.ts`: sign and verify the role cookie (HMAC, HTTP-only, `SameSite=Lax`, `Secure` in production);
       helpers `requireStaff()`, `requireStudent()`, `currentIdentity()`.
-- [ ] `middleware.ts`: redirect `/staff/*` and `/student/*` to `/` when the cookie is missing, invalid or for the
+- [x] `proxy.ts` (Next.js 16's name for `middleware.ts`): redirect `/staff/*` and `/student/*` to `/` when the cookie is missing, invalid or for the
       wrong role.
-- [ ] Endpoints: `GET/PUT/DELETE /api/session`, `GET /api/session/options`, `GET /api/health` (DB check now;
+- [x] Endpoints: `GET/PUT/DELETE /api/session`, `GET /api/session/options`, `GET /api/health` (DB check now;
       storage added in M06), `GET /api/me` (basic).
-- [ ] Integration test harness: `npm run test:integration` runs Vitest against `TEST_DATABASE_URL`, resets the
+- [x] Integration test harness: `npm run test:integration` runs Vitest against `TEST_DATABASE_URL`, resets the
       schema before the run and truncates tables between tests; helpers to build test data and call handlers.
       Prisma 7 blocks `prisma migrate reset` when run by an AI agent (DB-022): reset with the harness's own guarded
       drop-and-recreate plus `prisma migrate deploy`, reusing the M03 `tests/db` setup where possible.
-- [ ] CI job for integration tests using GitHub Actions service containers (Postgres; MinIO added in M06).
-- [ ] Tests: tampered cookie rejected; wrong role → 403; no cookie → 401; error shape for each error class.
+- [x] CI job for integration tests using GitHub Actions service containers (Postgres; MinIO added in M06).
+- [x] Tests: tampered cookie rejected; wrong role → 403; no cookie → 401; error shape for each error class.
 
 Acceptance criteria:
 - Switching role via `PUT /api/session` sets a cookie that the middleware honours.
