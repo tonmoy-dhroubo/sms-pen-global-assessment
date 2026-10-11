@@ -155,3 +155,30 @@ delegated the remaining open choices.
 - Decision: `MARK_CHANGE.change` records `MARK`, `PUBLISH`, `WITHHOLD` and `UNPUBLISH` events, each with who and
   when; a reason is required for changing a published mark, withholding and unpublishing.
 - Why: One audit trail feeds the student activity timeline and answers "who released this result and when".
+
+## DB-021: Name search goes through `immutable_unaccent(lower(full_name))`
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision: The init migration defines an IMMUTABLE wrapper `immutable_unaccent(text)` and a GIN trigram index on
+  `immutable_unaccent(lower(full_name))`. Services must search with exactly that expression (e.g.
+  `immutable_unaccent(lower(full_name)) LIKE immutable_unaccent(lower($1))` or trigram similarity) so the index is
+  used.
+- Why: Accent- and case-insensitive search (edge-cases.md) that stays fast as the student list grows.
+
+## DB-022: Schema details settled in M03
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision:
+  - Prisma 7.10 (stable). Prisma 8 is still a release candidate; revisit when it is stable.
+  - Naming: PascalCase models / camelCase fields mapped to plural snake_case tables and snake_case columns.
+  - Nullable columns: `StatusChange.fromStatus` and `reason`; `Assessment.closedAt`; `Payment.voidedAt` and
+    `voidReason`; `Mark.mark`, `withheldReason`, `publishedAt`; `MarkChange.oldMark`, `newMark`, `reason`;
+    `PendingUpload.confirmedAt`; `FeeCharge.programmeFeeId`. Everything else is NOT NULL. "Reason required" rules
+    are enforced in services (DB-020), not by the database.
+  - `ADJUSTMENT` charges must be positive; anything that reduces what a student owes is a `WAIVER`.
+  - Resets: Prisma 7 refuses `prisma migrate reset` when an AI agent runs it, and that guard is respected. Test
+    harnesses and `db:reset` drop and recreate the schema themselves, guarded to `_test` databases or local hosts,
+    then run `prisma migrate deploy`.
+- Why: Recorded from the M03 report during the overnight review (D-025).

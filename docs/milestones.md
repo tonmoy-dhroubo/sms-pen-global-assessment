@@ -13,7 +13,7 @@ waiting on a decision.
 | M00 | Repository foundations | — | Done | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Done | m01-nextjs-scaffold | [#2](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/2) |
 | M02 | Local infrastructure (Docker, env) | M01 | Done | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
-| M03 | Prisma schema and first migration | M02 | In review | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
+| M03 | Prisma schema and first migration | M02 | Done | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
 | M04 | Domain rules and unit tests | M03 | Not started | | |
 | M05 | API foundation, roles and test harness | M04 | Not started | | |
 | M06 | Storage layer (S3 / MinIO) | M05 | Not started | | |
@@ -270,6 +270,8 @@ Tasks:
       storage added in M06), `GET /api/me` (basic).
 - [ ] Integration test harness: `npm run test:integration` runs Vitest against `TEST_DATABASE_URL`, resets the
       schema before the run and truncates tables between tests; helpers to build test data and call handlers.
+      Prisma 7 blocks `prisma migrate reset` when run by an AI agent (DB-022): reset with the harness's own guarded
+      drop-and-recreate plus `prisma migrate deploy`, reusing the M03 `tests/db` setup where possible.
 - [ ] CI job for integration tests using GitHub Actions service containers (Postgres; MinIO added in M06).
 - [ ] Tests: tampered cookie rejected; wrong role → 403; no cookie → 401; error shape for each error class.
 
@@ -322,7 +324,9 @@ Tasks:
 - [ ] Self-check at the end: recompute with the real rule functions and assert the expected facts from the seed plan
       (8 overdue with the right buckets, 1 credit, the late submissions, the withheld results, status totals).
       Fail with a clear message if anything differs.
-- [ ] Scripts: `db:seed`, `db:reset` (drop, migrate, empty the bucket, seed).
+- [ ] Scripts: `db:seed`, `db:reset` (drop, migrate, empty the bucket, seed). `db:reset` uses its own guarded
+      drop of the `public` schema + `prisma migrate deploy` (not `prisma migrate reset`, DB-022) and refuses unless the
+      database host is local (`localhost`/`127.0.0.1`/`::1`) or `--force` is passed.
 - [ ] Draft the "demo tour" list for the README from the personas (finalised in M18).
 
 Acceptance criteria:
