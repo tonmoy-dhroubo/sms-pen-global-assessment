@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canUpload,
+  uploadBlockMessage,
   type UploadAssessment,
   type UploadStudent,
 } from "@/lib/services/rules/submission-rules";
@@ -163,5 +164,21 @@ describe("canUpload", () => {
         reason: "CLOSED",
       });
     });
+  });
+});
+
+describe("uploadBlockMessage", () => {
+  it("has a distinct plain-words message for every reason", () => {
+    const reasons = [
+      "NOT_ENROLLED",
+      "MODULE_NOT_IN_PROGRAMME",
+      "CLOSED",
+      "ON_TIME_LOCKED",
+    ] as const;
+    const messages = reasons.map((reason) => uploadBlockMessage(reason));
+    expect(new Set(messages).size).toBe(4);
+    for (const message of messages) expect(message).toMatch(/^[A-Z].*\.$/);
+    expect(uploadBlockMessage("CLOSED")).toContain("closed");
+    expect(uploadBlockMessage("ON_TIME_LOCKED")).toContain("on time");
   });
 });

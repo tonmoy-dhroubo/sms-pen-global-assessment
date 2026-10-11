@@ -288,6 +288,9 @@ model PendingUpload {
   assessmentId String    @map("assessment_id") @db.Uuid
   studentId    String    @map("student_id") @db.Uuid
   objectKey    String    @unique @map("object_key")
+  originalName String    @map("original_name") // as the student named it; copied to SUBMISSION_FILE at confirm
+  mimeType     String    @map("mime_type") // declared at issue; PDF or DOCX
+  sizeBytes    Int       @map("size_bytes") // declared at issue; the presigned PUT signs it and confirm re-checks it
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
   confirmedAt  DateTime? @map("confirmed_at") @db.Timestamptz(3) // null until confirmed
 

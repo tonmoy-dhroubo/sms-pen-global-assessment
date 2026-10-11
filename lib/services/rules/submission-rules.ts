@@ -62,3 +62,20 @@ export function canUpload(
   }
   return { allowed: true, late: pastDeadline };
 }
+
+/**
+ * The reason an upload is blocked, in plain words for the student (shown beside a disabled Upload button and returned
+ * in API errors). One wording everywhere, so the page, the API and the tests agree.
+ */
+export function uploadBlockMessage(reason: UploadBlockReason): string {
+  switch (reason) {
+    case "NOT_ENROLLED":
+      return "You cannot upload because you are not currently enrolled. Contact the Registry office if you think this is wrong.";
+    case "MODULE_NOT_IN_PROGRAMME":
+      return "This assessment is not part of your programme, so you cannot submit work for it.";
+    case "CLOSED":
+      return "This assessment is closed. Uploads are no longer accepted, not even late ones.";
+    case "ON_TIME_LOCKED":
+      return "You submitted on time and the deadline has passed, so your submission can no longer be replaced.";
+  }
+}

@@ -258,20 +258,38 @@ export function createStorage(config: StorageConfig) {
       }
     },
 
-    /** The first `n` bytes (fewer if the object is shorter), read with a ranged GET. For signature checks. */
-    async readFirstBytes(key: string, n: number): Promise<Buffer> {
-      if (!Number.isInteger(n) || n < 1) throw new RangeError("n must be a positive whole number");
+    /**
+     * `length` bytes starting at `offset` (fewer if the object ends first), read with a ranged GET. For signature
+     * checks and for reading the end of a ZIP file without downloading the rest.
+     */
+    async readRange(key: string, offset: number, length: number): Promise<Buffer> {
+      if (!Number.isInteger(offset) || offset < 0) {
+        throw new RangeError("offset must be a non-negative whole number");
+      }
+      if (!Number.isInteger(length) || length < 1) {
+        throw new RangeError("length must be a positive whole number");
+      }
       try {
         const result = await client.send(
-          new GetObjectCommand({ Bucket, Key: key, Range: `bytes=0-${n - 1}` }),
+          new GetObjectCommand({
+            Bucket,
+            Key: key,
+            Range: `bytes=${offset}-${offset + length - 1}`,
+          }),
         );
         return Buffer.from((await result.Body?.transformToByteArray()) ?? []);
       } catch (error) {
         if (isMissingObject(error)) throw new ObjectNotFoundError(key);
-        // A range on an empty object is "not satisfiable": there are simply no bytes.
+        // A range that starts at or past the end (or any range on an empty object) is "not satisfiable": no bytes.
         if (isInvalidRange(error)) return Buffer.alloc(0);
         throw error;
       }
+    },
+
+    /** The first `n` bytes (fewer if the object is shorter), read with a ranged GET. For signature checks. */
+    async readFirstBytes(key: string, n: number): Promise<Buffer> {
+      if (!Number.isInteger(n) || n < 1) throw new RangeError("n must be a positive whole number");
+      return this.readRange(key, 0, n);
     },
 
     /** Lower-case hex SHA-256 of the whole object, hashed as it streams (never held in memory). */

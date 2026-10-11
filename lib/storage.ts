@@ -43,6 +43,7 @@ export const presignGet: Storage["presignGet"] = (...args) => storage().presignG
 export const headObject: Storage["headObject"] = (...args) => storage().headObject(...args);
 export const readFirstBytes: Storage["readFirstBytes"] = (...args) =>
   storage().readFirstBytes(...args);
+export const readRange: Storage["readRange"] = (...args) => storage().readRange(...args);
 export const sha256: Storage["sha256"] = (...args) => storage().sha256(...args);
 export const putObject: Storage["putObject"] = (...args) => storage().putObject(...args);
 export const deleteObject: Storage["deleteObject"] = (...args) => storage().deleteObject(...args);
