@@ -6,6 +6,8 @@ import {
   formatDateTime,
   formatDuration,
   formatRelative,
+  instantToLocalDateTime,
+  isLocalTime,
   parseDateOnly,
   sessionFor,
   sessionLabel,
@@ -13,6 +15,7 @@ import {
   toDateOnly,
   todayIn,
   zonedParts,
+  zonedTimeToInstant,
 } from "@/lib/services/rules/time";
 import { fixedClock, systemClock } from "@/lib/services/clock";
 
@@ -239,5 +242,66 @@ describe("clock", () => {
     const value = systemClock().getTime();
     expect(value).toBeGreaterThanOrEqual(before);
     expect(value).toBeLessThanOrEqual(Date.now());
+  });
+});
+
+describe("wall-clock time to an instant", () => {
+  it("reads 23:59 in Dhaka as 17:59 UTC", () => {
+    expect(zonedTimeToInstant({ date: "2026-10-11", time: "23:59" }).toISOString()).toBe(
+      "2026-10-11T17:59:00.000Z",
+    );
+  });
+
+  it("crosses the date line the right way: early morning in Dhaka is the previous day in UTC", () => {
+    expect(zonedTimeToInstant({ date: "2026-10-12", time: "03:30" }).toISOString()).toBe(
+      "2026-10-11T21:30:00.000Z",
+    );
+    expect(zonedTimeToInstant({ date: "2026-01-01", time: "00:00" }).toISOString()).toBe(
+      "2025-12-31T18:00:00.000Z",
+    );
+  });
+
+  it("round-trips through instantToLocalDateTime for every minute-aligned instant it is given", () => {
+    for (const iso of ["2026-10-11T17:59:00Z", "2026-02-28T18:00:00Z", "2027-06-30T23:59:00Z"]) {
+      const local = instantToLocalDateTime(new Date(iso));
+      expect(zonedTimeToInstant(local).toISOString()).toBe(new Date(iso).toISOString());
+    }
+    expect(instantToLocalDateTime(new Date("2026-10-11T17:59:00Z"))).toEqual({
+      date: "2026-10-11",
+      time: "23:59",
+    });
+  });
+
+  it("drops the seconds when reading an instant back", () => {
+    expect(instantToLocalDateTime(new Date("2026-10-11T17:59:42Z")).time).toBe("23:59");
+  });
+
+  it("works for a zone with daylight saving and rejects the hour that never happens", () => {
+    // New York is UTC-4 in summer and UTC-5 in winter.
+    expect(
+      zonedTimeToInstant({ date: "2026-07-01", time: "12:00" }, "America/New_York").toISOString(),
+    ).toBe("2026-07-01T16:00:00.000Z");
+    expect(
+      zonedTimeToInstant({ date: "2026-12-01", time: "12:00" }, "America/New_York").toISOString(),
+    ).toBe("2026-12-01T17:00:00.000Z");
+    // 02:30 on 8 Mar 2026 was skipped when the clocks went forward.
+    expect(() =>
+      zonedTimeToInstant({ date: "2026-03-08", time: "02:30" }, "America/New_York"),
+    ).toThrow(RangeError);
+  });
+
+  it("rejects dates and times that are not real", () => {
+    expect(() => zonedTimeToInstant({ date: "2026-02-30", time: "10:00" })).toThrow(RangeError);
+    expect(() => zonedTimeToInstant({ date: "2026-10-11", time: "24:00" })).toThrow(RangeError);
+    expect(() => zonedTimeToInstant({ date: "2026-10-11", time: "9:5" })).toThrow(RangeError);
+  });
+
+  it("isLocalTime accepts HH:mm only", () => {
+    expect(isLocalTime("00:00")).toBe(true);
+    expect(isLocalTime("23:59")).toBe(true);
+    expect(isLocalTime("24:00")).toBe(false);
+    expect(isLocalTime("12:60")).toBe(false);
+    expect(isLocalTime("7:30")).toBe(false);
+    expect(isLocalTime("")).toBe(false);
   });
 });

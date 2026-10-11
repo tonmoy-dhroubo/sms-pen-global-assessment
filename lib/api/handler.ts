@@ -31,6 +31,8 @@ interface IdentityByAccess {
 export interface Warning {
   code: string;
   message: string;
+  /** Machine-readable facts behind the warning (for example how many rows it affected). */
+  details?: Record<string, unknown>;
 }
 
 export interface HandlerContext<A extends Access, P, Q, B> {
@@ -44,7 +46,7 @@ export interface HandlerContext<A extends Access, P, Q, B> {
   body: B;
   identity: IdentityByAccess[A];
   /** Adds an entry to the response's `warnings` array (successful responses only). */
-  warn: (code: string, message: string) => void;
+  warn: (code: string, message: string, details?: Record<string, unknown>) => void;
 }
 
 export interface RouteOptions<A extends Access, Q, B> {
@@ -215,7 +217,8 @@ export function route<A extends Access, P = Record<string, never>, Q = undefined
         query,
         body,
         identity: checked,
-        warn: (code, message) => warnings.push({ code, message }),
+        warn: (code, message, details) =>
+          warnings.push(details ? { code, message, details } : { code, message }),
       });
       return successResponse(result, warnings, requestId);
     } catch (error) {

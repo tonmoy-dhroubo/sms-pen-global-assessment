@@ -22,7 +22,7 @@ waiting on a decision.
 | M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
 | M10 | Fees and payments | M09 | Done | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
 | M11 | Staff dashboard | M10 | Done | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
-| M12 | Assessments (staff) | M09 | Not started | | |
+| M12 | Assessments (staff) | M09 | In review | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
 | M13 | Submissions (student upload flow) | M12 | Not started | | |
 | M14 | Marksheet and results | M13 | Not started | | |
 | M15 | Student portal | M14 | Not started | | |
@@ -430,13 +430,13 @@ Acceptance criteria: after `npm run db:reset`, every figure matches the "expecte
 (Submissions), D-013.
 
 Tasks:
-- [ ] Services and endpoints: list (with counts), create, get, update (version; deadline-change warning with count
+- [x] Services and endpoints: list (with counts), create, get, update (version; deadline-change warning with count
       of changed late flags), close, reopen, list submissions for eligible students (programme includes module,
       status Enrolled — plus any student who already submitted).
-- [ ] File download endpoint with permission check and presigned GET (original file name).
-- [ ] UI: list page, new form (date + time in Asia/Dhaka), detail page with Submissions tab (status badges,
+- [x] File download endpoint with permission check and presigned GET (original file name).
+- [x] UI: list page, new form (date + time in Asia/Dhaka), detail page with Submissions tab (status badges,
       lateness, versions, download).
-- [ ] Integration tests: eligibility, close/reopen, deadline change flips late flags, download permissions.
+- [x] Integration tests: eligibility, close/reopen, deadline change flips late flags, download permissions.
 
 ---
 

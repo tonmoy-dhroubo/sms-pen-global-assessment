@@ -133,6 +133,7 @@ export async function createAssessment(input: {
   createdById: string;
   title?: string;
   deadline?: Date;
+  closedAt?: Date | null;
 }) {
   const n = next();
   return db.assessment.create({
@@ -141,6 +142,7 @@ export async function createAssessment(input: {
       createdById: input.createdById,
       title: input.title ?? `Assessment ${n}`,
       deadline: input.deadline ?? new Date(Date.now() + 24 * 60 * 60 * 1000),
+      closedAt: input.closedAt ?? null,
     },
   });
 }
@@ -157,6 +159,46 @@ export async function createSubmission(input: {
       studentId: input.studentId,
       firstSubmittedAt: input.submittedAt,
       lastSubmittedAt: input.submittedAt,
+    },
+  });
+}
+
+/** One stored file version of a submission (the object itself is not created; tests that download put one). */
+export async function createSubmissionFile(input: {
+  submissionId: string;
+  uploadedAt: Date;
+  originalName?: string;
+  objectKey?: string;
+  sizeBytes?: number;
+  sha256?: string;
+}) {
+  const n = next();
+  return db.submissionFile.create({
+    data: {
+      submissionId: input.submissionId,
+      objectKey: input.objectKey ?? `tests/files/${n}-${Math.random().toString(36).slice(2)}.pdf`,
+      originalName: input.originalName ?? `report-${n}.pdf`,
+      mimeType: "application/pdf",
+      sizeBytes: input.sizeBytes ?? 1024,
+      sha256: input.sha256 ?? "a".repeat(64),
+      uploadedAt: input.uploadedAt,
+    },
+  });
+}
+
+/** A per-student deadline extension (DB-014). */
+export async function createExtension(input: {
+  assessmentId: string;
+  studentId: string;
+  newDeadline: Date;
+  reason?: string;
+}) {
+  return db.extension.create({
+    data: {
+      assessmentId: input.assessmentId,
+      studentId: input.studentId,
+      newDeadline: input.newDeadline,
+      reason: input.reason ?? "Medical grounds",
     },
   });
 }
@@ -179,4 +221,9 @@ export async function createMark(input: {
       withheldReason: input.withheldReason ?? null,
     },
   });
+}
+
+/** Makes a programme include a module (the many-to-many link, DB-013). */
+export async function linkModule(programmeId: string, moduleId: string) {
+  return db.programmeModule.create({ data: { programmeId, moduleId } });
 }

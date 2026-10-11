@@ -121,6 +121,74 @@ export function daysBetween(from: DateOnly, to: DateOnly): number {
   );
 }
 
+// --- Wall-clock time to an instant (deadline forms) -------------------------------------------------------------------
+
+export interface LocalDateTime {
+  /** `YYYY-MM-DD` */
+  date: DateOnly;
+  /** `HH:mm`, 24-hour */
+  time: string;
+}
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Whether the text is a 24-hour `HH:mm` time. */
+export function isLocalTime(value: string): boolean {
+  return TIME_PATTERN.test(value);
+}
+
+/** The offset of `timeZone` from UTC at an instant, in milliseconds (positive east of Greenwich). */
+function zoneOffsetMs(instantMs: number, timeZone: string): number {
+  const p = zonedParts(new Date(instantMs), timeZone);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - instantMs;
+}
+
+/**
+ * The instant at which the clocks in `timeZone` read the given date and time (the inverse of `zonedParts`). Used to
+ * turn the staff member's "23:59 on 11 Oct" into the UTC timestamp that is stored. Throws a `RangeError` for a date or
+ * time that is not real, or one that never happens in the zone (a skipped hour at a daylight-saving change).
+ */
+export function zonedTimeToInstant(
+  { date, time }: LocalDateTime,
+  timeZone: string = APP_TIME_ZONE,
+): Date {
+  const { year, month, day } = parseDateOnly(date);
+  const match = TIME_PATTERN.exec(time);
+  if (!match) throw new RangeError(`Not an HH:mm time: "${time}"`);
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, hour, minute);
+  // The offset depends on the instant being solved for: start from the wall clock read as UTC, correct with the offset
+  // found there, then once more with the offset found at the corrected instant.
+  const first = wallClockAsUtc - zoneOffsetMs(wallClockAsUtc, timeZone);
+  const instant = wallClockAsUtc - zoneOffsetMs(first, timeZone);
+
+  const check = zonedParts(new Date(instant), timeZone);
+  if (
+    check.year !== year ||
+    check.month !== month ||
+    check.day !== day ||
+    check.hour !== hour ||
+    check.minute !== minute
+  ) {
+    throw new RangeError(`${date} ${time} does not exist in ${timeZone}`);
+  }
+  return new Date(instant);
+}
+
+/** The date and time the clocks in `timeZone` read at an instant (to the minute; seconds are dropped). */
+export function instantToLocalDateTime(
+  instant: Date,
+  timeZone: string = APP_TIME_ZONE,
+): LocalDateTime {
+  const p = zonedParts(instant, timeZone);
+  return {
+    date: `${pad(p.year, 4)}-${pad(p.month, 2)}-${pad(p.day, 2)}`,
+    time: `${pad(p.hour, 2)}:${pad(p.minute, 2)}`,
+  };
+}
+
 // --- Academic sessions (DB-015) -------------------------------------------------------------------------------------
 
 /** Start year of the session containing the instant: sessions run July to June, judged in Dhaka time. */

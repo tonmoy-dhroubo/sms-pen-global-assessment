@@ -36,7 +36,7 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 - [ ] **M** — Upload started before the deadline but finished after it: submission time is when the file arrives
   (D-023), and students are told this next to the upload button.
 - [ ] **M** — Only server time counts; deadlines show their time zone and a countdown.
-- [ ] **M** — Deadline changed after submissions: late flags recalculate automatically (derived, not stored).
+- [x] **M** — Deadline changed after submissions: late flags recalculate automatically (derived, not stored).
 - [ ] **M** — File checks: PDF/DOCX verified by content, not just extension; empty files rejected; macro-enabled
   `.docm` rejected; size limit enforced.
 - [ ] **M** — Double-click submit: unique constraint plus an idempotent confirm step.

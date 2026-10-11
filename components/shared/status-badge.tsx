@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { Classification, EnrolmentStatus, ReleaseStatus } from "@/lib/services/rules/types";
 import type { FeeState } from "@/lib/services/rules/fees";
+import type { AssessmentState } from "@/lib/services/rules/deadlines";
 
 // One badge for every status in the app (pages.md "Status badges"). A badge always shows its text label; the tone is
 // an extra cue, never the only one (D-017). Tone colours are theme tokens in app/globals.css with light and dark
@@ -39,6 +40,11 @@ export const BADGES = {
     NOT_SUBMITTED: { label: "Not submitted", tone: "grey" },
     CLOSED: { label: "Closed", tone: "grey" },
   },
+  assessment: {
+    open: { label: "Open", tone: "green" },
+    "past-deadline": { label: "Past deadline", tone: "amber" },
+    closed: { label: "Closed", tone: "grey" },
+  },
   result: {
     DRAFT: { label: "Draft", tone: "grey" },
     PUBLISHED: { label: "Published", tone: "blue" },
@@ -62,6 +68,7 @@ export type StatusBadgeProps = { className?: string } & (
       /** For `LATE`: how late, e.g. "2 days" (from `lateBy`). Shown after the label. */
       detail?: string | null;
     }
+  | { group: "assessment"; value: AssessmentState }
   | { group: "result"; value: ReleaseStatus }
   | { group: "classification"; value: ResultClassification }
 );
