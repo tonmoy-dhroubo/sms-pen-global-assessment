@@ -17,7 +17,7 @@ waiting on a decision.
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
-| M07 | Seed data and reset | M06 | In review | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
+| M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
 | M08 | App shell and shared UI | M07 | Not started | | |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
 | M10 | Fees and payments | M09 | Not started | | |

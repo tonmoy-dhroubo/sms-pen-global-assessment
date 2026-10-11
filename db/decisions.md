@@ -182,3 +182,18 @@ delegated the remaining open choices.
     harnesses and `db:reset` drop and recreate the schema themselves, guarded to `_test` databases or local hosts,
     then run `prisma migrate deploy`.
 - Why: Recorded from the M03 report during the overnight review (D-025).
+
+## DB-023: Seed interpretations and mark-history scope (M07)
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision (accepted from the M07 report during the overnight review, D-025):
+  - Completed students' marks are published, including on A2; every other A2 mark is draft.
+  - Tanvir's withheld result is on A3 only, so exactly two marks are withheld in the demo (fees; misconduct).
+  - Arif owes 2,00,000: the unpaid 40,000 from session S-1 (which sets the 60+ age) plus the unpaid current
+    instalment 1. Habib's `academicYear` stays at S-1, the session he left in.
+  - `MARK_CHANGE` rows are written for changes to an existing mark and for publish, withhold and unpublish events —
+    **not** for the first entry of a mark. M14 follows the same rule.
+  - `db:seed` and `db:reset` refuse non-local database **or storage** targets unless `--force`. The seed prints a
+    content fingerprint; two resets on the same day must match.
+  - One seeded file keeps a Bengali name ("পোর্টফোলিও.pdf") to demonstrate non-ASCII downloads.
