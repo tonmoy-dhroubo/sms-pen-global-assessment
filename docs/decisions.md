@@ -300,3 +300,19 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     name ends in `_test`.
 - Note for the README (M18): with `npm start` (production mode) over plain HTTP, the Secure cookie works on
   localhost in Chrome, Firefox and Edge; reviewers should use `npm run dev` or one of those browsers.
+
+## D-030: Storage layer details settled in M06
+
+- Date: 2026-10-12
+- Decision (accepted from the M06 report during the overnight review, D-025):
+  - AWS SDK v3 with `requestChecksumCalculation`/`responseChecksumValidation` = `WHEN_REQUIRED`; the default adds a
+    CRC32 of an empty body to presigned PUT URLs, which MinIO ignores but AWS-style stores reject.
+  - Presigned PUTs sign `content-type` and `content-length`; a mismatched type or size gets 403 from storage.
+    File contents and the configured maximum size are still checked at confirm time (M13). If Supabase (M19)
+    rejects a signed `content-length`, drop it from the signed headers and rely on the confirm check.
+  - Downloads use `Content-Disposition: attachment` with an ASCII fallback plus an RFC 5987 `filename*`, so
+    Bengali file names survive.
+  - Submission time (D-023) comes from the object's `LastModified`, which has one-second resolution; a file landing
+    within the deadline's final second counts as on time.
+  - Tests use a separate `submissions-test` bucket; CI starts MinIO with `docker run` because the fork's image
+    cannot be a service container (it needs `server /data`).

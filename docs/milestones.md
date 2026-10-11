@@ -16,7 +16,7 @@ waiting on a decision.
 | M03 | Prisma schema and first migration | M02 | Done | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
-| M06 | Storage layer (S3 / MinIO) | M05 | In review | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
+| M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
 | M07 | Seed data and reset | M06 | Not started | | |
 | M08 | App shell and shared UI | M07 | Not started | | |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
@@ -527,6 +527,8 @@ Tasks:
 - [ ] (Could) One Playwright test covering: staff records a payment → student sees the updated balance; student
       uploads → staff sees the submission; staff publishes → student sees the result.
 - [ ] Review indexes and query counts on the heaviest pages.
+- [ ] Dependency hygiene: move the `shadcn` CLI from `dependencies` to `devDependencies` (it pulls the `braces`
+      advisory into the production tree); re-run `npm audit --omit=dev` and record the result.
 
 ---
 
