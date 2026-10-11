@@ -123,24 +123,24 @@ Verification: `git ls-files --eol` shows `i/lf` for text files.
 **References:** D-003, D-010, D-016, D-017, tech-stack.md.
 
 Tasks:
-- [ ] Create the app with the latest stable Next.js (App Router, TypeScript, Tailwind, ESLint) at the repo root,
+- [x] Create the app with the latest stable Next.js (App Router, TypeScript, Tailwind, ESLint) at the repo root,
       without a `src/` folder. Layout: `app/`, `components/`, `lib/`, `db/`, `tests/`.
-- [ ] `tsconfig.json`: `strict: true`, `noUncheckedIndexedAccess: true`, path alias `@/*`.
-- [ ] Prettier with the Tailwind plugin; `eslint-config-prettier` so they don't fight.
-- [ ] npm scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`tsc --noEmit`), `format`, `format:check`, `test`
+- [x] `tsconfig.json`: `strict: true`, `noUncheckedIndexedAccess: true`, path alias `@/*`.
+- [x] Prettier with the Tailwind plugin; `eslint-config-prettier` so they don't fight.
+- [x] npm scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`tsc --noEmit`), `format`, `format:check`, `test`
       (Vitest unit), `test:watch`.
-- [ ] Vitest configured (Node environment for services; jsdom only where component tests need it) with one
+- [x] Vitest configured (Node environment for services; jsdom only where component tests need it) with one
       placeholder test.
-- [ ] shadcn/ui initialised (CSS variables, neutral base colour). Add: button, input, label, form, select, dialog,
+- [x] shadcn/ui initialised (CSS variables, neutral base colour). Add: button, input, label, form, select, dialog,
       dropdown-menu, table, badge, card, tabs, sonner, skeleton, calendar, popover, command, sheet, tooltip,
       separator, alert.
-- [ ] `lucide-react`, `next-themes`; `ThemeProvider` in the root layout (class strategy, default System, no flash).
-- [ ] `ThemeToggle` component (Light / Dark / System) — used in the header in M08.
-- [ ] Fonts via `next/font` (IBM Plex Sans + IBM Plex Mono, per the mockup).
-- [ ] `package.json` `engines.node` matches `.nvmrc`.
-- [ ] GitHub Actions `ci.yml` on pull requests and pushes to `main`: checkout, setup-node from `.nvmrc` with npm
+- [x] `lucide-react`, `next-themes`; `ThemeProvider` in the root layout (class strategy, default System, no flash).
+- [x] `ThemeToggle` component (Light / Dark / System) — used in the header in M08.
+- [x] Fonts via `next/font` (IBM Plex Sans + IBM Plex Mono, per the mockup).
+- [x] `package.json` `engines.node` matches `.nvmrc`.
+- [x] GitHub Actions `ci.yml` on pull requests and pushes to `main`: checkout, setup-node from `.nvmrc` with npm
       cache, `npm ci`, `lint`, `typecheck`, `format:check`, `test`, `build`.
-- [ ] Remove create-next-app boilerplate (sample page, SVGs); a minimal home page saying "Registry — setting up".
+- [x] Remove create-next-app boilerplate (sample page, SVGs); a minimal home page saying "Registry — setting up".
 
 Acceptance criteria:
 - `npm run dev` serves the page; toggling theme works and persists across reloads without a flash.
