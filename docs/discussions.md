@@ -19,6 +19,9 @@ as resolved with the decision ID.
 - **Colour palette.** Neutral base with one accent, or PEN Global's green branding? Until decided, use the mockup's
   dark green accent (`#2F6B3F`) as a single CSS variable so it is a one-line change.
 
+- **MinIO image source (user to confirm).** Official images are gone; we use the `pgsty` community fork (D-027).
+  Keep it, or switch the local S3 server?
+
 ## Resolved
 
 - **Command search** → header quick search with `Ctrl+K` for staff (milestone M16).

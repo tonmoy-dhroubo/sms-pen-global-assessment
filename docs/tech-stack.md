@@ -50,9 +50,12 @@ Only environment variables differ between the two. Expected variables (final lis
 `docker compose up -d` starts everything the app needs:
 
 - **postgres** — the application database.
-- **minio** — object storage for submission files, with its web console for inspecting uploads.
+- **minio** — object storage for submission files, with its web console for inspecting uploads. Uses the
+  community Silo fork images `pgsty/minio` / `pgsty/mc`, because official MinIO images are no longer published (D-027).
 - **minio-init** — a one-shot `mc` container that creates the private submissions bucket, so a fresh clone works
   without manual setup.
+- **CORS:** MinIO has no per-bucket CORS, so it is set server-wide (`MINIO_API_CORS_ALLOW_ORIGIN` = `APP_ORIGIN`).
+  On Supabase Storage (hosted) it is configured on the bucket.
 
 ## Application layering
 
@@ -72,7 +75,8 @@ app/                 pages (Server Components) and app/api/* Route Handlers
 
 The same code runs against MinIO locally and Supabase Storage on Vercel (D-012, D-013).
 
-- The bucket is **private**; nothing is publicly readable. CORS on the bucket allows the app's origin to `PUT`.
+- The bucket is **private**; nothing is publicly readable. CORS allows only the app's origin to `PUT`/`GET`
+  (server-wide on MinIO, per bucket on Supabase).
 - **Upload, step 1:** the browser asks a Route Handler for an upload URL. The server checks the role, the assessment
   and the deadline, picks the object key, and returns a short-lived presigned `PUT` URL.
 - **Upload, step 2:** the browser uploads the file straight to the bucket. Files never pass through the app server,

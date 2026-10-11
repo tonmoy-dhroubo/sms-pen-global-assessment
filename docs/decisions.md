@@ -247,3 +247,19 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   - `npm audit` reports high advisories in `braces` via `eslint-config-next` (dev-only, no non-downgrade fix);
     accepted for now, re-checked in M17.
 - Why: Decided by Claude during the overnight review (D-025); purely technical, no behaviour change.
+
+## D-027: MinIO images from the community Silo fork; server-wide CORS
+
+- Date: 2026-10-12
+- Context: In M02 the official `minio/minio` and `minio/mc` images turned out to be unavailable (Docker Hub denies
+  access; `quay.io/minio/*` has no manifests — verified by Claude), so pinned official tags are impossible.
+- Decision: Use the community-maintained Silo fork, `pgsty/minio` and `pgsty/mc`, pinned to release tags. Same S3
+  API and commands, so D-012 (MinIO locally) stands. Because MinIO does not implement per-bucket CORS, CORS is set
+  server-wide via `MINIO_API_CORS_ALLOW_ORIGIN` (from `APP_ORIGIN`).
+- Why: Closest drop-in to the user's choice of MinIO, current releases, working console. Decided by Claude during
+  the overnight review (D-025); **flagged for the user to confirm** — it is a third-party image.
+- Alternatives: `alpine/minio` (stale since 2025-10); switching to another S3 server such as Garage or SeaweedFS
+  (would change the user's choice); building MinIO from source (slow, fragile for reviewers).
+- Also accepted from M02: `server-only` dependency; optional `DIRECT_URL`, `TEST_DATABASE_URL`,
+  `S3_PUBLIC_ENDPOINT`; defaults `APP_TIMEZONE=Asia/Dhaka`, `MAX_UPLOAD_MB=20`, `DEMO_MODE=false`;
+  `SESSION_SECRET` ≥ 32 characters. The hosted demo (M19) must set a real secret.

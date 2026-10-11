@@ -12,7 +12,7 @@ waiting on a decision.
 | --- | --- | --- | --- | --- | --- |
 | M00 | Repository foundations | — | Done | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Done | m01-nextjs-scaffold | [#2](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/2) |
-| M02 | Local infrastructure (Docker, env) | M01 | In review | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
+| M02 | Local infrastructure (Docker, env) | M01 | Done | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
 | M03 | Prisma schema and first migration | M02 | Not started | | |
 | M04 | Domain rules and unit tests | M03 | Not started | | |
 | M05 | API foundation, roles and test harness | M04 | Not started | | |
@@ -207,6 +207,8 @@ Tasks:
 - [ ] `lib/db.ts`: Prisma client singleton (safe with Next.js hot reload).
 - [ ] npm scripts: `db:migrate` (dev), `db:deploy`, `db:generate`, `db:validate`, `db:studio`.
 - [ ] Add `npx prisma validate` to CI.
+- [ ] Make sure `next build` still passes in CI without a `.env` once `lib/db` imports `lib/env` (give the CI build step
+      dummy values, or parse env lazily) — flagged in the M02 report.
 - [ ] Update db/er-diagram.md if anything had to differ, with the reason in db/decisions.md (via the report).
 
 Acceptance criteria:
@@ -291,7 +293,9 @@ Tasks:
 - [ ] Presigned URLs use `S3_PUBLIC_ENDPOINT` when set (the browser-facing host).
 - [ ] Object key builder `submissions/<assessmentId>/<studentId>/<uuid>.<ext>`.
 - [ ] `/api/health` reports storage status.
-- [ ] MinIO service container added to the CI integration job; integration tests for put → head → read → hash →
+- [ ] Test presigned PUTs with the real AWS SDK v3 against MinIO, including the checksum headers newer SDK versions
+      add (flagged in the M02 report).
+- [ ] MinIO service container (`pgsty/minio`, D-027) added to the CI integration job; integration tests for put → head → read → hash →
       delete.
 
 Acceptance criteria:
