@@ -18,7 +18,7 @@ waiting on a decision.
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
 | M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
-| M08 | App shell and shared UI | M07 | Not started | | |
+| M08 | App shell and shared UI | M07 | In review | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
 | M10 | Fees and payments | M09 | Not started | | |
 | M11 | Staff dashboard | M10 | Not started | | |
@@ -342,16 +342,16 @@ Verification: `npm run db:reset`; spot-check in Prisma Studio and the MinIO cons
 **References:** docs/pages.md (Global layout, Status badges), D-016, D-017, D-020, mockup.
 
 Tasks:
-- [ ] `/` role picker page (staff cards + student search).
-- [ ] Header: app name, staff search box placeholder (wired in M16), `ThemeToggle`, role switcher dropdown
+- [x] `/` role picker page (staff cards + student search).
+- [x] Header: app name, staff search box placeholder (wired in M16), `ThemeToggle`, role switcher dropdown
       (staff list + searchable students) calling `PUT /api/session` then navigating.
-- [ ] Staff layout with sidebar (collapses to a sheet on mobile); student layout with tabs.
-- [ ] Shared components: `StatusBadge` (all groups in pages.md), `Money`, `DateTime`, `RelativeTime`,
+- [x] Staff layout with sidebar (collapses to a sheet on mobile); student layout with tabs.
+- [x] Shared components: `StatusBadge` (all groups in pages.md), `Money`, `DateTime`, `RelativeTime`,
       `Countdown`, `EmptyState`, `ErrorState` with retry, page skeletons, `DataTable` base (server-side pagination
       and sort, URL state), confirm dialog, reason dialog (for actions needing a reason).
-- [ ] Sonner toasts for success and errors; API error helper that maps `fieldErrors` onto forms.
-- [ ] `DEMO_MODE` banner.
-- [ ] Placeholder pages for every route in pages.md (title + "coming in MNN").
+- [x] Sonner toasts for success and errors; API error helper that maps `fieldErrors` onto forms.
+- [x] `DEMO_MODE` banner.
+- [x] Placeholder pages for every route in pages.md (title + "coming in MNN").
 
 Acceptance criteria:
 - Switching between a staff member and any student lands on the right home; tampering with the cookie sends you to `/`.
