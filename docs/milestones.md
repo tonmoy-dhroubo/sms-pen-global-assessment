@@ -393,15 +393,15 @@ Verification: tests + manual walkthrough with screenshots.
 edge-cases.md (Fees), DB-002, DB-003, DB-011, DB-018.
 
 Tasks:
-- [ ] Services: fee schedule read/replace (new charges only), `getStudentFees`, `addCharge` (adjustment/waiver),
+- [x] Services: fee schedule read/replace (new charges only), `getStudentFees`, `addCharge` (adjustment/waiver),
       `recordPayment` (future date blocked, duplicate reference conflict, overpayment warning), `voidPayment`,
       `listBalances` (fee state and ageing filters).
-- [ ] Endpoints per api.md.
-- [ ] UI: Fees section on the student record (summary, charges, payments, voided struck through); record payment
+- [x] Endpoints per api.md.
+- [x] UI: Fees section on the student record (summary, charges, payments, voided struck through); record payment
       dialog (method incl. bKash/Nagad, reference, date, amount; warnings shown); add adjustment/waiver dialog; void
       dialog with reason; `/staff/fees` overview with ageing filter; `/staff/programmes` with fee schedules.
-- [ ] Balance updates immediately after any action (no reload needed).
-- [ ] Integration tests for every Fees edge case, including withdrawn students staying on the overdue list and
+- [x] Balance updates immediately after any action (no reload needed).
+- [x] Integration tests for every Fees edge case, including withdrawn students staying on the overdue list and
       "outstanding but not due" vs "overdue".
 
 Acceptance criteria and edge cases: all Fees items in edge-cases.md ticked (debt ageing data ready for M11).

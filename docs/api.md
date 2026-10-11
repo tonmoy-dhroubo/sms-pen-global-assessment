@@ -106,6 +106,12 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 | PUT | `/api/programmes/{id}/fees/{academicYear}` | Staff | Replace a session's fee schedule: `{ "instalments": [{ "instalment": 1, "amount": "160000.00", "dueDate": "2026-09-01" }] }`. Only affects charges created afterwards (existing charges never change) |
 | GET | `/api/modules` | Any | Modules with the programmes that include them |
 
+**Shapes** (settled in M10):
+
+- `GET /api/programmes` answers `{ items: [{ id, code, name, durationYears, modules: [{ id, code, title }] }] }` (by name; modules by code). `GET /api/modules` answers `{ items: [{ id, code, title, programmes: [{ id, code, name }] }] }`.
+- `GET /api/programmes/{id}` is the programme above plus `feeSchedules`, newest session first: `[{ academicYear, instalments: [{ instalment, amount, dueDate }], total, billedStudents }]`. `billedStudents` is how many students have a charge copied from that session's schedule.
+- **Replace a schedule** (`PUT .../fees/{academicYear}`): `academicYear` is a session such as `2026-27` (400 on `academicYear` otherwise); the body needs 1-12 instalments numbered exactly 1..n in any order (400 on `instalments` if numbers skip or repeat), each with an `amount` above zero (at most two decimals) and a real `dueDate`. Instalments are matched by number: listed numbers are updated in place or added, unlisted ones are removed. Charges that already exist are never read or changed (they hold their own copy), so removing an instalment that students have been billed for is refused with 422 `BUSINESS_RULE`, `details: { rule: "FEE_INSTALMENT_IN_USE", instalments: [2] }`, and nothing is saved. Success answers 200 with the session's schedule (`{ academicYear, instalments, total, billedStudents }`) and, when something changed and students were already billed from it, the warning `EXISTING_CHARGES_UNCHANGED`. Edits to one programme's schedules are applied one at a time.
+
 ## Students
 
 | Method | Path | Who | Purpose |
@@ -143,11 +149,23 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/students/{id}/fees` | Staff | `{ summary, charges, payments }`. Summary: `charged`, `waived`, `paid`, `balance` (negative = credit), `overdueAmount`, `oldestOverdueDays`, `ageingBucket`, `nextDueDate` |
+| GET | `/api/students/{id}/fees` | Staff | `{ summary, charges, payments }`. Summary: `charged`, `waived`, `paid`, `balance` (negative = credit), `credit`, `overdueAmount`, `oldestOverdueDays`, `ageingBucket`, `nextDueDate`, `feeState` |
 | POST | `/api/students/{id}/charges` | Staff | Adjustment or waiver: `{ "kind": "ADJUSTMENT" \| "WAIVER", "description", "amount", "dueDate" }`. Waiver amounts are entered positive and stored negative |
 | POST | `/api/students/{id}/payments` | Staff | `{ "amount", "method", "paidAt", "reference" }`. Future `paidAt` → 400. Duplicate reference → 409 `CONFLICT` with the existing payment. Larger than balance → success with warning `OVERPAYMENT` |
 | POST | `/api/payments/{id}/void` | Staff | `{ "reason" }`. Already voided → 422 |
 | GET | `/api/fees` | Staff | Students with a non-zero balance. Query: `feeState`, `ageingBucket` (`1-30`, `31-60`, `60+`), `programmeId`, list params |
+
+**Shapes** (settled in M10):
+
+- **Summary** is the `feeSummary` of the Students "Shapes" block. **Charge:** `{ id, kind, academicYear, description, amount, dueDate, createdAt }`; a waiver's `amount` is negative, as stored. **Payment:** `{ id, studentId, amount, method, paidAt, reference, recordedBy: { id, fullName }, recordedAt, voidedAt, voidReason }`; `voidedAt` and `voidReason` are `null` unless voided.
+- **Read** (`GET /api/students/{id}/fees`): charges oldest due date first, payments newest first (by `paidAt`). Voided payments are included, with their reason; they count toward nothing in the summary. A student with no charges has an all-zero summary with `feeState: "paid"`. An unknown or malformed id is 404.
+- **Writes** answer with the changed row and the student's summary afterwards, so a client can update without a second call: `POST .../charges` 201 `{ charge, summary }`; `POST .../payments` 201 `{ payment, summary }` (plus `warnings`); `POST /api/payments/{id}/void` 200 `{ payment, summary }`. Adjustments, waivers and payments are allowed for a student of any status, and a charge belongs to the student's current session (`academicYear`).
+- **Charge input:** `kind` is `ADJUSTMENT` (adds to what is owed) or `WAIVER` (reduces it); `description` 1-200 characters; `amount` above zero; `dueDate` any real date (a past date makes the charge due at once).
+- **Payment input:** `amount` above zero with at most two decimals, sent as a string; it may be typed with grouping (`"1,25,000"`) and is returned as `"125000.00"`. `method` is `BANK_TRANSFER`, `CASH`, `BKASH`, `NAGAD` or `CARD`. `paidAt` is a real date, today (Dhaka) or earlier; backdating is allowed, a later date is 400 on `paidAt` ("A payment cannot be dated in the future."). `reference` is required, at most 64 characters, and stored trimmed, with runs of spaces collapsed and in upper case, so `trx 9f3` and `TRX 9F3` are the same reference.
+- **Duplicate reference:** references are unique across all payments, voided ones included (a voided payment's reference cannot be reused). The 409 is `{ code: "CONFLICT", details: { field: "reference", existing: { id, reference, student: { id, studentNumber, fullName }, amount, paidAt, voided } } }`. Two identical simultaneous requests: exactly one is 201, the other 409.
+- **Overpayment:** when `amount` is more than the balance before the payment (or the student owes nothing, or already has a credit) the payment is saved and the response carries `{ code: "OVERPAYMENT", message }`.
+- **Void:** `reason` is 1-500 characters (400 otherwise). The row is kept, with `voidedAt` set. Voiding again is 422 `BUSINESS_RULE`, `details.rule: "PAYMENT_ALREADY_VOIDED"` (the first reason is kept); of two simultaneous voids exactly one succeeds. The schema records who recorded a payment (`recordedBy`) but not who voided it.
+- **Balances list** (`GET /api/fees`): every student whose fee state is not "paid" (overdue, outstanding or credit), whatever their enrolment status, so a withdrawn student who still owes stays on it. Item: `{ id, studentNumber, fullName, email, programme: { id, code, name }, academicYear, yearOfStudy, status, feeSummary, lastPayment: { paidAt, amount } | null }` (`lastPayment` is the latest payment that is not voided). The envelope is the standard list `{ items, page, pageSize, total }`. `feeState` is `overdue`, `outstanding` or `credit` (`paid` is a 400); `ageingBucket` is `1-30`, `31-60` or `60+` (a hand-typed `60+` that arrives as `60 ` is understood; the UI sends `60%2B`). Sort: `oldestOverdueDays` (default `-oldestOverdueDays`: longest overdue first), `overdueAmount`, `fullName`; students with no overdue age always come last when sorting by it; ties keep name order. Like the student list's fee-state filter (D-032), the rule runs in memory over the candidates.
 
 ## Dashboard
 

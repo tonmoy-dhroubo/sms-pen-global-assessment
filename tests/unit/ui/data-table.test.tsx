@@ -150,6 +150,15 @@ describe("DataTable", () => {
     expect(within(screen.getAllByRole("columnheader")[2]!).queryByRole("button")).toBeNull();
   });
 
+  it("makes a column sortable when it only has an id and a custom cell (no accessor)", async () => {
+    const user = userEvent.setup();
+    renderTable({
+      columns: [{ id: "overdueAmount", header: "Overdue", enableSorting: true, cell: () => "x" }],
+    });
+    await user.click(screen.getByRole("button", { name: /Overdue/ }));
+    expect(push).toHaveBeenCalledWith("/staff/students?sort=overdueAmount", { scroll: false });
+  });
+
   it("changes the page size through the URL", async () => {
     const user = userEvent.setup();
     renderTable();

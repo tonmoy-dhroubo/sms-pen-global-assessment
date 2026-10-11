@@ -22,13 +22,13 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Fees and payments
 
-- [ ] **M** — Overpayment: balance shows as a credit, not a negative number.
-- [ ] **M** — Duplicate payment reference: clear error linking to the existing payment (also stops double-click duplicates).
-- [ ] **M** — Payment larger than the outstanding balance: warning, allowed.
-- [ ] **M** — Payment dated in the future: blocked. Backdated payments: allowed.
-- [ ] **M** — Mistaken payment: voided with a reason, never edited or deleted; shown struck through.
-- [ ] **M** — Withdrawn student who still owes money stays on the overdue list.
-- [ ] **M** — Outstanding but not yet due is shown differently from overdue.
+- [x] **M** — Overpayment: balance shows as a credit, not a negative number.
+- [x] **M** — Duplicate payment reference: clear error linking to the existing payment (also stops double-click duplicates).
+- [x] **M** — Payment larger than the outstanding balance: warning, allowed.
+- [x] **M** — Payment dated in the future: blocked. Backdated payments: allowed.
+- [x] **M** — Mistaken payment: voided with a reason, never edited or deleted; shown struck through.
+- [x] **M** — Withdrawn student who still owes money stays on the overdue list.
+- [x] **M** — Outstanding but not yet due is shown differently from overdue.
 - [ ] **S** — Debt ageing on the dashboard: overdue split into 1–30, 31–60 and 60+ days.
 
 ## Submissions

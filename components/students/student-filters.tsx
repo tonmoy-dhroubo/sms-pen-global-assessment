@@ -4,6 +4,7 @@ import { ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useListUrlState } from "@/components/data-table/data-table";
+import { FilterSelect } from "@/components/shared/filter-select";
 import { badgeDefinition } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,13 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { ProgrammeOption } from "@/lib/services/students";
 import {
   DEFAULT_STATUS_FILTER,
@@ -36,7 +30,6 @@ import {
 // the same params. Changing any of them sends the table back to page 1 (`useListUrlState`).
 
 export const SEARCH_DEBOUNCE_MS = 300;
-const ANY = "__any__";
 
 const FEE_STATE_LABEL: Record<(typeof FEE_STATES)[number], string> = {
   overdue: "Overdue",
@@ -291,36 +284,5 @@ export function StudentFilters({ programmes, academicYears, maxYearOfStudy }: St
         ) : null}
       </div>
     </section>
-  );
-}
-
-interface FilterSelectProps {
-  id: string;
-  label: string;
-  value: string | null;
-  onChange: (value: string | null) => void;
-  options: { value: string; label: string }[];
-}
-
-function FilterSelect({ id, label, value, onChange, options }: FilterSelectProps) {
-  return (
-    <Field>
-      <FieldLabel htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </FieldLabel>
-      <Select value={value ?? ANY} onValueChange={(next) => onChange(next === ANY ? null : next)}>
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ANY}>Any</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
   );
 }

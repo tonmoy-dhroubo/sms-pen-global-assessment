@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { DateTime } from "@/components/format/date-time";
-import { Money } from "@/components/format/money";
+import { StudentFeesCard } from "@/components/fees/student-fees-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { FeeStatus } from "@/components/students/fee-status";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotFoundError } from "@/lib/api/errors";
 import { requireStaffPage } from "@/lib/page-guards";
+import { getStudentFees } from "@/lib/services/fees";
 import { getStudent } from "@/lib/services/students";
 
 export const metadata: Metadata = { title: "Student record" };
@@ -22,15 +23,6 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm break-words">{children}</dd>
-    </div>
-  );
-}
-
-function Figure({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-lg font-semibold">{children}</dd>
     </div>
   );
 }
@@ -67,12 +59,12 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
   await requireStaffPage();
   const { id } = await params;
 
-  const student = await getStudent(id).catch((error: unknown) => {
-    if (error instanceof NotFoundError) notFound();
-    throw error;
-  });
-  const fees = student.feeSummary;
-  const inCredit = fees.feeState === "credit";
+  const [student, fees] = await Promise.all([getStudent(id), getStudentFees(id)]).catch(
+    (error: unknown) => {
+      if (error instanceof NotFoundError) notFound();
+      throw error;
+    },
+  );
 
   return (
     <div className="space-y-6">
@@ -124,7 +116,7 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
               <StatusBadge group="enrolment" value={student.status} />
             </Detail>
             <Detail label="Fees">
-              <FeeStatus summary={fees} />
+              <FeeStatus summary={fees.summary} />
             </Detail>
             <Detail label="Programme">{student.programme.name}</Detail>
             <Detail label="Session">{student.academicYear}</Detail>
@@ -141,46 +133,7 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fees</CardTitle>
-          <CardDescription>
-            Charges, payments and recording a payment arrive in M10. The summary below is calculated
-            from the student&apos;s charges and payments.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-5">
-            <Figure label="Charged">
-              <Money value={fees.charged} />
-            </Figure>
-            <Figure label="Waived">
-              <Money value={fees.waived} />
-            </Figure>
-            <Figure label="Paid">
-              <Money value={fees.paid} />
-            </Figure>
-            <Figure label={inCredit ? "Credit" : "Balance"}>
-              <Money value={inCredit ? fees.credit : fees.balance} />
-            </Figure>
-            <Figure label="Overdue">
-              {fees.feeState === "overdue" ? (
-                <>
-                  <Money value={fees.overdueAmount} />
-                  {fees.oldestOverdueDays !== null ? (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {fees.oldestOverdueDays} {fees.oldestOverdueDays === 1 ? "day" : "days"}{" "}
-                      overdue
-                    </span>
-                  ) : null}
-                </>
-              ) : (
-                <span className="text-muted-foreground">None</span>
-              )}
-            </Figure>
-          </dl>
-        </CardContent>
-      </Card>
+      <StudentFeesCard studentId={student.id} studentName={student.fullName} fees={fees} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ComingSoon
