@@ -55,6 +55,21 @@ describe("status badge tone contrast (D-017)", () => {
     });
   });
 
+  // The dashboard's ageing bar: graphics need 3:1 against the card they sit on (white; the dark card is about #171717).
+  describe.each([
+    ["light", ":root", "#ffffff"],
+    ["dark", ".dark", "#171717"],
+  ])("ageing bar segments in the %s theme", (_name, selector, card) => {
+    it.each(["ageing-1", "ageing-2", "ageing-3"])(
+      "%s is at least 3:1 against the card",
+      (token) => {
+        const colour = tokens(selector)[token];
+        expect(colour, `--${token}`).toBeDefined();
+        expect(contrast(colour!, card)).toBeGreaterThanOrEqual(3);
+      },
+    );
+  });
+
   it("the brand colour carries white button text at 4.5:1 or better", () => {
     expect(contrast(tokens(":root").brand!, "#ffffff")).toBeGreaterThanOrEqual(4.5);
   });

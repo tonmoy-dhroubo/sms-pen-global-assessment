@@ -21,7 +21,7 @@ waiting on a decision.
 | M08 | App shell and shared UI | M07 | Done | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
 | M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
 | M10 | Fees and payments | M09 | Done | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
-| M11 | Staff dashboard | M10 | Not started | | |
+| M11 | Staff dashboard | M10 | In review | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
 | M12 | Assessments (staff) | M09 | Not started | | |
 | M13 | Submissions (student upload flow) | M12 | Not started | | |
 | M14 | Marksheet and results | M13 | Not started | | |
@@ -414,10 +414,10 @@ Acceptance criteria and edge cases: all Fees items in edge-cases.md ticked (debt
 **References:** pages.md (`/staff`), api.md (Dashboard), seed-plan.md (expected figures).
 
 Tasks:
-- [ ] `GET /api/dashboard` with KPI counts, overdue list with ageing buckets, needs-attention items.
-- [ ] UI: KPI cards, ageing breakdown (small bar or segmented summary using shadcn Charts), overdue table with
+- [x] `GET /api/dashboard` with KPI counts, overdue list with ageing buckets, needs-attention items.
+- [x] UI: KPI cards, ageing breakdown (small bar or segmented summary using shadcn Charts), overdue table with
       "Record payment", needs-attention list linking to the right record or assessment.
-- [ ] Efficient queries (no per-student loops); tested.
+- [x] Efficient queries (no per-student loops); tested.
 
 Acceptance criteria: after `npm run db:reset`, every figure matches the "expected" table in seed-plan.md.
 

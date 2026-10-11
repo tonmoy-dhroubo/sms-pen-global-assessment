@@ -50,6 +50,9 @@
   --color-tone-blue-foreground: var(--tone-blue-fg);
   --color-tone-red: var(--tone-red-bg);
   --color-tone-red-foreground: var(--tone-red-fg);
+  --color-ageing-1: var(--ageing-1);
+  --color-ageing-2: var(--ageing-2);
+  --color-ageing-3: var(--ageing-3);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -108,6 +111,12 @@
   --tone-blue-fg: #1e3a8a;
   --tone-red-bg: #fee2e2;
   --tone-red-fg: #7f1d1d;
+
+  /* Debt-ageing bar segments on the dashboard (1-30 / 31-60 / 60+ days): graphics, so at least 3:1 against the card
+     (tested in tests/unit/ui/tone-contrast.test.ts); every segment is also labelled with text. */
+  --ageing-1: #d97706;
+  --ageing-2: #c2410c;
+  --ageing-3: #991b1b;
 }
 
 .dark {
@@ -154,6 +163,10 @@
   --tone-blue-fg: #bfdbfe;
   --tone-red-bg: #7f1d1d;
   --tone-red-fg: #fecaca;
+
+  --ageing-1: #fbbf24;
+  --ageing-2: #fb923c;
+  --ageing-3: #f87171;
 }
 
 @layer base {

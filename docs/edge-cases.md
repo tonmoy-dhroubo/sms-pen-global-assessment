@@ -29,7 +29,7 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 - [x] **M** — Mistaken payment: voided with a reason, never edited or deleted; shown struck through.
 - [x] **M** — Withdrawn student who still owes money stays on the overdue list.
 - [x] **M** — Outstanding but not yet due is shown differently from overdue.
-- [ ] **S** — Debt ageing on the dashboard: overdue split into 1–30, 31–60 and 60+ days.
+- [x] **S** — Debt ageing on the dashboard: overdue split into 1–30, 31–60 and 60+ days.
 
 ## Submissions
 
