@@ -59,4 +59,6 @@ Two Claude Code subagents are defined in `.claude/agents/`:
   per milestone (`mNN-slug`, Conventional Commits, squash merge after the user approves); planning and docs-only
   changes may go straight to `main` (D-019).
 - **Build one milestone at a time** following [docs/milestones.md](docs/milestones.md), then stop and report (D-021).
+- **Next.js 16 docs ship with the package** in `node_modules/next/dist/docs/`; check them before relying on memory
+  for Next.js APIs.
 - Default branch is `main`.
