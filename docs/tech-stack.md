@@ -14,11 +14,11 @@ The agreed stack and how the pieces fit. The reasoning behind each choice is in 
 | UI | Tailwind CSS + shadcn/ui | Plus lucide-react, Sonner, Calendar, Charts (Recharts), Sidebar block (D-016) |
 | Theming | next-themes | Light / Dark / System, global toggle in the header (D-017) |
 | Forms | react-hook-form + Zod, shadcn `field` | shadcn's old `form` component is gone (D-026) |
-| Tables | TanStack Table (shadcn data-table) | Server-side filtering/pagination, state in URL params |
+| Tables | TanStack Table v8 (shadcn data-table) | Server-side filtering/pagination, state in URL params |
 | Validation | Zod | Shared between forms and API handlers |
 | Dates | date-fns | Stored in UTC, shown in one configured time zone |
 | Roles | Cookie-based role switcher, no real auth | Enforced on the server |
-| Tests | Vitest | Domain rules first; Playwright only if time allows |
+| Tests | Vitest (+ Testing Library for components) | Domain rules first; Playwright only if time allows |
 | Lint/format | ESLint + Prettier | |
 | Package manager | npm | |
 | Deployment | Local (Docker) for submission; Vercel for a hosted demo | Deploy once features work |

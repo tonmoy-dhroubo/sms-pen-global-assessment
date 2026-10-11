@@ -18,7 +18,7 @@ waiting on a decision.
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
 | M06 | Storage layer (S3 / MinIO) | M05 | Done | m06-storage-layer | [#7](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/7) |
 | M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
-| M08 | App shell and shared UI | M07 | In review | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
+| M08 | App shell and shared UI | M07 | Done | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
 | M10 | Fees and payments | M09 | Not started | | |
 | M11 | Staff dashboard | M10 | Not started | | |
@@ -507,6 +507,7 @@ Tasks:
 - [ ] `GET /api/students/{id}/timeline` and the timeline section on the student record.
 - [ ] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
       opens it).
+- [ ] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
 - [ ] (Could) CSV exports: overdue list and marksheet.
 - [ ] (Could) Print stylesheet for the student record's fee statement and marksheet.
 

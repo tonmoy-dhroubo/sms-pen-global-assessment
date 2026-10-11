@@ -316,3 +316,17 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     within the deadline's final second counts as on time.
   - Tests use a separate `submissions-test` bucket; CI starts MinIO with `docker run` because the fork's image
     cannot be a service container (it needs `server /data`).
+
+## D-031: App shell details settled in M08
+
+- Date: 2026-10-12
+- Decision (accepted from the M08 report during the overnight review, D-025):
+  - Staff sidebar is a hand-built nav that becomes a Sheet below `md`, instead of the full shadcn Sidebar block
+    (too heavy for five links). Supersedes that part of D-016.
+  - Accent colour lives in one token, `--brand` (`#2f6b3f`), driving primary, ring and sidebar colours.
+  - Dev dependencies `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event` accepted;
+    `@tanstack/react-table` pinned to v8 (v9 changed its API and shadcn's pattern targets v8).
+  - Every data page calls `requireStaffPage()` / `requireStudentPage()` itself (layouts don't re-run on client
+    navigation); route handlers keep `requireStaff()` / `requireStudent()`.
+  - Copy: late badge "Late · 2 days"; reason dialogs require 1–500 characters.
+  - A "Change role" entry (clears the session, back to `/`) is added to M16.
