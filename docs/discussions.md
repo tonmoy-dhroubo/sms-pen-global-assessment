@@ -10,6 +10,8 @@ as resolved with the decision ID.
   Vercel origin. Fallback: use Supabase's own signed upload URLs in the hosted storage adapter only.
 - **Colour palette.** Neutral base with one accent, or PEN Global's green branding?
 - **Command search (cmdk).** Global "find a student by name or ID" palette for staff — include or skip?
+- **Edge cases.** Checklist in [edge-cases.md](edge-cases.md); three open questions at its end (priority split,
+  late-upload timing, mark rounding).
 - **Data model.** Draft ER diagram in [db/er-diagram.md](../db/er-diagram.md). Awaiting confirmation of the
   proposed answers DB-009 to DB-014 in [db/decisions.md](../db/decisions.md).
 

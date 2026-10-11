@@ -27,6 +27,7 @@ This file stays short. All details, reasoning and discussion live in [`docs/`](d
 | [docs/requirements.md](docs/requirements.md) | The brief in our own words: scope, deliverables, how it is graded |
 | [docs/tech-stack.md](docs/tech-stack.md) | Agreed stack, local services, app layering, uploads and roles |
 | [db/](db/README.md) | Database: ER diagram, DB decisions (`DB-NNN`), and later the Prisma schema, migrations and seed scripts |
+| [docs/edge-cases.md](docs/edge-cases.md) | Checklist of edge cases and extras to build, by priority (Must / Should / Could) |
 | [docs/decisions.md](docs/decisions.md) | Decision log: what we chose, why, and what we rejected |
 | [docs/discussions.md](docs/discussions.md) | Open questions and discussion notes that are not yet decisions |
 | [docs/ai-usage.md](docs/ai-usage.md) | Running log of how AI was used; feeds the README's AI section |
