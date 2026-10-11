@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:db": "vitest run --config vitest.db.config.mts",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
     "services:up": "docker compose up -d --wait",
     "services:down": "docker compose down",
     "services:reset": "docker compose down -v && docker compose up -d --wait",
