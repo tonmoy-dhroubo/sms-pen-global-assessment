@@ -56,7 +56,7 @@ async function staff() {
   return createStaff();
 }
 
-/** A mod taught in one fresh programme, with a staff member to act as. */
+/** A module taught in one fresh programme, with a staff member to act as. */
 async function setup() {
   const person = await staff();
   const programme = await createProgramme();
@@ -205,14 +205,14 @@ describe("create", () => {
     ]);
   });
 
-  it("rejects an unknown mod, a missing title and a deadline without an offset", async () => {
+  it("rejects an unknown module, a missing title and a deadline without an offset", async () => {
     const { mod, cookie } = await setup();
     const deadline = DEADLINE_ISO;
 
     const unknown = await create(cookie, { moduleId: UNKNOWN_ID, title: "x", deadline });
     expect(unknown.status).toBe(400);
     expect(unknown.body.error.details).toMatchObject({
-      fieldErrors: { moduleId: ["Choose a mod."] },
+      fieldErrors: { moduleId: ["Choose a module."] },
     });
 
     const malformed = await create(cookie, { moduleId: "not-a-uuid", title: "x", deadline });
@@ -249,7 +249,7 @@ describe("create", () => {
 
 describe("eligibility and counts", () => {
   /**
-   * One assessment (deadline 5 days ago) on a mod taught in P1. P2 does not include the mod.
+   * One assessment (deadline 5 days ago) on a module taught in P1. P2 does not include the module.
    *   s1 Enrolled P1, on time, mark published      s2 Enrolled P1, late, extended to on time, mark draft
    *   s3 Enrolled P1, never submitted, NS mark     s4 Deferred P1, never submitted        (not eligible)
    *   s5 Withdrawn P1, submitted on time           s6 Enrolled P2, never submitted        (not eligible)
@@ -306,7 +306,7 @@ describe("eligibility and counts", () => {
     return { person, assessment, cookie: asStaff(person.id), mod, p1, p2, s, deadline };
   }
 
-  it("counts eligible students (enrolled in a programme with the mod, plus anyone who submitted), submissions, late, marked and published", async () => {
+  it("counts eligible students (enrolled in a programme with the module, plus anyone who submitted), submissions, late, marked and published", async () => {
     const { assessment } = await scenario();
     const list = await listAssessments(assessmentListQuerySchema.parse({}), clock);
 
@@ -352,7 +352,7 @@ describe("eligibility and counts", () => {
     ]);
     const byId = new Map(result.body.items.map((r) => [r.student.id, r]));
     expect(byId.has(s.s4.id)).toBe(false); // deferred, never submitted
-    expect(byId.has(s.s6.id)).toBe(false); // programme does not include the mod
+    expect(byId.has(s.s6.id)).toBe(false); // programme does not include the module
 
     expect(byId.get(s.s1.id)).toMatchObject({ eligible: true, status: "ON_TIME", lateBy: null });
     expect(byId.get(s.s3.id)).toMatchObject({
@@ -467,7 +467,7 @@ describe("eligibility and counts", () => {
     expect(states.get("Closed late")).toBe("closed");
   });
 
-  it("filters by mod, sorts and pages, and rejects bad query values", async () => {
+  it("filters by module, sorts and pages, and rejects bad query values", async () => {
     const { person, cookie } = await setup();
     const m1 = await createModule({ code: "AAA100" });
     const m2 = await createModule({ code: "ZZZ100" });
@@ -508,7 +508,7 @@ describe("eligibility and counts", () => {
       "Gamma",
       "Alpha",
     ]);
-    expect((await get("?sort=mod&pageSize=2")).body.items.map((i) => i.module.code)).toEqual([
+    expect((await get("?sort=module&pageSize=2")).body.items.map((i) => i.module.code)).toEqual([
       "AAA100",
       "AAA100",
     ]);
@@ -857,20 +857,20 @@ describe("update", () => {
       const stored = await db.assessment.findUniqueOrThrow({ where: { id: assessment.id } });
       expect(stored).toMatchObject({ moduleId: mod.id, title: "Keep", version: 1 });
 
-      // Sending the mod it already has is not a change, so it is fine.
+      // Sending the module it already has is not a change, so it is fine.
       expect(
         (await patch(assessment.id, cookie, { moduleId: mod.id, title: "Renamed", version: 1 }))
           .status,
       ).toBe(200);
     });
 
-    it("rejects a mod that does not exist", async () => {
+    it("rejects a module that does not exist", async () => {
       const { person, mod, cookie } = await setup();
       const assessment = await createAssessment({ moduleId: mod.id, createdById: person.id });
       const result = await patch(assessment.id, cookie, { moduleId: UNKNOWN_ID, version: 1 });
       expect(result.status).toBe(400);
       expect(result.body.error.details).toMatchObject({
-        fieldErrors: { moduleId: ["Choose a mod."] },
+        fieldErrors: { moduleId: ["Choose a module."] },
       });
     });
   });
