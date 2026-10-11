@@ -361,3 +361,15 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   - `/api/fees` lists every student whose fee state is not "paid", whatever their enrolment status, sorted by
     longest overdue first; `GET /api/programmes` and `/api/modules` return `{ items }` without paging.
   - A fee schedule has 1–12 instalments; `/staff/programmes` offers the previous, current and next two sessions.
+
+## D-034: Dashboard definitions settled in M11
+
+- Date: 2026-10-12
+- Decision (accepted from the M11 report during the overnight review, D-025):
+  - "Total outstanding" = sum of positive balances across all students, any status; credits are not netted off;
+    includes money not yet due.
+  - "Late submissions" = latest file arrived after the effective deadline, within a rolling 14 × 24 h window.
+  - "Results to publish" counts every DRAFT mark (including non-submissions), plus withheld as a sub-figure.
+  - Lists show at most 10 items with a `total` and a link to the full view (overdue list: longest overdue first;
+    ties by larger amount). `GET /api/dashboard` takes no parameters.
+  - Ageing is drawn as a hand-built segmented bar with a text legend (no chart library); Recharts is not used.
