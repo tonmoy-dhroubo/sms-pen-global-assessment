@@ -121,3 +121,62 @@ export async function createStudent(
     },
   });
 }
+
+export async function createModule(overrides: Partial<{ code: string; title: string }> = {}) {
+  const n = next();
+  return db.module.create({ data: { code: `MOD${100 + n}`, title: `Module ${n}`, ...overrides } });
+}
+
+/** An assessment of a module; `deadline` is an instant (default: one day from now). */
+export async function createAssessment(input: {
+  moduleId: string;
+  createdById: string;
+  title?: string;
+  deadline?: Date;
+}) {
+  const n = next();
+  return db.assessment.create({
+    data: {
+      moduleId: input.moduleId,
+      createdById: input.createdById,
+      title: input.title ?? `Assessment ${n}`,
+      deadline: input.deadline ?? new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
+}
+
+/** A submission whose latest file arrived at `submittedAt` (no file row: the dashboard only reads the submission). */
+export async function createSubmission(input: {
+  assessmentId: string;
+  studentId: string;
+  submittedAt: Date;
+}) {
+  return db.submission.create({
+    data: {
+      assessmentId: input.assessmentId,
+      studentId: input.studentId,
+      firstSubmittedAt: input.submittedAt,
+      lastSubmittedAt: input.submittedAt,
+    },
+  });
+}
+
+/** A mark (default: a draft 55.0). A withheld mark takes a `withheldReason`. */
+export async function createMark(input: {
+  assessmentId: string;
+  studentId: string;
+  enteredById: string;
+  releaseStatus?: "DRAFT" | "PUBLISHED" | "WITHHELD";
+  withheldReason?: string;
+}) {
+  return db.mark.create({
+    data: {
+      assessmentId: input.assessmentId,
+      studentId: input.studentId,
+      enteredById: input.enteredById,
+      mark: "55.0",
+      releaseStatus: input.releaseStatus ?? "DRAFT",
+      withheldReason: input.withheldReason ?? null,
+    },
+  });
+}
