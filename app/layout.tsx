@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
+import { DemoBanner } from "@/components/layout/demo-banner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
@@ -21,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Registry",
+  title: { default: "Registry", template: "%s · Registry" },
   description: "Student Management System: Registry module",
 };
 
@@ -35,7 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            {/* DEMO_MODE is read here, on the server, and passed down: lib/env must never reach the browser. */}
+            <DemoBanner show={env.DEMO_MODE} />
+            {children}
+          </TooltipProvider>
           <Toaster />
         </ThemeProvider>
       </body>
