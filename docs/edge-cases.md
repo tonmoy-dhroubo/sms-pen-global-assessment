@@ -50,7 +50,7 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Marks and results
 
-- [ ] **M** — Mark must be 0–100 with at most one decimal; classification rounds half-up first (DB-019), covered by
+- [x] **M** — Mark must be 0–100 with at most one decimal; classification rounds half-up first (DB-019), covered by
   tests at 39.4 / 39.5 / 40 / 59.4 / 59.5 / 60 / 69.4 / 69.5 / 70.
 - [ ] **M** — Work never submitted: explicit non-submission (NS), not a silent 0.
 - [ ] **M** — Late flag visible to staff while marking; no automatic penalty.
