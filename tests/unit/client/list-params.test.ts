@@ -89,6 +89,13 @@ describe("withParams", () => {
     expect(withParams("a=1&b=2", { a: "", b: undefined }).toString()).toBe("");
   });
 
+  it("writes a repeated key for an array and removes the key for an empty one", () => {
+    expect(
+      withParams("status=ENROLLED&q=a", { status: ["WITHDRAWN", "COMPLETED"] }).toString(),
+    ).toBe("q=a&status=WITHDRAWN&status=COMPLETED");
+    expect(withParams("status=ENROLLED&q=a", { status: [] }).toString()).toBe("q=a");
+  });
+
   it("accepts URLSearchParams as the source and does not mutate it", () => {
     const source = new URLSearchParams("a=1");
     expect(withParams(source, { b: 2 }).toString()).toBe("a=1&b=2");

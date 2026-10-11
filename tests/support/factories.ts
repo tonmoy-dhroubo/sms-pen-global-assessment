@@ -19,10 +19,77 @@ export async function createStaff(
   });
 }
 
-export async function createProgramme(overrides: Partial<{ code: string; name: string }> = {}) {
+export async function createProgramme(
+  overrides: Partial<{ code: string; name: string; durationYears: number }> = {},
+) {
   const n = next();
   return db.programme.create({
     data: { code: `PRG-${n}`, name: `Programme ${n}`, durationYears: 3, ...overrides },
+  });
+}
+
+/** One instalment of a programme's fee schedule for a session. */
+export async function createProgrammeFee(input: {
+  programmeId: string;
+  academicYear: string;
+  instalment?: number;
+  amount?: string;
+  /** `YYYY-MM-DD` */
+  dueDate: string;
+}) {
+  return db.programmeFee.create({
+    data: {
+      programmeId: input.programmeId,
+      academicYear: input.academicYear,
+      instalment: input.instalment ?? 1,
+      amount: input.amount ?? "100000.00",
+      dueDate: new Date(`${input.dueDate}T00:00:00.000Z`),
+    },
+  });
+}
+
+/** A fee charge for a student (a waiver's amount must be negative, as the database requires). */
+export async function createFeeCharge(input: {
+  studentId: string;
+  amount: string;
+  /** `YYYY-MM-DD` */
+  dueDate: string;
+  kind?: "PROGRAMME_FEE" | "ADJUSTMENT" | "WAIVER";
+  academicYear?: string;
+  description?: string;
+}) {
+  return db.feeCharge.create({
+    data: {
+      studentId: input.studentId,
+      kind: input.kind ?? "PROGRAMME_FEE",
+      academicYear: input.academicYear ?? "2026-27",
+      description: input.description ?? "Tuition",
+      amount: input.amount,
+      dueDate: new Date(`${input.dueDate}T00:00:00.000Z`),
+    },
+  });
+}
+
+/** A payment against a student, recorded by `staffId`. */
+export async function createPayment(input: {
+  studentId: string;
+  staffId: string;
+  amount: string;
+  /** `YYYY-MM-DD` */
+  paidAt?: string;
+  voided?: boolean;
+}) {
+  return db.payment.create({
+    data: {
+      studentId: input.studentId,
+      recordedById: input.staffId,
+      amount: input.amount,
+      method: "BANK_TRANSFER",
+      paidAt: new Date(`${input.paidAt ?? "2026-01-01"}T00:00:00.000Z`),
+      reference: `PAY-${next()}`,
+      voidedAt: input.voided ? new Date() : null,
+      voidReason: input.voided ? "Entered by mistake" : null,
+    },
   });
 }
 
@@ -33,6 +100,9 @@ export async function createStudent(
     studentNumber: string;
     programmeId: string;
     status: "ENROLLED" | "DEFERRED" | "WITHDRAWN" | "COMPLETED";
+    dateOfBirth: Date;
+    academicYear: string;
+    yearOfStudy: number;
   }> = {},
 ) {
   const n = next();
