@@ -165,10 +165,10 @@ describe("late submissions", () => {
   it("counts files that arrived after the effective deadline within the last 14 days", async () => {
     const staff = await createStaff();
     const programme = await createProgramme();
-    const module = await createModule();
+    const mod = await createModule();
     const deadline = ago(5 * DAY);
     const assessment = await createAssessment({
-      moduleId: module.id,
+      moduleId: mod.id,
       createdById: staff.id,
       title: "Essay",
       deadline,
@@ -241,7 +241,7 @@ describe("late submissions", () => {
     ]);
     expect(lateSubmissions.items[0]).toMatchObject({
       student: { id: extendedLate.id, studentNumber: extendedLate.studentNumber },
-      assessment: { id: assessment.id, title: "Essay", module: { code: module.code } },
+      assessment: { id: assessment.id, title: "Essay", module: { code: mod.code } },
       submittedAt: ago(1 * DAY).toISOString(),
       deadline: ago(3 * DAY).toISOString(),
       href: `/staff/assessments/${assessment.id}`,
@@ -511,7 +511,6 @@ describe("query count", () => {
     await withClient(testDatabaseUrl(), truncateAll);
     const large = await statementsFor(50);
 
-`);
     expect(large).toBe(small);
     expect(small).toBeGreaterThan(5); // it really did count something
     expect(small).toBeLessThanOrEqual(25); // and the budget is small (19 today: relation loads count as statements)
