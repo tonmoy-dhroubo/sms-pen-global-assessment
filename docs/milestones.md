@@ -20,7 +20,7 @@ waiting on a decision.
 | M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
 | M08 | App shell and shared UI | M07 | Done | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
 | M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
-| M10 | Fees and payments | M09 | In progress | m10-fees-payments | |
+| M10 | Fees and payments | M09 | In review | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
 | M11 | Staff dashboard | M10 | Not started | | |
 | M12 | Assessments (staff) | M09 | Not started | | |
 | M13 | Submissions (student upload flow) | M12 | Not started | | |
