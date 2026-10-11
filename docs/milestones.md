@@ -16,7 +16,7 @@ waiting on a decision.
 | M03 | Prisma schema and first migration | M02 | Done | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
 | M04 | Domain rules and unit tests | M03 | Done | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Done | m05-api-foundation | [#6](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/6) |
-| M06 | Storage layer (S3 / MinIO) | M05 | Not started | | |
+| M06 | Storage layer (S3 / MinIO) | M05 | In progress | m06-storage-layer | |
 | M07 | Seed data and reset | M06 | Not started | | |
 | M08 | App shell and shared UI | M07 | Not started | | |
 | M09 | Students: list, create, record, status | M08 | Not started | | |
@@ -289,15 +289,15 @@ Verification: `npm run test:integration`; manual curl of `/api/session` and `/ap
 **References:** D-006, D-012, D-013, tech-stack.md (File uploads).
 
 Tasks:
-- [ ] `lib/storage.ts` using the AWS SDK v3: `presignPut(key, contentType, sizeBytes, expiresIn)`,
+- [x] `lib/storage.ts` using the AWS SDK v3: `presignPut(key, contentType, sizeBytes, expiresIn)`,
       `presignGet(key, downloadName, expiresIn)`, `headObject`, `readFirstBytes(key, n)`, `sha256(key)` (streamed),
       `deleteObject`, `deletePrefix`.
-- [ ] Presigned URLs use `S3_PUBLIC_ENDPOINT` when set (the browser-facing host).
-- [ ] Object key builder `submissions/<assessmentId>/<studentId>/<uuid>.<ext>`.
-- [ ] `/api/health` reports storage status.
-- [ ] Test presigned PUTs with the real AWS SDK v3 against MinIO, including the checksum headers newer SDK versions
+- [x] Presigned URLs use `S3_PUBLIC_ENDPOINT` when set (the browser-facing host).
+- [x] Object key builder `submissions/<assessmentId>/<studentId>/<uuid>.<ext>`.
+- [x] `/api/health` reports storage status.
+- [x] Test presigned PUTs with the real AWS SDK v3 against MinIO, including the checksum headers newer SDK versions
       add (flagged in the M02 report).
-- [ ] MinIO service container (`pgsty/minio`, D-027) added to the CI integration job; integration tests for put → head → read → hash →
+- [x] MinIO service container (`pgsty/minio`, D-027) added to the CI integration job; integration tests for put → head → read → hash →
       delete.
 
 Acceptance criteria:
