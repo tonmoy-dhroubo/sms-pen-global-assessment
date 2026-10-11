@@ -211,5 +211,8 @@ delegated the remaining open choices.
   - References are normalised: trimmed, inner spaces collapsed, upper-cased.
   - Removing a fee-schedule instalment that students were already billed for is refused
     (`FEE_INSTALMENT_IN_USE`); its amount and due date can still be edited, because charges keep their own copy.
+- Implementation: migration `20261012120000_fee_audit_columns`. The partial unique index is declared in
+  `schema.prisma` via `@@unique(..., where: raw("voided_at IS NULL"))`, which needs Prisma's **`partialIndexes`
+  preview feature** (enabled in the generator). Revisit when it becomes stable or if a Prisma upgrade drops it.
 - Why: Every financial action needs a who-and-when (DB-005) for the activity timeline, and real bank references
   repeat when a mistaken entry is corrected. Decided by Claude during the overnight review (D-025).
