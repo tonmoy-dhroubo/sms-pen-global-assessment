@@ -289,6 +289,7 @@ export async function buildSeed(ctx: BuildContext): Promise<BuildSummary> {
           amount: fee.amount.toFixed(2),
           dueDate: dateColumn(fee.dueDate),
           createdAt,
+          createdById: staff.kamrul, // billed when the student was enrolled
         });
         if (k === 0 && index === 0 && persona.waiver) {
           chargeRows.push({
@@ -297,6 +298,7 @@ export async function buildSeed(ctx: BuildContext): Promise<BuildSummary> {
             kind: "WAIVER",
             academicYear: label,
             description: `${persona.waiver.description} ${label}`,
+            createdById: staff.fatema, // the Finance Officer grants waivers
             amount: (-persona.waiver.amount).toFixed(2),
             dueDate: dateColumn(fee.dueDate),
             createdAt: new Date(createdAt.getTime() + 3 * HOUR_MS),
@@ -362,6 +364,7 @@ export async function buildSeed(ctx: BuildContext): Promise<BuildSummary> {
           recordedById: staff[recordedBy],
           recordedAt,
           voidedAt: spec.voidReason ? tl.at(daysBetween(tl.today, paidOn), 15, 20) : null,
+          voidedById: spec.voidReason ? staff[recordedBy] : null, // voided by whoever recorded it
           voidReason: spec.voidReason ?? null,
         });
         previous = { instalment, paidOn, voided: Boolean(spec.voidReason) };

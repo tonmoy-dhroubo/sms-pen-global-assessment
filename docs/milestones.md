@@ -20,7 +20,7 @@ waiting on a decision.
 | M07 | Seed data and reset | M06 | Done | m07-seed-data | [#8](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/8) |
 | M08 | App shell and shared UI | M07 | Done | m08-app-shell | [#9](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/9) |
 | M09 | Students: list, create, record, status | M08 | Done | m09-students | [#10](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/10) |
-| M10 | Fees and payments | M09 | Not started | | |
+| M10 | Fees and payments | M09 | In review | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
 | M11 | Staff dashboard | M10 | Not started | | |
 | M12 | Assessments (staff) | M09 | Not started | | |
 | M13 | Submissions (student upload flow) | M12 | Not started | | |
@@ -393,15 +393,15 @@ Verification: tests + manual walkthrough with screenshots.
 edge-cases.md (Fees), DB-002, DB-003, DB-011, DB-018.
 
 Tasks:
-- [ ] Services: fee schedule read/replace (new charges only), `getStudentFees`, `addCharge` (adjustment/waiver),
+- [x] Services: fee schedule read/replace (new charges only), `getStudentFees`, `addCharge` (adjustment/waiver),
       `recordPayment` (future date blocked, duplicate reference conflict, overpayment warning), `voidPayment`,
       `listBalances` (fee state and ageing filters).
-- [ ] Endpoints per api.md.
-- [ ] UI: Fees section on the student record (summary, charges, payments, voided struck through); record payment
+- [x] Endpoints per api.md.
+- [x] UI: Fees section on the student record (summary, charges, payments, voided struck through); record payment
       dialog (method incl. bKash/Nagad, reference, date, amount; warnings shown); add adjustment/waiver dialog; void
       dialog with reason; `/staff/fees` overview with ageing filter; `/staff/programmes` with fee schedules.
-- [ ] Balance updates immediately after any action (no reload needed).
-- [ ] Integration tests for every Fees edge case, including withdrawn students staying on the overdue list and
+- [x] Balance updates immediately after any action (no reload needed).
+- [x] Integration tests for every Fees edge case, including withdrawn students staying on the overdue list and
       "outstanding but not due" vs "overdue".
 
 Acceptance criteria and edge cases: all Fees items in edge-cases.md ticked (debt ageing data ready for M11).

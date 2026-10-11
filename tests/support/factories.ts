@@ -88,6 +88,7 @@ export async function createPayment(input: {
       paidAt: new Date(`${input.paidAt ?? "2026-01-01"}T00:00:00.000Z`),
       reference: `PAY-${next()}`,
       voidedAt: input.voided ? new Date() : null,
+      voidedById: input.voided ? input.staffId : null,
       voidReason: input.voided ? "Entered by mistake" : null,
     },
   });

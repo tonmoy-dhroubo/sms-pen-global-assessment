@@ -287,8 +287,31 @@ export async function selfCheck(input: {
   expectEqual("Nusrat pays via bKash", ["BKASH"], methodsByStudent("Nusrat Jahan"));
   expectEqual("Sumaiya pays via Nagad", ["NAGAD"], methodsByStudent("Sumaiya Haque"));
   expectEqual("Shakil pays by bank transfer", ["BANK_TRANSFER"], methodsByStudent("Shakil Ahmed"));
-  const references = allPayments.map((p) => p.reference);
-  expectEqual("payment references are unique", references.length, new Set(references).size);
+  const references = allPayments.filter((p) => !p.voidedAt).map((p) => p.reference);
+  expectEqual(
+    "payment references are unique among payments that are not voided",
+    references.length,
+    new Set(references).size,
+  );
+  // Audit columns (DB-024): a voided payment has a voider, a payment that is not voided has none, every charge has
+  // the staff member who added it, and waivers are the Finance Officer's.
+  expectEqual(
+    "every voided payment names who voided it, and no other payment does",
+    allPayments.map((p) => p.voidedAt !== null),
+    allPayments.map((p) => p.voidedById !== null),
+  );
+  const allCharges = students.flatMap((s) => s.feeCharges);
+  expectEqual(
+    "every fee charge records who created it",
+    0,
+    allCharges.filter((c) => c.createdById === null).length,
+  );
+  const financeOfficer = staff.find((member) => member.jobTitle === "Finance Officer");
+  expectEqual(
+    "waivers were added by the Finance Officer",
+    true,
+    allCharges.filter((c) => c.kind === "WAIVER").every((c) => c.createdById === financeOfficer?.id),
+  );
   lines.push(
     `payments: ${allPayments.length} (${voided.length} voided); methods in use: ${[...new Set(allPayments.map((p) => p.method))].sort().join(", ")}`,
   );

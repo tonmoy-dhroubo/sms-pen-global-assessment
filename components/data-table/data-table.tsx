@@ -16,7 +16,7 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition, type ReactNode } from "react";
+import { useMemo, useTransition, type ReactNode } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +88,20 @@ export function useListUrlState() {
   return { update, isPending };
 }
 
+/**
+ * TanStack Table only lets a column sort when it reads a value (an accessor). Our columns render custom cells and
+ * the server does the sorting, so a column that opts in with `enableSorting` gets a no-op accessor.
+ */
+function withSortAccessors<TData>(
+  columns: ColumnDef<TData, unknown>[],
+): ColumnDef<TData, unknown>[] {
+  return columns.map((column) =>
+    column.enableSorting && !("accessorFn" in column) && !("accessorKey" in column)
+      ? ({ sortDescFirst: false, ...column, accessorFn: () => null } as ColumnDef<TData, unknown>)
+      : column,
+  );
+}
+
 export function DataTable<TData>({
   columns,
   data,
@@ -116,10 +130,11 @@ export function DataTable<TData>({
   }
 
   // TanStack Table returns functions that React Compiler cannot memoise; this component does not rely on that.
+  const sortableColumns = useMemo(() => withSortAccessors(columns), [columns]);
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
-    columns,
+    columns: sortableColumns,
     getRowId,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,

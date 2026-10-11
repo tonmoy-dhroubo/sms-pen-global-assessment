@@ -415,6 +415,7 @@ export async function createStudent(
             description: tuitionDescription(input.academicYear, fee.instalment, schedule.length),
             amount: fee.amount,
             dueDate: fee.dueDate,
+            createdById: actorId,
           })),
         });
       }
