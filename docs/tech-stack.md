@@ -7,13 +7,13 @@ The agreed stack and how the pieces fit. The reasoning behind each choice is in 
 | Area | Choice | Notes |
 | --- | --- | --- |
 | Language | TypeScript, `strict` mode | |
-| Framework | Next.js latest stable, App Router, React 19 | Brief requires 14+ |
+| Framework | Next.js 16 (App Router), React 19, Tailwind CSS v4 | Brief requires 14+; Cache Components off (D-026) |
 | Database | PostgreSQL | Docker locally, Neon on Vercel |
 | ORM | Prisma latest stable, `pg` driver adapter | `schema.prisma` committed; migrations committed |
 | File storage | S3-compatible, via the AWS S3 SDK | MinIO (Docker) locally, Supabase Storage on Vercel |
 | UI | Tailwind CSS + shadcn/ui | Plus lucide-react, Sonner, Calendar, Charts (Recharts), Sidebar block (D-016) |
 | Theming | next-themes | Light / Dark / System, global toggle in the header (D-017) |
-| Forms | react-hook-form + Zod | |
+| Forms | react-hook-form + Zod, shadcn `field` | shadcn's old `form` component is gone (D-026) |
 | Tables | TanStack Table (shadcn data-table) | Server-side filtering/pagination, state in URL params |
 | Validation | Zod | Shared between forms and API handlers |
 | Dates | date-fns | Stored in UTC, shown in one configured time zone |
