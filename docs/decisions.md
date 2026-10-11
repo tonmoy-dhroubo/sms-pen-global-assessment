@@ -222,3 +222,12 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Date: 2026-10-12
 - Decision: The Must / Should / Could split in [edge-cases.md](edge-cases.md) is accepted as proposed.
 - Why: The user delegated the remaining open choices to Claude's recommendations.
+
+## D-025: Overnight autonomy — Claude reviews and merges milestone PRs
+
+- Date: 2026-10-12
+- Decision: While the user is away (from the night of 2026-10-12), the main Claude session reviews each milestone
+  PR itself and squash-merges it when CI is green and the acceptance criteria and Definition of Done are met, then
+  starts the next milestone. Anything behaviour-affecting that the docs don't cover is parked for the user rather
+  than decided. The user reviews merged PRs and reports in the morning.
+- Why: Chosen by the user before going to sleep, so work continues without blocking on review.
