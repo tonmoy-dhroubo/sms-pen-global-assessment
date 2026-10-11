@@ -14,7 +14,7 @@ waiting on a decision.
 | M01 | Next.js scaffold and tooling | M00 | Done | m01-nextjs-scaffold | [#2](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/2) |
 | M02 | Local infrastructure (Docker, env) | M01 | Done | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
 | M03 | Prisma schema and first migration | M02 | Done | m03-prisma-schema | [#4](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/4) |
-| M04 | Domain rules and unit tests | M03 | In progress | m04-domain-rules | |
+| M04 | Domain rules and unit tests | M03 | In review | m04-domain-rules | [#5](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/5) |
 | M05 | API foundation, roles and test harness | M04 | Not started | | |
 | M06 | Storage layer (S3 / MinIO) | M05 | Not started | | |
 | M07 | Seed data and reset | M06 | Not started | | |
