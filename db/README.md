@@ -9,7 +9,8 @@ Everything about the database lives here.
 | [seed-plan.md](seed-plan.md) | Demo data plan: 30 students, personas, relative dates |
 | `schema.prisma` | Prisma schema — the source of truth |
 | `migrations/` | Prisma migrations, committed. The first one also holds hand-written SQL: extensions, check constraints and the name-search index |
-| `seed/` | Seed and demo-reset scripts (not yet created) |
+| `seed/` | The seed (`npm run db:seed`), the reset (`npm run db:reset`), its self-check and the sample PDF/DOCX fixtures |
+| `tools/` | Database helpers shared by the reset and the test harness (guarded schema drop, `migrate deploy`) |
 
 Prisma's default folder is `prisma/`; `prisma.config.ts` at the repo root points it here instead (DB-008).
 
