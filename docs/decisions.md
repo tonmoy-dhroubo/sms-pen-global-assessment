@@ -373,3 +373,20 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   - Lists show at most 10 items with a `total` and a link to the full view (overdue list: longest overdue first;
     ties by larger amount). `GET /api/dashboard` takes no parameters.
   - Ageing is drawn as a hand-built segmented bar with a text legend (no chart library); Recharts is not used.
+
+## D-035: Assessment details settled in M12
+
+- Date: 2026-10-12
+- Decision (accepted from the M12 report during the overnight review, D-025):
+  - New badge group **Assessment: Open · Past deadline · Closed** ("Past deadline" = deadline passed but not
+    closed, so late uploads are still accepted).
+  - Warnings may carry optional `details`; `LATE_FLAGS_RECALCULATED` has `{changed, submissions}` and is returned
+    on any real deadline change when the assessment has submissions (even if nothing flipped).
+  - A deadline in the past is allowed with a `DEADLINE_IN_PAST` warning (staff may back-enter); deadlines are
+    entered as date + time in Asia/Dhaka and stored in UTC.
+  - Editing a closed assessment is allowed; close/reopen bump `version`; `ALREADY_CLOSED` / `NOT_CLOSED` are 422.
+  - An assessment's module cannot change once it has submissions **or marks** (marks part added in M14).
+  - "Eligible" = Enrolled students whose programme includes the module, plus anyone who already submitted
+    (shown with a "no longer eligible" label). Lateness uses the latest file vs the effective deadline.
+  - File downloads: staff, or the owning student whatever their status; anyone else gets 404.
+  - Duplicate assessment titles within a module are allowed.

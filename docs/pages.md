@@ -26,6 +26,7 @@ covered here is a question for the planner, not a guess. Visual reference: the C
 | Fees | Paid · Outstanding · Overdue · Credit | green · grey · red · blue |
 | Submission | On time · Late (+ how late) · Not submitted · Closed | green · amber · grey · grey |
 | Result | Draft · Published · Withheld | grey · blue · amber |
+| Assessment | Open · Past deadline · Closed | green · amber · grey |
 | Classification | Distinction · Merit · Pass · Fail · NS | text label, neutral |
 
 Badges always carry a text label; colour is never the only signal.
