@@ -12,7 +12,7 @@ waiting on a decision.
 | --- | --- | --- | --- | --- | --- |
 | M00 | Repository foundations | — | Done | m00-repo-foundations | [#1](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/1) |
 | M01 | Next.js scaffold and tooling | M00 | Done | m01-nextjs-scaffold | [#2](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/2) |
-| M02 | Local infrastructure (Docker, env) | M01 | Not started | | |
+| M02 | Local infrastructure (Docker, env) | M01 | In review | m02-local-infrastructure | [#3](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/3) |
 | M03 | Prisma schema and first migration | M02 | Not started | | |
 | M04 | Domain rules and unit tests | M03 | Not started | | |
 | M05 | API foundation, roles and test harness | M04 | Not started | | |
@@ -156,21 +156,21 @@ Verification: `npm ci && npm run lint && npm run typecheck && npm run format:che
 **References:** D-007, D-011, D-012, tech-stack.md (Environments, Local services).
 
 Tasks:
-- [ ] `docker-compose.yml` with pinned image versions:
+- [x] `docker-compose.yml` with pinned image versions:
   - `postgres` (current major, alpine), named volume, healthcheck, port from env.
   - `minio`, named volume, API and console ports, healthcheck.
   - `minio-init` (`minio/mc`): waits for MinIO, creates the private `submissions` bucket, applies the CORS policy
         (allow `PUT`/`GET` from `http://localhost:3000`), exits 0. Safe to re-run.
-- [ ] A second database `sms_test` for integration tests (init script in `docker/postgres/init/`).
-- [ ] `.env.example` documenting every variable with a comment: `DATABASE_URL`, `DIRECT_URL`, `TEST_DATABASE_URL`,
+- [x] A second database `sms_test` for integration tests (init script in `docker/postgres/init/`).
+- [x] `.env.example` documenting every variable with a comment: `DATABASE_URL`, `DIRECT_URL`, `TEST_DATABASE_URL`,
       `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE`,
       `S3_PUBLIC_ENDPOINT` (browser-reachable endpoint for presigned URLs, if different), `APP_TIMEZONE`
       (`Asia/Dhaka`), `SESSION_SECRET`, `MAX_UPLOAD_MB` (default 20), `DEMO_MODE` (`false`). Local defaults work
       as-is after `cp .env.example .env`.
-- [ ] `lib/env.ts`: Zod-validated, typed environment; the app fails fast at startup with a clear message listing
+- [x] `lib/env.ts`: Zod-validated, typed environment; the app fails fast at startup with a clear message listing
       missing or invalid variables. Server-only (never imported by client components).
-- [ ] npm scripts: `services:up`, `services:down`, `services:reset` (removes volumes).
-- [ ] README "Run locally" section (draft): prerequisites (Node LTS, Docker), the 4–5 commands.
+- [x] npm scripts: `services:up`, `services:down`, `services:reset` (removes volumes).
+- [x] README "Run locally" section (draft): prerequisites (Node LTS, Docker), the 4–5 commands.
 
 Acceptance criteria:
 - From a clean clone: `cp .env.example .env && npm run services:up` → both containers healthy, bucket exists and is

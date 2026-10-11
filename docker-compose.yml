@@ -1,0 +1,77 @@
+# Local services for development and for reviewers: Postgres, MinIO (S3-compatible storage)
+# and a one-shot container that creates the private bucket.
+#
+#   npm run services:up      start everything and wait until it is healthy
+#   npm run services:down    stop (data is kept)
+#   npm run services:reset   stop and delete all data (Postgres + MinIO volumes)
+#
+# Values come from `.env` (copy `.env.example`); the defaults below match `.env.example`.
+name: sms
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sms}
+      POSTGRES_DB: ${POSTGRES_DB:-sms}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18+ images keep data in a versioned subdirectory, so mount the parent.
+      - postgres-data:/var/lib/postgresql
+      # Creates the `sms_test` database on first start (see the script).
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # The official minio/minio and minio/mc images are no longer published, so this uses the
+  # community-maintained Silo fork (same S3 API, same `minio`/`mc` commands). See README/docs.
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      # The local MinIO root user doubles as the app's S3 credentials (S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY).
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+      # MinIO has no per-bucket CORS API (PutBucketCors is not implemented), so CORS is a server-wide
+      # setting. Only the app's origin may make browser requests (presigned PUT/GET/HEAD).
+      MINIO_API_CORS_ALLOW_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # Creates the private bucket, then exits 0. Safe to re-run:
+  #   docker compose run --rm minio-init
+  minio-init:
+    image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/sh", "/config/init.sh"]
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-submissions}
+    volumes:
+      - ./docker/minio:/config:ro
+
+volumes:
+  postgres-data:
+  minio-data:
