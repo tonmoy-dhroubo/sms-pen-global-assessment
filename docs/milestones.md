@@ -368,15 +368,15 @@ Verification: manual walkthrough + screenshots (light, dark, mobile) in the PR.
 DB-015, DB-016.
 
 Tasks:
-- [ ] Services: `listStudents` (search across name with unaccent/trigram, partial Student ID, email; filters; fee
+- [x] Services: `listStudents` (search across name with unaccent/trigram, partial Student ID, email; filters; fee
       state; default status filter), `createStudent` (transaction: allocate number, create, initial STATUS_CHANGE,
       fee charges from the programme schedule; email lower-cased; duplicate check unless confirmed),
       `getStudent`, `updateStudent` (version check), `changeStatus` (matrix, reasons, history).
-- [ ] Endpoints per api.md.
-- [ ] UI: list page with search, filters, filter chips, pagination; new student form with duplicate dialog;
+- [x] Endpoints per api.md.
+- [x] UI: list page with search, filters, filter chips, pagination; new student form with duplicate dialog;
       record page header and profile; edit page with version-conflict handling; status change dialog showing only
       allowed transitions.
-- [ ] Integration tests: create (ID format and sequence), email conflict, duplicate warning + confirm, invalid
+- [x] Integration tests: create (ID format and sequence), email conflict, duplicate warning + confirm, invalid
       DOB/age, every allowed and disallowed transition, version conflict, search by partial ID and accent-insensitive
       name, default hiding of withdrawn/completed.
 

@@ -21,7 +21,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm">{children}</dd>
+      <dd className="mt-0.5 text-sm break-words">{children}</dd>
     </div>
   );
 }
