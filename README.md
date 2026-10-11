@@ -98,6 +98,7 @@ Pick a person from the role picker, then look for these. "S" is the current sess
 | `npm run db:deploy`                   | Apply committed migrations (also what CI runs) |
 | `npm run db:seed`                     | Fill an empty database and the bucket with the demo data, then self-check it |
 | `npm run db:reset`                    | Drop the schema, migrate, empty the bucket and seed (local only; `--force` for anything else) |
+| `npm run uploads:cleanup`             | Delete expired, never-confirmed upload URLs and their stray files (local only; `--force` for anything else) |
 | `npm run db:generate` / `db:validate` | Regenerate the Prisma client / validate the schema |
 | `npm run db:drift`                    | Fail if the database differs from `db/schema.prisma` |
 | `npm run db:studio`                   | Prisma Studio, a browser UI for the data   |

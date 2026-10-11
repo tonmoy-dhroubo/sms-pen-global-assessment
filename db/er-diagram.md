@@ -136,6 +136,9 @@ erDiagram
     uuid assessmentId FK
     uuid studentId FK
     string objectKey UK
+    string originalName "as declared when the URL was issued"
+    string mimeType "declared: PDF or DOCX"
+    int sizeBytes "declared; re-checked at confirm"
     timestamptz expiresAt
     timestamptz confirmedAt "null until confirmed"
   }
@@ -209,5 +212,5 @@ erDiagram
 - `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004, DB-015).
 - `MARK` and `SUBMISSION` are not linked directly. Both are keyed on (assessment, student), so a mark can exist
   without a submission (e.g. a non-submission).
-- `PENDING_UPLOAD` backs the three-step upload flow (D-013, DB-017); unconfirmed rows past `expiresAt` are cleaned up.
+- `PENDING_UPLOAD` backs the three-step upload flow (D-013, DB-017); unconfirmed rows past `expiresAt` are cleaned up. It also holds what the student declared when the URL was issued (`originalName`, `mimeType`, `sizeBytes`, added in M13), because confirm only receives the pending id.
 - Values such as balance, overdue, late and classification are calculated, not stored — see [README.md](README.md).

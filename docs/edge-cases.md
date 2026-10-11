@@ -33,20 +33,20 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Submissions
 
-- [ ] **M** — Upload started before the deadline but finished after it: submission time is when the file arrives
+- [x] **M** — Upload started before the deadline but finished after it: submission time is when the file arrives
   (D-023), and students are told this next to the upload button.
-- [ ] **M** — Only server time counts; deadlines show their time zone and a countdown.
+- [x] **M** — Only server time counts; deadlines show their time zone and a countdown.
 - [x] **M** — Deadline changed after submissions: late flags recalculate automatically (derived, not stored).
-- [ ] **M** — File checks: PDF/DOCX verified by content, not just extension; empty files rejected; macro-enabled
+- [x] **M** — File checks: PDF/DOCX verified by content, not just extension; empty files rejected; macro-enabled
   `.docm` rejected; size limit enforced.
-- [ ] **M** — Double-click submit: unique constraint plus an idempotent confirm step.
-- [ ] **M** — On-time submission cannot be replaced after the deadline; a first submission after the deadline is
+- [x] **M** — Double-click submit: unique constraint plus an idempotent confirm step.
+- [x] **M** — On-time submission cannot be replaced after the deadline; a first submission after the deadline is
   accepted and flagged late.
-- [ ] **M** — Closed assessment (`closedAt` set): no uploads at all.
-- [ ] **M** — Withdrawn or deferred students, and students whose programme does not include the module, cannot
+- [x] **M** — Closed assessment (`closedAt` set): no uploads at all.
+- [x] **M** — Withdrawn or deferred students, and students whose programme does not include the module, cannot
   submit; the UI explains why.
-- [ ] **M** — Abandoned uploads (upload URL issued, never confirmed): cleanup script deletes stray objects.
-- [ ] **S** — Submission receipt: time, file name, size and SHA-256 fingerprint, to settle "I submitted on time" disputes.
+- [x] **M** — Abandoned uploads (upload URL issued, never confirmed): cleanup script deletes stray objects.
+- [x] **S** — Submission receipt: time, file name, size and SHA-256 fingerprint, to settle "I submitted on time" disputes.
 
 ## Marks and results
 
