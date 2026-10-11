@@ -280,3 +280,23 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Why: Oldest-first is how student accounts are normally settled and needs no payment-to-charge links. Recorded
   from the M04 report during the overnight review (D-025). The seed plan was adjusted (personas 4 and 29) so the
   60+ ageing examples hold under this rule.
+
+## D-029: Session and API details settled in M05
+
+- Date: 2026-10-12
+- Decision (accepted from the M05 report during the overnight review, D-025):
+  - Next.js 16 uses `proxy.ts` (formerly middleware). It only checks the cookie's signature, age and role and
+    redirects; route handlers and server code re-verify and confirm the record still exists.
+  - Role cookie lifetime 7 days with 60 s clock-skew tolerance; `Secure` in production. If `SESSION_SECRET` is
+    missing, the proxy refuses everyone rather than failing open.
+  - `GET /api/session` always returns 200 (`{role:null}` when there is no valid session); `PUT` returns the
+    identity; `DELETE` returns 200 `{role:null}`.
+  - `/api/session/options` returns `{staff, students:{items,total}}` (limit 20, max 50), matching name or Student
+    ID only and exposing no emails or dates of birth, because the role picker is public.
+  - `/api/me` reports `canSubmit` as `{allowed, reason, message}` based on status; per-assessment reasons live on
+    `/api/me/assessments`.
+  - 500 responses carry `details.requestId`; every response has `x-request-id` and `Cache-Control: no-store`.
+  - One integration harness (`npm run test:integration`) replaces `test:db`; it only ever touches databases whose
+    name ends in `_test`.
+- Note for the README (M18): with `npm start` (production mode) over plain HTTP, the Secure cookie works on
+  localhost in Chrome, Firefox and Edge; reviewers should use `npm run dev` or one of those browsers.
