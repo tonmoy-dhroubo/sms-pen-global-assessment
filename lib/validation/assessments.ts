@@ -40,10 +40,7 @@ export const deadlineSchema = z
   .string({ required_error: "Enter a deadline." })
   .datetime({ offset: true, message: "Enter the deadline as an ISO 8601 timestamp." })
   .transform((value) => new Date(value))
-  .refine(
-    (date) => date >= EARLIEST_DEADLINE && date < LATEST_DEADLINE,
-    DEADLINE_RANGE_MESSAGE,
-  );
+  .refine((date) => date >= EARLIEST_DEADLINE && date < LATEST_DEADLINE, DEADLINE_RANGE_MESSAGE);
 
 // --- The form (Dhaka date and time) -------------------------------------------------------------------------------
 
