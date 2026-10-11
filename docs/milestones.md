@@ -430,13 +430,13 @@ Acceptance criteria: after `npm run db:reset`, every figure matches the "expecte
 (Submissions), D-013.
 
 Tasks:
-- [ ] Services and endpoints: list (with counts), create, get, update (version; deadline-change warning with count
+- [x] Services and endpoints: list (with counts), create, get, update (version; deadline-change warning with count
       of changed late flags), close, reopen, list submissions for eligible students (programme includes module,
       status Enrolled — plus any student who already submitted).
-- [ ] File download endpoint with permission check and presigned GET (original file name).
-- [ ] UI: list page, new form (date + time in Asia/Dhaka), detail page with Submissions tab (status badges,
+- [x] File download endpoint with permission check and presigned GET (original file name).
+- [x] UI: list page, new form (date + time in Asia/Dhaka), detail page with Submissions tab (status badges,
       lateness, versions, download).
-- [ ] Integration tests: eligibility, close/reopen, deadline change flips late flags, download permissions.
+- [x] Integration tests: eligibility, close/reopen, deadline change flips late flags, download permissions.
 
 ---
 

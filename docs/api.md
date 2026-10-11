@@ -62,7 +62,8 @@ Every response carries an `x-request-id` header (an incoming one is reused when 
 ### Warnings
 
 Some actions succeed but deserve attention (payment larger than balance, publishing for a student with overdue
-fees). Successful responses may include `"warnings": [{ "code": "...", "message": "..." }]`.
+fees). Successful responses may include `"warnings": [{ "code": "...", "message": "..." }]`; a warning may also carry
+`"details"` with the numbers behind it (for example `{ "changed": 2 }`).
 
 ### Lists
 
@@ -238,6 +239,16 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 | POST | `/api/assessments/{id}/reopen` | Staff | Clear `closedAt` |
 | GET | `/api/assessments/{id}/submissions` | Staff | Every eligible student with submission status, lateness and file versions |
 
+**Shapes** (settled in M12; timestamps ISO 8601 UTC):
+
+- **Assessment** (list item, detail and every write's body): `{ id, title, module: { id, code, title }, deadline, closedAt, state, version, counts }`, plus `createdBy: { id, fullName }` on the detail and on writes. `deadline` is the assessment's deadline (students with an extension have their own); `closedAt` is `null` while it accepts uploads. `state` is `open` (not closed, deadline not yet passed; arriving exactly at the deadline is still on time), `past-deadline` (not closed, deadline gone by: uploads are still accepted and marked late) or `closed` (no uploads at all, whatever the deadline). `counts` is `{ eligible, submitted, late, marked, published }`: `eligible` is the number of rows the submissions list has (Enrolled students whose programme includes the module, plus anyone who submitted regardless of status), `submitted` how many students have a submission, `late` how many of those have a latest file after their effective deadline (derived, never stored), `marked` the marks entered (a non-submission counts, any release status), `published` the marks published.
+- **List** (`GET /api/assessments`): the standard `{ items, page, pageSize, total }`. Query: `moduleId`, `state` (`open`, `past-deadline`, `closed`), `page`, `pageSize`, `sort` (`deadline` (default `-deadline`: newest first), `title`, `module` (by code); ties break on deadline then id). A fixed number of queries however many assessments or students there are (tested).
+- **Create** (`POST`, 201): `moduleId` must be an existing module (400 on `moduleId` otherwise), `title` 1-200 characters (spaces collapsed), `deadline` an ISO 8601 timestamp with `Z` or an offset (`2026-10-11T23:59:00+06:00` and `2026-10-11T17:59:00Z` are the same instant); years outside 2000-2099 are a 400. A deadline that is already in the past is accepted (staff may back-enter an assessment) and answers with the warning `DEADLINE_IN_PAST`. The UI collects a date and a time in Asia/Dhaka and converts them to this instant.
+- **Update** (`PATCH`): any of `title`, `deadline`, `moduleId`, plus the `version` that was read (at least one field is required). Stale version: 409 `VERSION_CONFLICT` with `details.currentVersion`. Changing `moduleId` is only allowed while no student has submitted, otherwise 422 `BUSINESS_RULE`, `details: { rule: "ASSESSMENT_HAS_SUBMISSIONS", submissions }`; an unknown module is a 400 on `moduleId`. A closed assessment can still be edited. When a deadline change is real and the assessment has submissions, the response carries the warning `LATE_FLAGS_RECALCULATED` with `details: { changed, submissions }`: `changed` is how many submissions flipped between on time and late (a student with an extension never flips, as their own deadline does not move) and `submissions` how many exist (`changed` can be 0). When nothing actually changes the assessment is returned as it is and the version does not move.
+- **Close** (`POST .../close`): 200 with the assessment, `closedAt` = now. Closing a closed assessment: 422 `BUSINESS_RULE`, `details.rule: "ALREADY_CLOSED"` (the first closing time is kept; of two simultaneous closes exactly one succeeds). **Reopen:** 200, `closedAt` = `null`; reopening one that is not closed: 422, `details.rule: "NOT_CLOSED"`. Both move `version`, so an edit form opened before the change gets `VERSION_CONFLICT` on save. Neither takes a body.
+- **Submissions** (`GET .../submissions`): `{ assessmentId, total, summary: { onTime, late, notSubmitted }, items }`, not paged, by name (case and accents ignored), then Student ID. Eligible = Enrolled in a programme that includes the module; anyone who has submitted is listed whatever their status now. Item: `{ student: { id, studentNumber, fullName, status, programme: { id, code, name } }, eligible, status, lateBy, deadline, extension, submission, currentFile, versions }`. `eligible` is `false` for a student who submitted but is no longer Enrolled in such a programme. `status` is `ON_TIME`, `LATE` or `NOT_SUBMITTED`; `lateBy` ("2 days", "5 hours") is set only when late and measures the latest file against `deadline`, the student's effective deadline (their extension's `newDeadline` if they have one, else the assessment's). `extension` is `{ newDeadline, reason }` or `null`; `submission` is `{ id, firstSubmittedAt, lastSubmittedAt }` or `null`. A file is `{ id, version, fileName, mimeType, sizeBytes, sha256, uploadedAt }` (`version` counts from 1 for the first upload; `uploadedAt` is when it arrived, the submission time of D-023). `currentFile` is the latest file (or `null`), `versions` every file newest first.
+- An id that is not a UUID is a 404, like an unknown one.
+
 ## Submissions and files
 
 Upload flow (D-013, DB-017). All three steps re-check the rules on the server.
@@ -250,6 +261,8 @@ Upload flow (D-013, DB-017). All three steps re-check the rules on the server.
 | GET | `/api/files/{fileId}/download` | Any | Staff, or the owning student → `{ "url", "expiresAt" }` (presigned GET, 5 minutes, original file name). Others → 404 |
 
 **Receipt:** `{ "submissionId", "fileName", "sizeBytes", "sha256", "uploadedAt", "late": false, "lateBy": null }`.
+
+**Download** (`GET /api/files/{fileId}/download`, settled in M12): any signed-in role; the role is checked first (no session is 401). Staff may open any file; a student only a file of their own submission, and another student's file is a 404 identical to an unknown one (also for an id that is not a UUID), so it never confirms the file exists. A student keeps access to their own files whatever their enrolment status. Answers `{ "url", "expiresAt" }`: a presigned GET that lives 300 seconds and saves the file under its original name (`Content-Disposition: attachment` with an RFC 5987 `filename*`, so Bengali names survive).
 
 ## Marks and results
 
