@@ -3,6 +3,7 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach } from "vitest";
 import { TEST_SESSION_SECRET } from "./constants";
 import { testDatabaseUrl, truncateAll } from "./test-db";
+import { applyStorageTestEnv } from "./test-storage";
 
 // Runs in every integration test file before the file's own code.
 //
@@ -16,16 +17,9 @@ process.env.DIRECT_URL = url;
 
 process.env.SESSION_SECRET = TEST_SESSION_SECRET;
 
-// 3. Storage settings are validated by `lib/env` but unused until M06; fill in placeholders when .env is absent
-//    (as in CI) so the app code can be imported.
-const defaults: Record<string, string> = {
-  S3_ENDPOINT: "http://localhost:9000",
-  S3_REGION: "us-east-1",
-  S3_BUCKET: "submissions",
-  S3_ACCESS_KEY_ID: "minioadmin",
-  S3_SECRET_ACCESS_KEY: "minioadmin",
-};
-for (const [key, value] of Object.entries(defaults)) process.env[key] ||= value;
+// 3. Point the app at the test bucket (never the dev one) and fill in local-MinIO defaults when .env is absent (as in
+//    CI). The bucket itself is created and emptied once per run by global-setup.ts.
+applyStorageTestEnv();
 
 // 4. Empty every table before each test.
 let client: Client;

@@ -95,7 +95,7 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/health` | Anyone | `{ "db": "ok", "storage": "ok" }`; 503 if either is down (`"down"` for the failing one). Until M06 only `db` is reported |
+| GET | `/api/health` | Anyone | `{ "db": "ok", "storage": "ok" }`; 503 if either is down (`"down"` for the failing one). Storage is checked with a `HeadBucket` call on the configured bucket; each check times out after 3 s |
 
 ## Programmes and modules
 

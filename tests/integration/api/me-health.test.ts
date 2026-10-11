@@ -1,3 +1,4 @@
+import { S3Client } from "@aws-sdk/client-s3";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET as getHealth } from "@/app/api/health/route";
 import { GET as getMe } from "@/app/api/me/route";
@@ -10,10 +11,10 @@ type ErrorBody = { error: { code: string; message: string } };
 describe("GET /api/health", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("reports the database as ok without any session", async () => {
+  it("reports the database and storage as ok without any session", async () => {
     const { status, body } = await call(getHealth, { path: "/api/health" });
     expect(status).toBe(200);
-    expect(body).toEqual({ db: "ok" });
+    expect(body).toEqual({ db: "ok", storage: "ok" });
   });
 
   it("answers 503 when the database check fails", async () => {
@@ -21,7 +22,16 @@ describe("GET /api/health", () => {
     vi.spyOn(db, "$queryRaw").mockRejectedValueOnce(new Error("connection refused"));
     const { status, body } = await call(getHealth, { path: "/api/health" });
     expect(status).toBe(503);
-    expect(body).toEqual({ db: "down" });
+    expect(body).toEqual({ db: "down", storage: "ok" });
+    expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers 503 when the storage check fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(S3Client.prototype, "send").mockRejectedValueOnce(new Error("connection refused"));
+    const { status, body } = await call(getHealth, { path: "/api/health" });
+    expect(status).toBe(503);
+    expect(body).toEqual({ db: "ok", storage: "down" });
     expect(console.error).toHaveBeenCalledTimes(1);
   });
 });
