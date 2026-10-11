@@ -12,3 +12,4 @@ db/
 .claude/
 .github/pull_request_template.md
 *.md
+lib/generated/
