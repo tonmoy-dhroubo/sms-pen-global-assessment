@@ -534,7 +534,7 @@ Tasks:
       ai-usage.md (tools, how the work was split between planner and coder agents, what was reviewed or rejected);
       known limitations.
 - [ ] Fresh-clone rehearsal: follow the README exactly on a clean checkout; fix anything that doesn't work.
-- [ ] Ask the user to re-export `db/er-diagram.png` from the final Mermaid diagram.
+- [ ] Ask the user whether to add a rendered PNG export of the final ER diagram (`db/er-diagram.png`).
 - [ ] Final check that no secrets or the brief PDF are in the repo history.
 
 ---

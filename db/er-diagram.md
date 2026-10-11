@@ -3,9 +3,6 @@
 > **Status: agreed design, not yet implemented.** Reflects DB-001 to DB-020 in [decisions.md](decisions.md).
 > Once `schema.prisma` exists it becomes the source of truth; keep this diagram in sync with it.
 
-A rendered export is in [er-diagram.png](er-diagram.png). **It is out of date** (it predates DB-015 to DB-020);
-re-export it from the Mermaid source below.
-
 Notation: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more.
 `PK` primary key, `FK` foreign key, `UK` unique.
 
