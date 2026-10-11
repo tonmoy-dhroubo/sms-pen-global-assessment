@@ -8,17 +8,17 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Enrolment
 
-- [ ] **M** — Probable duplicate student (same name + date of birth, different email): warn before creating; allow override.
-- [ ] **M** — Date of birth in the future or an implausible age: validation error (age 16–100).
-- [ ] **M** — Status transitions follow an allowed matrix:
+- [x] **M** — Probable duplicate student (same name + date of birth, different email): warn before creating; allow override.
+- [x] **M** — Date of birth in the future or an implausible age: validation error (age 16–100).
+- [x] **M** — Status transitions follow an allowed matrix:
   - Completed is final.
   - Withdrawn → Enrolled only as a re-admission, with a reason.
   - Deferred and Withdrawn always require a reason.
   - Every change is written to `STATUS_CHANGE`.
-- [ ] **M** — Programme change mid-year: existing fee charges are untouched; staff add an adjustment charge. No silent
+- [x] **M** — Programme change mid-year: existing fee charges are untouched; staff add an adjustment charge. No silent
   recalculation.
-- [ ] **M** — Search matches partial IDs (`0007`), names regardless of case or accents, and email.
-- [ ] **M** — Withdrawn and Completed students are hidden from lists by default, behind a filter chip.
+- [x] **M** — Search matches partial IDs (`0007`), names regardless of case or accents, and email.
+- [x] **M** — Withdrawn and Completed students are hidden from lists by default, behind a filter chip.
 
 ## Fees and payments
 

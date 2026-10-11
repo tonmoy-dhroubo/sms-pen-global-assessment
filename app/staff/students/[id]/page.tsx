@@ -1,15 +1,204 @@
+import { ArrowLeftIcon, ConstructionIcon, PencilIcon } from "lucide-react";
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
+import { DateTime } from "@/components/format/date-time";
+import { Money } from "@/components/format/money";
+import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { FeeStatus } from "@/components/students/fee-status";
+import { StatusChangeDialog } from "@/components/students/status-change-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NotFoundError } from "@/lib/api/errors";
+import { requireStaffPage } from "@/lib/page-guards";
+import { getStudent } from "@/lib/services/students";
 
 export const metadata: Metadata = { title: "Student record" };
 
-// Placeholder until M09 (docs/milestones.md); the page's contents are specified in docs/pages.md.
-export default function StudentrecordPage() {
+function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <PlaceholderPage
-      title="Student record"
-      description="Profile, fees, submissions, results and the activity timeline."
-      milestone="M09"
-    />
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-sm break-words">{children}</dd>
+    </div>
+  );
+}
+
+function Figure({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-lg font-semibold">{children}</dd>
+    </div>
+  );
+}
+
+/** A section whose content arrives in a later milestone (docs/milestones.md). */
+function ComingSoon({
+  title,
+  description,
+  milestone,
+}: {
+  title: string;
+  description: string;
+  milestone: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <ConstructionIcon className="size-4" aria-hidden="true" />
+          Coming in {milestone}.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// The student record (pages.md `/staff/students/[id]`): the header with the profile and the status and fee badges, the
+// edit and status actions, and the sections that later milestones fill in.
+export default async function StudentRecordPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireStaffPage();
+  const { id } = await params;
+
+  const student = await getStudent(id).catch((error: unknown) => {
+    if (error instanceof NotFoundError) notFound();
+    throw error;
+  });
+  const fees = student.feeSummary;
+  const inCredit = fees.feeState === "credit";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Button asChild variant="ghost" size="sm" className="-ml-2.5">
+          <Link href="/staff/students">
+            <ArrowLeftIcon data-icon="inline-start" aria-hidden="true" />
+            Students
+          </Link>
+        </Button>
+      </div>
+
+      <PageHeader
+        title={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {student.fullName}
+            <StatusBadge group="enrolment" value={student.status} />
+          </span>
+        }
+        description={<span className="font-mono">{student.studentNumber}</span>}
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/staff/students/${student.id}/edit`}>
+                <PencilIcon data-icon="inline-start" aria-hidden="true" />
+                Edit details
+              </Link>
+            </Button>
+            <StatusChangeDialog
+              studentId={student.id}
+              studentName={student.fullName}
+              status={student.status}
+              version={student.version}
+            />
+          </>
+        }
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Detail label="Student ID">
+              <span className="font-mono">{student.studentNumber}</span>
+            </Detail>
+            <Detail label="Status">
+              <StatusBadge group="enrolment" value={student.status} />
+            </Detail>
+            <Detail label="Fees">
+              <FeeStatus summary={fees} />
+            </Detail>
+            <Detail label="Programme">{student.programme.name}</Detail>
+            <Detail label="Session">{student.academicYear}</Detail>
+            <Detail label="Year of study">Year {student.yearOfStudy}</Detail>
+            <Detail label="Email">
+              <a href={`mailto:${student.email}`} className="underline-offset-4 hover:underline">
+                {student.email}
+              </a>
+            </Detail>
+            <Detail label="Date of birth">
+              <DateTime value={student.dateOfBirth} />
+            </Detail>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fees</CardTitle>
+          <CardDescription>
+            Charges, payments and recording a payment arrive in M10. The summary below is calculated
+            from the student&apos;s charges and payments.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-5">
+            <Figure label="Charged">
+              <Money value={fees.charged} />
+            </Figure>
+            <Figure label="Waived">
+              <Money value={fees.waived} />
+            </Figure>
+            <Figure label="Paid">
+              <Money value={fees.paid} />
+            </Figure>
+            <Figure label={inCredit ? "Credit" : "Balance"}>
+              <Money value={inCredit ? fees.credit : fees.balance} />
+            </Figure>
+            <Figure label="Overdue">
+              {fees.feeState === "overdue" ? (
+                <>
+                  <Money value={fees.overdueAmount} />
+                  {fees.oldestOverdueDays !== null ? (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {fees.oldestOverdueDays} {fees.oldestOverdueDays === 1 ? "day" : "days"}{" "}
+                      overdue
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-muted-foreground">None</span>
+              )}
+            </Figure>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ComingSoon
+          title="Submissions"
+          description="Each assessment's deadline, status, file versions and receipt."
+          milestone="M13"
+        />
+        <ComingSoon
+          title="Results"
+          description="Grades, classification, release status and history."
+          milestone="M14"
+        />
+      </div>
+      <ComingSoon
+        title="Activity timeline"
+        description="Status changes, payments, voids, mark changes and releases."
+        milestone="M16"
+      />
+    </div>
   );
 }

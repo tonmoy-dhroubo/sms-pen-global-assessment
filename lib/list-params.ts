@@ -57,11 +57,12 @@ export function parseListParams(input: SearchParamsInput): ListParams {
   };
 }
 
-export type ParamUpdates = Record<string, string | number | null | undefined>;
+export type ParamUpdates = Record<string, string | number | readonly string[] | null | undefined>;
 
 /**
  * A copy of `current` with `updates` applied: `null`, `undefined` and empty strings remove a key. Defaults are
- * dropped so URLs stay short (`page=1` and the default page size are never written).
+ * dropped so URLs stay short (`page=1` and the default page size are never written). An array writes the key once
+ * per value (`status=A&status=B`) and an empty array removes it.
  */
 export function withParams(
   current: URLSearchParams | string,
@@ -69,6 +70,11 @@ export function withParams(
 ): URLSearchParams {
   const next = new URLSearchParams(typeof current === "string" ? current : current.toString());
   for (const [key, value] of Object.entries(updates)) {
+    if (Array.isArray(value)) {
+      next.delete(key);
+      for (const item of value as readonly string[]) if (item !== "") next.append(key, item);
+      continue;
+    }
     const text = value === null || value === undefined ? "" : String(value);
     const isDefault =
       (key === "page" && text === "1") ||
