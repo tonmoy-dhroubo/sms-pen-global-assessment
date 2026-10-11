@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ChargesTable } from "@/components/fees/charges-table";
 import { ChargeDialog } from "@/components/fees/charge-dialog";
 import { FeeSummaryStrip } from "@/components/fees/fee-summary-strip";
 import { PaymentsTable } from "@/components/fees/payments-table";
@@ -11,7 +12,7 @@ import { VoidPaymentButton } from "@/components/fees/void-payment-button";
 import { FeeScheduleDialog } from "@/components/programmes/fee-schedule-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { FeeSummaryDto } from "@/lib/services/fee-summary";
-import type { PaymentDto } from "@/lib/services/fees";
+import type { ChargeDto, PaymentDto } from "@/lib/services/fees";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }));
@@ -124,6 +125,7 @@ describe("PaymentsTable", () => {
     recordedBy: { id: "s1", fullName: "Kamrul Hasan" },
     recordedAt: "2026-10-01T09:00:00.000Z",
     voidedAt: null,
+    voidedBy: null,
     voidReason: null,
   };
 
@@ -138,6 +140,7 @@ describe("PaymentsTable", () => {
               id: "p2",
               reference: "NG-2",
               voidedAt: "2026-10-02T09:00:00.000Z",
+              voidedBy: { id: "s2", fullName: "Fatema Begum" },
               voidReason: "Entered twice",
             },
           ]}
@@ -166,9 +169,10 @@ describe("PaymentsTable", () => {
         .some((c) => c.className.includes("line-through")),
     ).toBe(false);
 
-    const badge = within(rows[1]!).getByLabelText("Voided. Reason: Entered twice");
+    const badge = within(rows[1]!).getByLabelText("Voided by Fatema Begum. Reason: Entered twice");
     badge.focus();
     expect((await screen.findAllByText("Entered twice")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Voided by Fatema Begum")).length).toBeGreaterThan(0);
   });
 
   it("shows an empty state with guidance", () => {
@@ -226,7 +230,7 @@ describe("ChargeDialog", () => {
   it("requires a type, description and amount", async () => {
     const user = userEvent.setup();
     mockFetch();
-    render(<ChargeDialog studentId={STUDENT_ID} studentName="Tanvir Hasan" />);
+    render(<ChargeDialog studentId={STUDENT_ID} studentName="Tanvir Hasan" balance="1000.00" />);
     const dialog = await open(user);
     await user.click(within(dialog).getByRole("button", { name: /^Add/ }));
     expect(await within(dialog).findByText("Choose adjustment or waiver.")).toBeTruthy();
@@ -240,7 +244,7 @@ describe("ChargeDialog", () => {
     mockFetch(
       jsonResponse({ charge: { amount: "-20000.00" }, summary: { balance: "240000.00" } }, 201),
     );
-    render(<ChargeDialog studentId={STUDENT_ID} studentName="Tanvir Hasan" />);
+    render(<ChargeDialog studentId={STUDENT_ID} studentName="Tanvir Hasan" balance="260000.00" />);
     const dialog = await open(user);
     await user.click(within(dialog).getByRole("radio", { name: /Waiver/ }));
     await user.type(within(dialog).getByLabelText("Description"), "Merit scholarship");
@@ -255,6 +259,92 @@ describe("ChargeDialog", () => {
       amount: "20000.00",
     });
     expect(vi.mocked(toast.success).mock.calls[0]![0]).toBe("Waiver of ৳20,000.00 added.");
+  });
+});
+
+describe("ChargeDialog waiver warning", () => {
+  async function openWaiver(balance: string) {
+    const user = userEvent.setup();
+    render(<ChargeDialog studentId={STUDENT_ID} studentName="Tanvir Hasan" balance={balance} />);
+    await user.click(screen.getByRole("button", { name: "Add adjustment or waiver" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add adjustment or waiver" });
+    await user.click(within(dialog).getByRole("radio", { name: /Waiver/ }));
+    return { user, dialog };
+  }
+
+  it("warns inline when a waiver is more than the balance, and not otherwise", async () => {
+    const { user, dialog } = await openWaiver("10000.00");
+    const amount = within(dialog).getByLabelText("Amount (BDT)");
+    await user.type(amount, "10000");
+    expect(within(dialog).queryByRole("status")).toBeNull();
+    await user.type(amount, "1");
+    expect((await within(dialog).findByRole("status")).textContent).toContain(
+      "more than the balance of ৳10,000.00",
+    );
+  });
+
+  it("says the student owes nothing when there is no balance, and never warns for an adjustment", async () => {
+    const { user, dialog } = await openWaiver("0.00");
+    await user.type(within(dialog).getByLabelText("Amount (BDT)"), "500");
+    expect((await within(dialog).findByRole("status")).textContent).toContain("owes nothing");
+    await user.click(within(dialog).getByRole("radio", { name: /Adjustment/ }));
+    await waitFor(() => expect(within(dialog).queryByRole("status")).toBeNull());
+  });
+
+  it("toasts the server's WAIVER_EXCEEDS_BALANCE warning after saving", async () => {
+    const { user, dialog } = await openWaiver("100.00");
+    mockFetch(
+      jsonResponse(
+        {
+          charge: { amount: "-500.00" },
+          summary: { balance: "-400.00" },
+          warnings: [{ code: "WAIVER_EXCEEDS_BALANCE", message: "More than the balance." }],
+        },
+        201,
+      ),
+    );
+    await user.type(within(dialog).getByLabelText("Description"), "Scholarship");
+    await user.type(within(dialog).getByLabelText("Amount (BDT)"), "500");
+    await user.click(within(dialog).getByRole("button", { name: "Add waiver" }));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(vi.mocked(toast.warning).mock.calls[0]![0]).toBe("More than the balance.");
+  });
+});
+
+describe("ChargesTable", () => {
+  const charge = (overrides: Partial<ChargeDto>): ChargeDto => ({
+    id: "c1",
+    kind: "PROGRAMME_FEE",
+    academicYear: "2026-27",
+    description: "Tuition 2026-27",
+    amount: "160000.00",
+    dueDate: "2026-09-02",
+    createdAt: "2026-08-01T00:00:00.000Z",
+    createdBy: { id: "s1", fullName: "Kamrul Hasan" },
+    ...overrides,
+  });
+
+  it("shows who added an adjustment or waiver, but not on the automatic programme fee", () => {
+    render(
+      <ChargesTable
+        charges={[
+          charge({}),
+          charge({
+            id: "c2",
+            kind: "WAIVER",
+            description: "Merit scholarship",
+            amount: "-20000.00",
+            createdBy: { id: "s2", fullName: "Fatema Begum" },
+          }),
+          charge({ id: "c3", kind: "ADJUSTMENT", description: "Old", createdBy: null }),
+        ]}
+      />,
+    );
+    expect(screen.getAllByText(/^Added by /).map((e) => e.textContent)).toEqual([
+      "Added by Fatema Begum",
+    ]);
+    expect(screen.getByText("Waiver")).toBeTruthy();
+    expect(screen.getByText("-৳20,000.00")).toBeTruthy();
   });
 });
 

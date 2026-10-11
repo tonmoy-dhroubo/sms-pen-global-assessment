@@ -77,7 +77,11 @@ export function PaymentsTable({ payments }: { payments: PaymentDto[] }) {
                 </TableCell>
                 <TableCell>
                   {voided ? (
-                    <VoidedBadge voidedAt={payment.voidedAt!} reason={payment.voidReason} />
+                    <VoidedBadge
+                      voidedAt={payment.voidedAt!}
+                      voidedBy={payment.voidedBy}
+                      reason={payment.voidReason}
+                    />
                   ) : (
                     <span className="text-sm text-muted-foreground">Recorded</span>
                   )}

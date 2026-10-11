@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { Notice } from "@/components/shared/notice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { handleApiError } from "@/lib/client/api-errors";
 import { addChargeRequest } from "@/lib/client/fees";
-import { formatBdt } from "@/lib/services/rules/money";
+import { Decimal, formatBdt, parseMoneyInput } from "@/lib/services/rules/money";
 import { todayIn } from "@/lib/services/rules/time";
 import {
   CHARGE_KINDS,
@@ -59,9 +60,11 @@ const KIND_COPY: Record<ChargeKindValue, { label: string; hint: string }> = {
 export interface ChargeDialogProps {
   studentId: string;
   studentName: string;
+  /** The student's balance from the fee summary (API money string; negative when in credit). */
+  balance: string;
 }
 
-export function ChargeDialog({ studentId, studentName }: ChargeDialogProps) {
+export function ChargeDialog({ studentId, studentName, balance }: ChargeDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -71,6 +74,11 @@ export function ChargeDialog({ studentId, studentName }: ChargeDialogProps) {
   });
   const { errors, isSubmitting } = form.formState;
   const kind = useWatch({ control: form.control, name: "kind" });
+  const amount = useWatch({ control: form.control, name: "amount" });
+  const typed = parseMoneyInput(amount ?? "");
+  const owed = new Decimal(balance);
+  const waiverTooBig =
+    kind === "WAIVER" && typed.ok && typed.value.greaterThan(0) && typed.value.greaterThan(owed);
 
   function changeOpen(next: boolean) {
     if (isSubmitting) return;
@@ -82,11 +90,15 @@ export function ChargeDialog({ studentId, studentName }: ChargeDialogProps) {
 
   const submit = form.handleSubmit(async (values) => {
     try {
-      const { charge, summary } = await addChargeRequest(studentId, values);
+      const result = await addChargeRequest(studentId, values);
+      const { charge, summary } = result;
       toast.success(
         `${KIND_COPY[values.kind].label} of ${formatBdt(charge.amount.replace("-", ""))} added.`,
         { description: `${studentName}'s balance is now ${formatBdt(summary.balance)}.` },
       );
+      for (const warning of result.warnings ?? []) {
+        toast.warning(warning.message, { duration: 12_000 });
+      }
       setOpen(false);
       router.refresh();
     } catch (error) {
@@ -226,6 +238,24 @@ export function ChargeDialog({ studentId, studentName }: ChargeDialogProps) {
                 )}
               />
             </div>
+
+            {waiverTooBig ? (
+              <Notice>
+                <p>
+                  {owed.greaterThan(0) ? (
+                    <>
+                      This waiver is more than the balance of {formatBdt(owed)}. You can still save
+                      it; the difference will show as credit.
+                    </>
+                  ) : (
+                    <>
+                      {studentName} owes nothing at the moment. You can still save this waiver; it
+                      will show as credit.
+                    </>
+                  )}
+                </p>
+              </Notice>
+            ) : null}
           </FieldGroup>
 
           <DialogFooter>

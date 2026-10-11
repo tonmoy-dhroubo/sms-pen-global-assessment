@@ -37,7 +37,11 @@ export function StudentFeesCard({ studentId, studentName, fees }: StudentFeesCar
               studentName={studentName}
               balance={fees.summary.balance}
             />
-            <ChargeDialog studentId={studentId} studentName={studentName} />
+            <ChargeDialog
+              studentId={studentId}
+              studentName={studentName}
+              balance={fees.summary.balance}
+            />
           </div>
 
           <div className="space-y-2">

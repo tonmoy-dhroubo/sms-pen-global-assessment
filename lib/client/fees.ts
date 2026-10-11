@@ -23,7 +23,7 @@ export function recordPaymentRequest(
 export function addChargeRequest(
   studentId: string,
   body: CreateChargeInput,
-): Promise<ChargeResult> {
+): Promise<Warned<ChargeResult>> {
   return apiRequest(`/api/students/${studentId}/charges`, { method: "POST", body });
 }
 
@@ -38,7 +38,6 @@ export interface ExistingPayment {
   student: { id: string; studentNumber: string; fullName: string };
   amount: string;
   paidAt: string;
-  voided: boolean;
 }
 
 export function existingPaymentFrom(

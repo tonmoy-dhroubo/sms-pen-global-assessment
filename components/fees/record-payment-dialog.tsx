@@ -94,6 +94,8 @@ export function RecordPaymentDialog({
   });
   const { errors, isSubmitting } = form.formState;
   const amount = useWatch({ control: form.control, name: "amount" });
+  const method = useWatch({ control: form.control, name: "method" });
+  const isCash = method === "CASH";
   const excess = excessOverBalance(amount, balance);
   const owes = new Decimal(balance).greaterThan(0);
 
@@ -276,7 +278,9 @@ export function RecordPaymentDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor="payment-reference">Reference</FieldLabel>
+                  <FieldLabel htmlFor="payment-reference">
+                    {isCash ? "Receipt number" : "Reference"}
+                  </FieldLabel>
                   <Input
                     {...field}
                     onChange={(event) => {
@@ -293,8 +297,9 @@ export function RecordPaymentDialog({
                     disabled={isSubmitting}
                   />
                   <FieldDescription id="payment-reference-hint">
-                    Bank, bKash or Nagad transaction ID, or the receipt number. Each reference can
-                    be used once; capitals and spacing are ignored.
+                    {isCash
+                      ? "The number on the receipt given for the cash, for example CASH-RCPT-0012. Each number can be used once; capitals and spacing are ignored."
+                      : "Bank, bKash or Nagad transaction ID. Each reference can be used once; capitals and spacing are ignored."}
                   </FieldDescription>
                   {fieldState.invalid ? <FieldError errors={[errors.reference]} /> : null}
                 </Field>
@@ -305,19 +310,12 @@ export function RecordPaymentDialog({
           {clash ? (
             <Alert variant="destructive">
               <TriangleAlertIcon aria-hidden="true" />
-              <AlertTitle>
-                {clash.voided
-                  ? "That reference was used by a voided payment"
-                  : "That reference is already in use"}
-              </AlertTitle>
+              <AlertTitle>That reference is already in use</AlertTitle>
               <AlertDescription>
                 <p>
-                  {clash.voided ? "A voided payment of " : "A payment of "}
-                  <Money value={clash.amount} /> dated {formatDate(clash.paidAt)} for{" "}
-                  {clash.student.fullName} ({clash.student.studentNumber}) already has it.
-                  {clash.voided
-                    ? " Enter a different reference."
-                    : " Check you are not recording the same payment twice."}
+                  A payment of <Money value={clash.amount} /> dated {formatDate(clash.paidAt)} for{" "}
+                  {clash.student.fullName} ({clash.student.studentNumber}) already has it. Check you
+                  are not recording the same payment twice.
                 </p>
                 <Link
                   href={`/staff/students/${clash.student.id}#payment-${clash.id}`}

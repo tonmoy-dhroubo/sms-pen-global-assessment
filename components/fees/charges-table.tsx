@@ -42,8 +42,15 @@ export function ChargesTable({ charges }: { charges: ChargeDto[] }) {
         <TableBody>
           {charges.map((charge) => (
             <TableRow key={charge.id}>
-              <TableCell className="max-w-72 truncate" title={charge.description}>
-                {charge.description}
+              <TableCell className="max-w-72">
+                <span className="block truncate" title={charge.description}>
+                  {charge.description}
+                </span>
+                {charge.kind !== "PROGRAMME_FEE" && charge.createdBy ? (
+                  <span className="block text-xs text-muted-foreground">
+                    Added by {charge.createdBy.fullName}
+                  </span>
+                ) : null}
               </TableCell>
               <TableCell>
                 <ChargeKindBadge kind={charge.kind} />

@@ -41,7 +41,10 @@ async function fill(
     await user.click(screen.getByRole("option", { name: values.method }));
   }
   if (values.reference !== undefined) {
-    await user.type(within(dialog).getByLabelText("Reference"), values.reference);
+    await user.type(
+      within(dialog).getByLabelText(/^(Reference|Receipt number)$/),
+      values.reference,
+    );
   }
 }
 
@@ -96,6 +99,21 @@ describe("RecordPaymentDialog", () => {
     expect(within(dialog).getByRole("combobox", { name: "Method" }).textContent).toContain(
       "Choose a method",
     );
+  });
+
+  it("asks for a receipt number when the method is cash, and a reference otherwise", async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    const dialog = await open(user);
+    expect(within(dialog).getByLabelText("Reference")).toBeTruthy();
+    await user.click(within(dialog).getByRole("combobox", { name: "Method" }));
+    await user.click(screen.getByRole("option", { name: "Cash" }));
+    expect(within(dialog).getByLabelText("Receipt number")).toBeTruthy();
+    expect(dialog.textContent).toContain("CASH-RCPT-0012");
+    await user.click(within(dialog).getByRole("combobox", { name: "Method" }));
+    await user.click(screen.getByRole("option", { name: "bKash" }));
+    expect(within(dialog).getByLabelText("Reference")).toBeTruthy();
+    expect(dialog.textContent).not.toContain("CASH-RCPT-0012");
   });
 
   it("offers every payment method, including bKash and Nagad", async () => {
@@ -256,7 +274,6 @@ describe("RecordPaymentDialog", () => {
             },
             amount: "7500.00",
             paidAt: "2026-10-02",
-            voided: false,
           },
         }),
         409,
@@ -283,7 +300,7 @@ describe("RecordPaymentDialog", () => {
     expect(screen.getByRole("dialog")).toBeTruthy(); // stays open so the reference can be corrected
 
     // Typing a different reference clears the explanation.
-    await user.type(within(dialog).getByLabelText("Reference"), "-2");
+    await user.type(within(dialog).getByLabelText(/^(Reference|Receipt number)$/), "-2");
     await waitFor(() =>
       expect(within(dialog).queryByText("That reference is already in use")).toBeNull(),
     );
