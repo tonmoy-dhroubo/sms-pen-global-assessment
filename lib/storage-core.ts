@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
 import {
+  CreateBucketCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -330,6 +331,19 @@ export function createStorage(config: StorageConfig) {
         continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
       } while (continuationToken);
       return deleted;
+    },
+
+    /**
+     * Creates the (private) bucket if it does not exist yet; does nothing if it does. For scripts that set up a
+     * fresh environment (the seed in CI). Locally `minio-init` creates the bucket; the app never calls this.
+     */
+    async ensureBucket(): Promise<void> {
+      try {
+        await client.send(new HeadBucketCommand({ Bucket }));
+      } catch (error) {
+        if (!isMissingObject(error)) throw error; // 404: the bucket is missing; anything else is a real failure
+        await client.send(new CreateBucketCommand({ Bucket }));
+      }
     },
 
     /** Throws unless the bucket exists and the credentials can reach it. Used by the health check. */

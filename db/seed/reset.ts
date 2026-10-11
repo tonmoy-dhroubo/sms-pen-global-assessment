@@ -1,0 +1,43 @@
+import { assertLocalTargets, dropAndRecreateSchema, migrateDeploy } from "../tools/database";
+import { createPrisma, createStorageFromEnv, fail, loadEnv, print } from "./context";
+import { printSeedReport } from "./report";
+import { runSeed } from "./run";
+
+// `npm run db:reset`: drop the `public` schema, apply the committed migrations, empty the bucket and seed (DB-022).
+// It deliberately does NOT use `prisma migrate reset` (Prisma blocks that for AI agents and the guard is respected).
+// It is destructive, so it refuses unless the database (and the storage endpoint) are local, or --force is passed.
+
+async function main() {
+  const env = loadEnv();
+  const force = process.argv.includes("--force");
+  assertLocalTargets(
+    { DATABASE_URL: env.DATABASE_URL, DIRECT_URL: env.DIRECT_URL, S3_ENDPOINT: env.S3_ENDPOINT },
+    force,
+    "reset",
+  );
+
+  const database = decodeURIComponent(new URL(env.DIRECT_URL).pathname.replace(/^\//, ""));
+  print(`Resetting database "${database}" and bucket "${env.S3_BUCKET}"...`);
+
+  print("  dropping the public schema");
+  await dropAndRecreateSchema(env.DIRECT_URL, (url) =>
+    assertLocalTargets({ DIRECT_URL: url }, force, "drop the schema"),
+  );
+  print("  applying migrations (prisma migrate deploy)");
+  migrateDeploy(env.DIRECT_URL);
+
+  const prisma = createPrisma(env.DATABASE_URL);
+  try {
+    print("  seeding");
+    const result = await runSeed({
+      prisma,
+      storage: createStorageFromEnv(env),
+      log: (message) => print(`    ${message}`),
+    });
+    printSeedReport(result);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main().catch(fail);
