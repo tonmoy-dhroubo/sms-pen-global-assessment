@@ -1,7 +1,7 @@
 # ER diagram
 
-> **Status: agreed design, not yet implemented.** Reflects DB-001 to DB-020 in [decisions.md](decisions.md).
-> Once `schema.prisma` exists it becomes the source of truth; keep this diagram in sync with it.
+> **Status: implemented in [schema.prisma](schema.prisma)** (M03), which is now the source of truth. Reflects DB-001 to
+> DB-020 in [decisions.md](decisions.md); keep this diagram in sync with the schema.
 
 Notation: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more.
 `PK` primary key, `FK` foreign key, `UK` unique.
@@ -178,6 +178,23 @@ erDiagram
 ```
 
 ## Notes
+
+- **Naming in Prisma:** entities here are UPPER_SNAKE; models are PascalCase (`ProgrammeFee`), fields camelCase, tables
+  plural snake_case (`programme_fees`) and columns snake_case (`programme_id`), mapped with `@@map` / `@map`.
+- **Nullable columns** the diagram leaves implicit: `STATUS_CHANGE.fromStatus` and `reason`, `ASSESSMENT.closedAt`,
+  `PAYMENT.voidedAt` / `voidReason`, `MARK.mark` / `withheldReason` / `publishedAt`, `MARK_CHANGE.oldMark` /
+  `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt`, `FEE_CHARGE.programmeFeeId`. Everything else is `NOT NULL`.
+- **Enums** (Postgres enum types): `EnrolmentStatus`, `FeeChargeKind`, `PaymentMethod`, `ReleaseStatus`, `MarkChangeType`
+  (`MARK_CHANGE.change`).
+- **Database-level rules** (hand-written SQL in the first migration, proven by `npm run test:db`):
+  - `MARK.mark` is between 0 and 100, and is null exactly when `isNonSubmission` is true.
+  - `PAYMENT.amount` is greater than 0.
+  - `FEE_CHARGE.amount` is negative for `WAIVER` and positive for every other kind.
+  - `immutable_unaccent(lower(student.full_name))` has a GIN trigram index (`unaccent` + `pg_trgm`); searches must use
+    that exact expression to hit the index.
+- **Delete rules:** every relation is `ON DELETE RESTRICT` (DB-005) except `PROGRAMME_MODULE`, which cascades.
+- **Indexes:** every foreign key, plus `student.status`, `mark.releaseStatus`, `programme_fee.dueDate`,
+  `fee_charge.dueDate`, `assessment.deadline` and `pending_upload.expiresAt`.
 
 - `EXTENSION` is a stretch goal (DB-014).
 - `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004, DB-015).
