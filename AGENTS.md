@@ -27,6 +27,7 @@ This file stays short. All details, reasoning and discussion live in [`docs/`](d
 | [docs/requirements.md](docs/requirements.md) | The brief in our own words: scope, deliverables, how it is graded |
 | [docs/tech-stack.md](docs/tech-stack.md) | Agreed stack, local services, app layering, uploads and roles |
 | [db/](db/README.md) | Database: ER diagram, DB decisions (`DB-NNN`), seed plan, and later the Prisma schema, migrations and seed scripts |
+| [docs/todo.md](docs/todo.md) | **Remaining work:** candidate review before submitting, and the optional M19 hosted deployment |
 | [docs/milestones.md](docs/milestones.md) | **Build plan and tracker.** One milestone at a time; process, Definition of Done, report template |
 | [docs/pages.md](docs/pages.md) | Every route: who sees it, what it shows, what you can do |
 | [docs/api.md](docs/api.md) | API contract: conventions, error format, every endpoint |
