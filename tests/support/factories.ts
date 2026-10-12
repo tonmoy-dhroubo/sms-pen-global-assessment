@@ -203,22 +203,30 @@ export async function createExtension(input: {
   });
 }
 
-/** A mark (default: a draft 55.0). A withheld mark takes a `withheldReason`. */
+/**
+ * A mark (default: a draft 55.0). A withheld mark takes a `withheldReason`; `mark: null` makes a non-submission; a
+ * published mark gets `publishedAt` set.
+ */
 export async function createMark(input: {
   assessmentId: string;
   studentId: string;
   enteredById: string;
+  mark?: string | null;
   releaseStatus?: "DRAFT" | "PUBLISHED" | "WITHHELD";
   withheldReason?: string;
 }) {
+  const mark = input.mark === undefined ? "55.0" : input.mark;
+  const releaseStatus = input.releaseStatus ?? "DRAFT";
   return db.mark.create({
     data: {
       assessmentId: input.assessmentId,
       studentId: input.studentId,
       enteredById: input.enteredById,
-      mark: "55.0",
-      releaseStatus: input.releaseStatus ?? "DRAFT",
+      mark,
+      isNonSubmission: mark === null,
+      releaseStatus,
       withheldReason: input.withheldReason ?? null,
+      publishedAt: releaseStatus === "PUBLISHED" ? new Date() : null,
     },
   });
 }

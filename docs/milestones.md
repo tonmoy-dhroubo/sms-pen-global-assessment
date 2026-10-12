@@ -24,7 +24,7 @@ waiting on a decision.
 | M11 | Staff dashboard | M10 | Done | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
 | M12 | Assessments (staff) | M09 | Done | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
 | M13 | Submissions (student upload flow) | M12 | Done | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
-| M14 | Marksheet and results | M13 | Not started | | |
+| M14 | Marksheet and results | M13 | In review | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
 | M15 | Student portal | M14 | Not started | | |
 | M16 | Activity timeline and extras | M15 | Not started | | |
 | M17 | Quality pass | M16 | Not started | | |
@@ -469,15 +469,15 @@ Acceptance criteria and edge cases: all Submissions items in edge-cases.md ticke
 edge-cases.md (Marks and results).
 
 Tasks:
-- [ ] Services and endpoints: marksheet rows, upsert mark (validation, NS, version, reason when published,
+- [x] Services and endpoints: marksheet rows, upsert mark (validation, NS, version, reason when published,
       MARK_CHANGE entries), publish (dry run preview + real run with warnings), withhold (reason), unpublish (reason),
       student results for staff.
-- [ ] UI: Marksheet tab grid (keyboard navigation, live classification, NS toggle, late flag visible, unsaved
+- [x] UI: Marksheet tab grid (keyboard navigation, live classification, NS toggle, late flag visible, unsaved
       changes warning, per-row save state), publish preview dialog, withhold/unpublish/change-reason dialogs;
       Results section on the student record with history.
-- [ ] Extend the M12 module-change rule: an assessment's module cannot change once it has submissions **or marks**
-      (422 `ASSESSMENT_HAS_SUBMISSIONS` → rename to `ASSESSMENT_HAS_ACTIVITY` or add `ASSESSMENT_HAS_MARKS`; D-035).
-- [ ] Integration tests: boundaries through the API, NS, reason enforcement, publish preview counts, overdue-fee
+- [x] Extend the M12 module-change rule: an assessment's module cannot change once it has submissions **or marks**
+      (422 `ASSESSMENT_HAS_ACTIVITY`, replacing `ASSESSMENT_HAS_SUBMISSIONS`; D-035).
+- [x] Integration tests: boundaries through the API, NS, reason enforcement, publish preview counts, overdue-fee
       warning, withheld hidden from the student API.
 
 Acceptance criteria and edge cases: all Marks and results items ticked, including the bulk publish preview (S).

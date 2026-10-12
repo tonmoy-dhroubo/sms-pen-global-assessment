@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { DateTime } from "@/components/format/date-time";
+import { StudentResultsCard } from "@/components/marks/student-results-card";
 import { StudentFeesCard } from "@/components/fees/student-fees-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { NotFoundError } from "@/lib/api/errors";
 import { requireStaffPage } from "@/lib/page-guards";
 import { getStudentFees } from "@/lib/services/fees";
+import { getStudentResults } from "@/lib/services/marks";
 import { getStudent } from "@/lib/services/students";
 
 export const metadata: Metadata = { title: "Student record" };
@@ -54,17 +56,19 @@ function ComingSoon({
 }
 
 // The student record (pages.md `/staff/students/[id]`): the header with the profile and the status and fee badges, the
-// edit and status actions, and the sections that later milestones fill in.
+// edit and status actions, the fees and results sections, and the sections that later milestones fill in.
 export default async function StudentRecordPage({ params }: { params: Promise<{ id: string }> }) {
   await requireStaffPage();
   const { id } = await params;
 
-  const [student, fees] = await Promise.all([getStudent(id), getStudentFees(id)]).catch(
-    (error: unknown) => {
-      if (error instanceof NotFoundError) notFound();
-      throw error;
-    },
-  );
+  const [student, fees, results] = await Promise.all([
+    getStudent(id),
+    getStudentFees(id),
+    getStudentResults(id),
+  ]).catch((error: unknown) => {
+    if (error instanceof NotFoundError) notFound();
+    throw error;
+  });
 
   return (
     <div className="space-y-6">
@@ -135,18 +139,13 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
 
       <StudentFeesCard studentId={student.id} studentName={student.fullName} fees={fees} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ComingSoon
-          title="Submissions"
-          description="Each assessment's deadline, status, file versions and receipt."
-          milestone="M13"
-        />
-        <ComingSoon
-          title="Results"
-          description="Grades, classification, release status and history."
-          milestone="M14"
-        />
-      </div>
+      <StudentResultsCard studentId={student.id} studentName={student.fullName} results={results} />
+
+      <ComingSoon
+        title="Submissions"
+        description="Each assessment's deadline, status, file versions and receipt."
+        milestone="M13"
+      />
       <ComingSoon
         title="Activity timeline"
         description="Status changes, payments, voids, mark changes and releases."

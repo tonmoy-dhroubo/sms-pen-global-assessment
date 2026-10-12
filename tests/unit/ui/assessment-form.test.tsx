@@ -38,9 +38,9 @@ function renderForm(overrides: Partial<AssessmentFormProps> = {}) {
   );
 }
 
-function renderEdit(submitted = 0) {
+function renderEdit(submitted = 0, marked = 0) {
   return renderForm({
-    mode: { kind: "edit", id: ID, version: 3, submitted },
+    mode: { kind: "edit", id: ID, version: 3, submitted, marked },
     initialValues: {
       moduleId: MODULE_ID,
       title: "Essay 1",
@@ -263,6 +263,14 @@ describe("edit assessment form", () => {
     ).toBeTruthy();
   });
 
+  it("locks the module once marks have been entered, even with no submissions", () => {
+    renderEdit(0, 2);
+    expect(screen.getByRole("combobox", { name: "Module" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByText(/cannot be changed because 2 marks have already been entered/),
+    ).toBeTruthy();
+  });
+
   it("allows changing the module while nobody has submitted", async () => {
     mockFetch(jsonResponse({ id: ID, title: "Essay 1", version: 4 }));
     const user = userEvent.setup();
@@ -306,7 +314,7 @@ describe("edit assessment form", () => {
           "BUSINESS_RULE",
           "The module cannot be changed because students have submitted.",
           {
-            rule: "ASSESSMENT_HAS_SUBMISSIONS",
+            rule: "ASSESSMENT_HAS_ACTIVITY",
           },
         ),
         422,

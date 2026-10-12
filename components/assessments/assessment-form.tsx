@@ -61,6 +61,8 @@ export type AssessmentFormMode =
       version: number;
       /** Students who have submitted: the module is locked and a deadline change recalculates their flags. */
       submitted: number;
+      /** Marks entered: the module is locked once there are any (D-035). */
+      marked?: number;
     };
 
 export interface AssessmentFormProps {
@@ -108,7 +110,8 @@ export function AssessmentForm({
   const [conflict, setConflict] = useState(false);
 
   const deadlineChanged = Boolean(dirtyFields.deadlineDate || dirtyFields.deadlineTime);
-  const moduleLocked = editing && mode.submitted > 0;
+  const marked = editing ? (mode.marked ?? 0) : 0;
+  const moduleLocked = editing && (mode.submitted > 0 || marked > 0);
 
   function warnAbout(assessment: AssessmentResponse) {
     for (const warning of assessment.warnings ?? []) {
@@ -148,10 +151,7 @@ export function AssessmentForm({
           setConflict(true);
           return;
         }
-        if (
-          error.code === "BUSINESS_RULE" &&
-          error.details?.rule === "ASSESSMENT_HAS_SUBMISSIONS"
-        ) {
+        if (error.code === "BUSINESS_RULE" && error.details?.rule === "ASSESSMENT_HAS_ACTIVITY") {
           form.setError(
             "moduleId",
             { type: "server", message: error.message },
@@ -230,8 +230,18 @@ export function AssessmentForm({
               </Select>
               {moduleLocked ? (
                 <FieldDescription id="assessment-module-hint">
-                  The module cannot be changed because {mode.submitted}{" "}
-                  {mode.submitted === 1 ? "student has" : "students have"} already submitted.
+                  {mode.submitted > 0 ? (
+                    <>
+                      The module cannot be changed because {mode.submitted}{" "}
+                      {mode.submitted === 1 ? "student has" : "students have"} already submitted.
+                      {marked > 0 ? " Marks have been entered too." : null}
+                    </>
+                  ) : (
+                    <>
+                      The module cannot be changed because {marked}{" "}
+                      {marked === 1 ? "mark has" : "marks have"} already been entered.
+                    </>
+                  )}
                 </FieldDescription>
               ) : null}
               {fieldState.invalid ? <FieldError errors={[errors.moduleId]} /> : null}
