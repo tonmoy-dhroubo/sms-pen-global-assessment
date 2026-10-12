@@ -136,7 +136,7 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | `npm test` / `test:watch`                                    | Unit and component tests (Vitest), no services needed                                                                 |
 | `npm run test:coverage`                                      | Unit tests with coverage; fails if `lib/services/rules` drops below 95 %                                              |
 | `npm run test:integration`                                   | API, database and storage tests against the throw-away `sms_test` database and `submissions-test` bucket (needs `services:up`) |
-| `npm run services:up` / `down` / `reset`                     | Start the Docker services and wait until healthy / stop them (data kept) / **delete all data** and start fresh        |
+| `npm run services:up` / `down` / `reset`                     | Start the Docker services, wait until healthy and create the bucket / stop them (data kept) / **delete all data** and start fresh        |
 | `npm run db:reset`                                           | Drop the schema, migrate, empty the bucket and seed with a self-check (local only; `--force` for anything else)       |
 | `npm run db:seed`                                            | Fill an **empty** database and the bucket with the demo data (refuses a populated database)                           |
 | `npm run db:migrate`                                         | Create and apply a migration after editing `db/schema.prisma` (development)                                           |

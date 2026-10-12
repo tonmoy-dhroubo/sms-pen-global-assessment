@@ -554,11 +554,11 @@ Tasks:
       **demo tour** (which student to open to see each edge case); **"How I used AI"** section summarising
       ai-usage.md (tools, how the work was split between planner and coder agents, what was reviewed or rejected);
       known limitations.
-- [ ] Fresh-clone rehearsal: follow the README exactly on a clean checkout; fix anything that doesn't work.
+- [x] Fresh-clone rehearsal: follow the README exactly on a clean checkout; fix anything that doesn't work.
 - [x] Render the final Mermaid ER diagram to `db/er-diagram.png` (the user asked for it; e.g. headless Chrome + the
       mermaid library, like the screenshots — avoid adding heavy dependencies) and link it from `db/README.md` and
       `db/er-diagram.md`.
-- [ ] Final check that no secrets or the brief PDF are in the repo history.
+- [x] Final check that no secrets or the brief PDF are in the repo history.
 
 ---
 
