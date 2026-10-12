@@ -1,7 +1,7 @@
 # Local services for development and for reviewers: Postgres, MinIO (S3-compatible storage)
 # and a one-shot container that creates the private bucket.
 #
-#   npm run services:up      start everything and wait until it is healthy
+#   npm run services:up      start Postgres and MinIO, wait until healthy, then create the bucket
 #   npm run services:down    stop (data is kept)
 #   npm run services:reset   stop and delete all data (Postgres + MinIO volumes)
 #

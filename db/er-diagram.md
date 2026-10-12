@@ -3,6 +3,9 @@
 > **Status: implemented in [schema.prisma](schema.prisma)** (M03), which is now the source of truth. Reflects DB-001 to
 > DB-020 in [decisions.md](decisions.md); keep this diagram in sync with the schema.
 
+A rendered image of the diagram is in [er-diagram.png](er-diagram.png). Regenerate it with `npm run er:png` after
+changing the diagram (needs Chrome or Edge and an internet connection).
+
 Notation: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more.
 `PK` primary key, `FK` foreign key, `UK` unique.
 
