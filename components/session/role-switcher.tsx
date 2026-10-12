@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, ChevronsUpDownIcon, Loader2Icon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon, Loader2Icon, LogOutIcon } from "lucide-react";
 import { useState } from "react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -14,19 +14,19 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { CurrentIdentity } from "@/components/session/current-identity";
 import { useSessionOptions } from "@/components/session/use-session-options";
-import { useSwitchIdentity } from "@/components/session/use-switch-identity";
+import { CHANGE_ROLE_PENDING, useSwitchIdentity } from "@/components/session/use-switch-identity";
 import type { SwitchSessionInput } from "@/lib/client/session";
 
 // The header's "Viewing as: ..." control (pages.md "Role switcher", D-020). A popover holding every staff member and
 // a searchable student list (name or Student ID), fed by `GET /api/session/options`. Choosing someone calls
 // `PUT /api/session` and lands on that role's home. The search is done by the server (it matches regardless of case
 // and accents), so the command list does no filtering of its own for students; the field is a plain combobox that
-// arrow keys, Enter and Escape drive.
+// arrow keys, Enter and Escape drive. "Change role" at the bottom clears the session and returns to the role picker.
 
 export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
   const [open, setOpen] = useState(false);
   const { query, setQuery, options, status, error, retry } = useSessionOptions({ enabled: open });
-  const { switchTo, pendingId } = useSwitchIdentity();
+  const { switchTo, changeRole, pendingId } = useSwitchIdentity();
 
   const needle = query.trim().toLowerCase();
   const staff = (options?.staff ?? []).filter(
@@ -55,6 +55,10 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
       return;
     }
     if (await switchTo(target)) setOpen(false);
+  }
+
+  async function leave() {
+    if (await changeRole()) setOpen(false);
   }
 
   const label = current ? current.fullName : "Not selected";
@@ -149,6 +153,26 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
             </div>
           </CommandList>
         </Command>
+
+        {current ? (
+          // Outside the scrolling list, so it is always in view at the bottom of the switcher.
+          <div className="border-t p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-start"
+              disabled={busy}
+              onClick={leave}
+            >
+              {pendingId === CHANGE_ROLE_PENDING ? (
+                <Loader2Icon className="animate-spin" data-icon="inline-start" aria-hidden="true" />
+              ) : (
+                <LogOutIcon data-icon="inline-start" aria-hidden="true" />
+              )}
+              Change role
+            </Button>
+          </div>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

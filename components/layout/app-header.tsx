@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { SearchIcon } from "lucide-react";
 import { StaffMobileNav } from "@/components/layout/staff-nav";
+import { StaffQuickSearch } from "@/components/layout/staff-quick-search";
 import { RoleSwitcher } from "@/components/session/role-switcher";
 import type { CurrentIdentity } from "@/components/session/current-identity";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
 // The header on every page, both roles (pages.md "Global layout"): app name, global search (staff only), theme
-// toggle, role switcher. Staff also get the menu button that opens the sidebar below md.
+// toggle, role switcher. Staff also get the menu button that opens the sidebar below md. Below md the search drops to
+// a second row of its own, so it stays reachable on a phone.
 
 export const APP_NAME = "Registry";
 
@@ -22,7 +22,7 @@ export function AppHeader({ identity }: { identity: CurrentIdentity | null }) {
       >
         Skip to main content
       </a>
-      <div className="flex h-14 items-center gap-2 px-4 md:gap-4 md:px-6">
+      <div className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 px-4 py-2 md:gap-x-4 md:px-6 md:py-0">
         {isStaff ? <StaffMobileNav /> : null}
         <Link
           href="/"
@@ -38,19 +38,8 @@ export function AppHeader({ identity }: { identity: CurrentIdentity | null }) {
         </Link>
 
         {isStaff ? (
-          // Wired up in M16 (Ctrl+K quick search); until then it is a visible, disabled placeholder.
-          <div className="mx-auto hidden w-full max-w-sm md:block" role="search">
-            <InputGroup>
-              <InputGroupInput
-                disabled
-                type="search"
-                placeholder="Search students (coming soon)"
-                aria-label="Search students (coming soon)"
-              />
-              <InputGroupAddon>
-                <SearchIcon aria-hidden="true" />
-              </InputGroupAddon>
-            </InputGroup>
+          <div className="order-last w-full md:order-none md:mx-auto md:max-w-sm md:flex-1">
+            <StaffQuickSearch />
           </div>
         ) : null}
 

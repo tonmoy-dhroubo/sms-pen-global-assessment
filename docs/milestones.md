@@ -26,7 +26,7 @@ waiting on a decision.
 | M13 | Submissions (student upload flow) | M12 | Done | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
 | M14 | Marksheet and results | M13 | Done | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
 | M15 | Student portal | M14 | Done | m15-student-portal | [#16](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/16) |
-| M16 | Activity timeline and extras | M15 | Not started | | |
+| M16 | Activity timeline and extras | M15 | In review | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
 | M17 | Quality pass | M16 | Not started | | |
 | M18 | README, demo tour and submission | M17 | Not started | | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
@@ -506,14 +506,14 @@ Acceptance criteria: the cross-cutting access-control item in edge-cases.md tick
 **References:** edge-cases.md (Extras), DB-020.
 
 Tasks:
-- [ ] `GET /api/students/{id}/timeline` and the timeline section on the student record.
-- [ ] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
+- [x] `GET /api/students/{id}/timeline` and the timeline section on the student record.
+- [x] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
       opens it).
-- [ ] "Withhold this student's results…" on the student record Results section (reason required; same service as the
+- [x] "Withhold this student's results…" on the student record Results section (reason required; same service as the
       marksheet), next to "Publish all for this student…" — pages.md lists both.
-- [ ] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
-- [ ] (Could) CSV exports: overdue list and marksheet.
-- [ ] (Could) Print stylesheet for the student record's fee statement and marksheet.
+- [x] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
+- [x] (Could) CSV exports: overdue list and marksheet.
+- [x] (Could) Print stylesheet for the student record's fee statement and marksheet.
 
 ---
 

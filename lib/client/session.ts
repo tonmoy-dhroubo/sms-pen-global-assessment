@@ -26,3 +26,8 @@ export function fetchSessionOptions(q: string, signal?: AbortSignal): Promise<Se
 export function switchIdentity(target: SwitchSessionInput): Promise<{ role: SessionRoleName }> {
   return apiRequest<{ role: SessionRoleName }>("/api/session", { method: "PUT", body: target });
 }
+
+/** `DELETE /api/session`: forgets who the browser is viewing as (the header's "Change role"). */
+export function clearSession(): Promise<{ role: null }> {
+  return apiRequest<{ role: null }>("/api/session", { method: "DELETE" });
+}

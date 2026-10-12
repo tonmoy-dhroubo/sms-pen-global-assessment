@@ -32,6 +32,8 @@ const EXPECTED_ACCESS: Record<string, Access> = {
   "POST /api/assessments/[id]/submission/confirm": "student",
   "GET /api/dashboard": "staff",
   "GET /api/fees": "staff",
+  "GET /api/exports/marksheet/[file]": "staff",
+  "GET /api/exports/overdue.csv": "staff",
   "GET /api/files/[fileId]/download": "any",
   "GET /api/health": "public",
   "POST /api/marks/publish": "staff",
@@ -60,6 +62,7 @@ const EXPECTED_ACCESS: Record<string, Access> = {
   "POST /api/students/[id]/payments": "staff",
   "GET /api/students/[id]/results": "staff",
   "POST /api/students/[id]/status": "staff",
+  "GET /api/students/[id]/timeline": "staff",
 };
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchSessionOptions, type SessionOptions } from "@/lib/client/session";
 import { ApiRequestError } from "@/lib/client/api";
+import { useDebounced } from "@/lib/client/use-debounced";
 
 // The staff list and the searchable student list behind the role picker and the header switcher
 // (`GET /api/session/options`). The search text is debounced so typing does not fire a request per keystroke, and an
@@ -27,15 +28,6 @@ interface Settled {
   key: string;
   options: SessionOptions | null;
   error: string | null;
-}
-
-function useDebounced<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(id);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 /**

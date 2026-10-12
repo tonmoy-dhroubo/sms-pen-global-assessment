@@ -8,6 +8,7 @@ import { StudentResultsCard } from "@/components/marks/student-results-card";
 import { StudentFeesCard } from "@/components/fees/student-fees-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ActivityTimeline } from "@/components/students/activity-timeline";
 import { FeeStatus } from "@/components/students/fee-status";
 import { StatusChangeDialog } from "@/components/students/status-change-dialog";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { requireStaffPage } from "@/lib/page-guards";
 import { getStudentFees } from "@/lib/services/fees";
 import { getStudentResults } from "@/lib/services/marks";
 import { getStudent } from "@/lib/services/students";
+import { getStudentTimeline } from "@/lib/services/timeline";
 
 export const metadata: Metadata = { title: "Student record" };
 
@@ -40,7 +42,7 @@ function ComingSoon({
   milestone: string;
 }) {
   return (
-    <Card>
+    <Card className="print:hidden">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -61,10 +63,12 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
   await requireStaffPage();
   const { id } = await params;
 
-  const [student, fees, results] = await Promise.all([
+  const now = new Date();
+  const [student, fees, results, timeline] = await Promise.all([
     getStudent(id),
     getStudentFees(id),
     getStudentResults(id),
+    getStudentTimeline(id),
   ]).catch((error: unknown) => {
     if (error instanceof NotFoundError) notFound();
     throw error;
@@ -146,11 +150,7 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
         description="Each assessment's deadline, status, file versions and receipt."
         milestone="M13"
       />
-      <ComingSoon
-        title="Activity timeline"
-        description="Status changes, payments, voids, mark changes and releases."
-        milestone="M16"
-      />
+      <ActivityTimeline studentId={student.id} initial={timeline} now={now.toISOString()} />
     </div>
   );
 }

@@ -1,13 +1,21 @@
 "use client";
 
-import { ChevronDownIcon, ChevronRightIcon, GraduationCapIcon, SendIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EyeOffIcon,
+  GraduationCapIcon,
+  SendIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
+import { toast } from "sonner";
 import { DateTime } from "@/components/format/date-time";
 import { ClassificationBadge } from "@/components/marks/classification-badge";
 import { MarkHistory, markText } from "@/components/marks/mark-history";
 import { PublishPreviewDialog } from "@/components/marks/publish-preview-dialog";
+import { ReasonDialog } from "@/components/dialogs/reason-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -20,11 +28,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { withholdMarksRequest } from "@/lib/client/marks";
 import type { StudentResults } from "@/lib/services/marks";
 
 // The Results section of the student record (pages.md `/staff/students/[id]`): every mark across assessments with its
 // classification and release status (the withheld reason is shown here, for staff only), and an expandable history of
-// every change and release. "Publish all for this student" opens the same preview dialog as the marksheet.
+// every change and release. "Publish all for this student" opens the same preview dialog as the marksheet;
+// "Withhold this student's results" asks for a reason and holds back every draft and published mark at once, through
+// the same endpoint as the marksheet's Withhold.
 
 export interface StudentResultsCardProps {
   studentId: string;
@@ -36,7 +47,26 @@ export function StudentResultsCard({ studentId, studentName, results }: StudentR
   const router = useRouter();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [publishing, setPublishing] = useState(false);
+  const [withholding, setWithholding] = useState(false);
   const { summary, items } = results;
+
+  // Withholding applies to draft and published marks; ones already withheld keep their own reason.
+  const withholdable = items.filter((item) => item.releaseStatus !== "WITHHELD");
+  const withholdablePublished = withholdable.filter((item) => item.releaseStatus === "PUBLISHED");
+
+  async function withholdAll(reason: string) {
+    const result = await withholdMarksRequest(
+      withholdable.map((item) => item.markId),
+      reason,
+    );
+    toast.success(
+      `Withheld ${result.changed} ${result.changed === 1 ? "mark" : "marks"} for ${studentName}.` +
+        (result.skipped > 0
+          ? ` ${result.skipped} ${result.skipped === 1 ? "was" : "were"} left as ${result.skipped === 1 ? "it was" : "they were"}.`
+          : ""),
+    );
+    router.refresh();
+  }
 
   function toggle(markId: string) {
     setExpanded((current) => {
@@ -48,7 +78,7 @@ export function StudentResultsCard({ studentId, studentName, results }: StudentR
   }
 
   return (
-    <Card>
+    <Card className="print:hidden">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <CardTitle>Results</CardTitle>
@@ -59,10 +89,29 @@ export function StudentResultsCard({ studentId, studentName, results }: StudentR
           </CardDescription>
         </div>
         {summary.total > 0 ? (
-          <Button type="button" variant="outline" onClick={() => setPublishing(true)}>
-            <SendIcon data-icon="inline-start" aria-hidden="true" />
-            Publish all for this student…
-          </Button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => setPublishing(true)}>
+                <SendIcon data-icon="inline-start" aria-hidden="true" />
+                Publish all for this student…
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={withholdable.length === 0}
+                aria-describedby={withholdable.length === 0 ? "withhold-none" : undefined}
+                onClick={() => setWithholding(true)}
+              >
+                <EyeOffIcon data-icon="inline-start" aria-hidden="true" />
+                Withhold this student&apos;s results…
+              </Button>
+            </div>
+            {withholdable.length === 0 ? (
+              <p id="withhold-none" className="text-xs text-muted-foreground">
+                Every mark is already withheld.
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </CardHeader>
       <CardContent>
@@ -176,6 +225,28 @@ export function StudentResultsCard({ studentId, studentName, results }: StudentR
         target={{ studentId }}
         subject={studentName}
         onPublished={() => router.refresh()}
+      />
+      <ReasonDialog
+        open={withholding}
+        onOpenChange={setWithholding}
+        title={`Withhold ${studentName}'s results`}
+        description={
+          <>
+            {withholdable.length} {withholdable.length === 1 ? "mark" : "marks"}
+            {withholdablePublished.length > 0
+              ? ` (${withholdablePublished.length} published, ${withholdable.length - withholdablePublished.length} draft)`
+              : ""}{" "}
+            will be hidden from the student (shown as &ldquo;Not yet available&rdquo;).
+            {summary.withheld > 0
+              ? ` ${summary.withheld} already withheld ${summary.withheld === 1 ? "mark keeps" : "marks keep"} its own reason.`
+              : ""}{" "}
+            The reason is kept for staff.
+          </>
+        }
+        reasonHint="For example: Outstanding fees, or Academic misconduct inquiry."
+        confirmLabel={`Withhold ${withholdable.length} ${withholdable.length === 1 ? "mark" : "marks"}`}
+        destructive
+        onSubmit={withholdAll}
       />
     </Card>
   );
