@@ -216,3 +216,14 @@ delegated the remaining open choices.
   preview feature** (enabled in the generator). Revisit when it becomes stable or if a Prisma upgrade drops it.
 - Why: Every financial action needs a who-and-when (DB-005) for the activity timeline, and real bank references
   repeat when a mistaken entry is corrected. Decided by Claude during the overnight review (D-025).
+
+## DB-025: Pending uploads keep the declared file details (M13)
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision: Migration `20261012180000_pending_upload_details` adds `original_name`, `mime_type` and `size_bytes`
+  to `pending_uploads` (existing throw-away rows are deleted first). The confirm step receives only the pending id,
+  so it needs the declared name (copied to `SUBMISSION_FILE`), type and size (re-checked against the stored
+  object). Rejected uploads (bad content, expired, rule failure at confirm) delete both the object and the pending
+  row; rejections are not stored.
+- Why: Recorded from the M13 pull request during the overnight review (D-025).
