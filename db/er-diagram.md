@@ -206,7 +206,8 @@ erDiagram
     that exact expression to hit the index.
 - **Delete rules:** every relation is `ON DELETE RESTRICT` (DB-005) except `PROGRAMME_MODULE`, which cascades.
 - **Indexes:** every foreign key, plus `student.status`, `mark.releaseStatus`, `programme_fee.dueDate`,
-  `fee_charge.dueDate`, `assessment.deadline` and `pending_upload.expiresAt`.
+  `fee_charge.dueDate`, `assessment.deadline`, `pending_upload.expiresAt` and `submission.lastSubmittedAt` (the dashboard's
+  14-day late-submission window, added in M17).
 
 - `EXTENSION` is a stretch goal (DB-014).
 - `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004, DB-015).
