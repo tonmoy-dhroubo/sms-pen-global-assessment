@@ -2,6 +2,7 @@
 
 import {
   flexRender,
+  type RowData,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
@@ -50,6 +51,15 @@ import { cn } from "@/lib/utils";
 // so a list can be shared, bookmarked and reloaded; the page that renders the table reads the same params with
 // `parseListParams` and fetches that slice. Filters on the same page keep their own params; changing any of them
 // should go through `useListUrlState().update` so the page resets to 1.
+
+declare module "@tanstack/react-table" {
+  // A column can carry classes for its header and cells, to hide it below a screen width (list tables use this so the
+  // columns that matter most stay in view on small screens).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    className?: string;
+  }
+}
 
 export interface DataTableProps<TData> {
   /** Give a sortable column an `id` equal to the API's sort field and `enableSorting: true`. */
@@ -193,6 +203,7 @@ export function DataTable<TData>({
                     <TableHead
                       key={header.id}
                       scope="col"
+                      className={column.columnDef.meta?.className}
                       aria-sort={
                         direction === "asc"
                           ? "ascending"
@@ -237,7 +248,7 @@ export function DataTable<TData>({
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

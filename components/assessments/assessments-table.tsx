@@ -16,6 +16,26 @@ import type { AssessmentSummary } from "@/lib/services/assessments";
 // closed, how many students submitted and how many were late, and marking and release progress. Sorting and paging are
 // on the server through DataTable; sortable columns use the API's sort field names.
 
+function FoldedDetails({ item, now }: { item: AssessmentSummary; now: string }) {
+  const { submitted, eligible, late, marked, published } = item.counts;
+  return (
+    <div className="mt-1.5 space-y-1 text-xs whitespace-normal text-muted-foreground xl:hidden">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <StatusBadge group="assessment" value={item.state} />
+        <span>
+          <DateTime value={item.deadline} /> (<RelativeTime value={item.deadline} now={now} />)
+        </span>
+      </div>
+      <div>
+        {submitted} of {eligible} submitted{late > 0 ? `, ${late} late` : ""}
+      </div>
+      <div>
+        {marked} marked &middot; {published} published
+      </div>
+    </div>
+  );
+}
+
 function makeColumns(now: string): ColumnDef<AssessmentSummary, unknown>[] {
   return [
     {
@@ -34,18 +54,23 @@ function makeColumns(now: string): ColumnDef<AssessmentSummary, unknown>[] {
       header: "Assessment",
       enableSorting: true,
       cell: ({ row }) => (
-        <Link
-          href={`/staff/assessments/${row.original.id}`}
-          className="font-medium underline-offset-4 hover:underline"
-        >
-          {row.original.title}
-        </Link>
+        <div className="min-w-32">
+          <Link
+            href={`/staff/assessments/${row.original.id}`}
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            {row.original.title}
+          </Link>
+          {/* Below the widest layout the other columns fold in here, so the deadline and counts stay in view. */}
+          <FoldedDetails item={row.original} now={now} />
+        </div>
       ),
     },
     {
       id: "deadline",
       header: "Deadline",
       enableSorting: true,
+      meta: { className: "max-xl:hidden" },
       cell: ({ row }) => (
         <div className="min-w-36">
           <DateTime value={row.original.deadline} />
@@ -60,11 +85,13 @@ function makeColumns(now: string): ColumnDef<AssessmentSummary, unknown>[] {
     {
       id: "state",
       header: "State",
+      meta: { className: "max-xl:hidden" },
       cell: ({ row }) => <StatusBadge group="assessment" value={row.original.state} />,
     },
     {
       id: "submissions",
       header: "Submitted",
+      meta: { className: "max-xl:hidden" },
       cell: ({ row }) => {
         const { submitted, eligible, late } = row.original.counts;
         return (
@@ -78,6 +105,7 @@ function makeColumns(now: string): ColumnDef<AssessmentSummary, unknown>[] {
     {
       id: "marking",
       header: "Marking",
+      meta: { className: "max-xl:hidden" },
       cell: ({ row }) => (
         <ProgressCount
           done={row.original.counts.marked}
@@ -89,6 +117,7 @@ function makeColumns(now: string): ColumnDef<AssessmentSummary, unknown>[] {
     {
       id: "release",
       header: "Release",
+      meta: { className: "max-xl:hidden" },
       cell: ({ row }) => (
         <ProgressCount
           done={row.original.counts.published}

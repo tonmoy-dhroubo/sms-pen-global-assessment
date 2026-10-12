@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import type { StudentListItem } from "@/lib/services/students";
 
 // The student list table (pages.md `/staff/students`): server-side paging and sorting through DataTable, a link to the
-// record on the Student ID and the name, and each student's enrolment and fee badges.
+// record on the Student ID and the name, and each student's enrolment and fee badges. Below the xl breakpoint the
+// Session, Year, Status and Fees columns are replaced by the badges under the name, so nothing scrolls out of view.
 
 const COLUMNS: ColumnDef<StudentListItem, unknown>[] = [
   {
@@ -40,6 +41,14 @@ const COLUMNS: ColumnDef<StudentListItem, unknown>[] = [
           {row.original.fullName}
         </Link>
         <div className="truncate text-xs text-muted-foreground">{row.original.email}</div>
+        {/* Below the widest layout the Status and Fees columns are folded in here, so the fee badge never scrolls out of view. */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal xl:hidden">
+          <span className="text-xs text-muted-foreground sm:hidden">
+            {row.original.programme.code}
+          </span>
+          <StatusBadge group="enrolment" value={row.original.status} />
+          <FeeStatus summary={row.original.feeSummary} />
+        </div>
       </div>
     ),
   },
@@ -47,6 +56,7 @@ const COLUMNS: ColumnDef<StudentListItem, unknown>[] = [
     id: "programme",
     header: "Programme",
     enableSorting: true,
+    meta: { className: "max-sm:hidden" },
     cell: ({ row }) => (
       <span title={row.original.programme.name}>{row.original.programme.code}</span>
     ),
@@ -55,23 +65,27 @@ const COLUMNS: ColumnDef<StudentListItem, unknown>[] = [
     id: "academicYear",
     header: "Session",
     enableSorting: true,
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <span className="tabular-nums">{row.original.academicYear}</span>,
   },
   {
     id: "yearOfStudy",
     header: "Year",
     enableSorting: true,
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <span className="tabular-nums">{row.original.yearOfStudy}</span>,
   },
   {
     id: "status",
     header: "Status",
     enableSorting: true,
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <StatusBadge group="enrolment" value={row.original.status} />,
   },
   {
     id: "fees",
     header: "Fees",
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <FeeStatus summary={row.original.feeSummary} />,
   },
 ];

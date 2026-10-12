@@ -316,6 +316,7 @@ model Submission {
 
   @@unique([assessmentId, studentId])
   @@index([studentId])
+  @@index([lastSubmittedAt])
   @@map("submissions")
 }
 

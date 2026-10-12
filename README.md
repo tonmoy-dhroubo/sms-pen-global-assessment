@@ -102,6 +102,10 @@ Pick a person from the role picker, then look for these. "S" is the current sess
 | `npm run db:generate` / `db:validate` | Regenerate the Prisma client / validate the schema |
 | `npm run db:drift`                    | Fail if the database differs from `db/schema.prisma` |
 | `npm run db:studio`                   | Prisma Studio, a browser UI for the data   |
+| `npm run a11y`                        | axe-core accessibility check of 23 page states in light and dark (needs the production build running on port 3000 and a fresh `db:reset`; uses the installed Chrome or Edge, or `CHROME_PATH`) |
+| `npm run responsive`                  | Opens every page at 375, 768 and 1280 px and reports any that scroll sideways; `-- --shots=dir` also saves PNGs |
+| `npm run keyboard`                    | Walks five workflows with the keyboard only (changes demo data; `db:reset` afterwards) |
+| `npm run e2e`                         | Payment -> student balance, upload -> staff view, mark and publish -> student result, in a real browser (changes demo data) |
 | `npm run test:integration`            | API, database and storage tests against the throw-away `sms_test` database and `submissions-test` bucket (drops and re-creates the schema, empties the bucket, each run; needs `npm run services:up`) |
 
 The full README (every environment variable explained, demo tour and AI usage) is written at the end of the

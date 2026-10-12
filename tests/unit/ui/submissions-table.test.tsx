@@ -122,10 +122,11 @@ describe("SubmissionsTable", () => {
   it("shows a status badge for each student: on time, late with how late, not submitted", () => {
     render(<SubmissionsTable submissions={submissions([ON_TIME, LATE, NOT_SUBMITTED])} />);
 
-    expect(within(rowOf("Ayesha Rahman")).getByText("On time")).toBeTruthy();
-    const late = within(rowOf("Tanvir Hasan")).getByText("Late").parentElement!;
+    // Below the widest layout the badge is repeated under the name (CSS hides one of the two), so look at the column cell.
+    expect(within(rowOf("Ayesha Rahman")).getAllByText("On time").length).toBeGreaterThan(0);
+    const late = within(rowOf("Tanvir Hasan")).getAllByText("Late").at(-1)!.parentElement!;
     expect(late.textContent).toBe("Late·2 days");
-    expect(within(rowOf("Nusrat Jahan")).getByText("Not submitted")).toBeTruthy();
+    expect(within(rowOf("Nusrat Jahan")).getAllByText("Not submitted").length).toBeGreaterThan(0);
     expect(screen.getByText(/3 students/).textContent).toMatch(
       /1 on time, 1 late, 1 not submitted/,
     );
@@ -133,7 +134,7 @@ describe("SubmissionsTable", () => {
 
   it("shows the current file, the effective deadline and an extension with its reason", () => {
     render(<SubmissionsTable submissions={submissions([ON_TIME, LATE])} />);
-    expect(within(rowOf("Ayesha Rahman")).getByText("পোর্টফোলিও.pdf")).toBeTruthy();
+    expect(within(rowOf("Ayesha Rahman")).getAllByText(/পোর্টফোলিও.pdf/).length).toBeGreaterThan(0);
     expect(within(rowOf("Ayesha Rahman")).getByText("1.4 MB")).toBeTruthy();
     expect(within(rowOf("Tanvir Hasan")).getByText(/Extended/).textContent).toContain(
       "Medical grounds",
@@ -152,7 +153,7 @@ describe("SubmissionsTable", () => {
     const row = rowOf("Habib Ullah");
     expect(within(row).getByText("Withdrawn")).toBeTruthy();
     expect(within(row).getByText(/No longer eligible/)).toBeTruthy();
-    expect(within(row).getByText("On time")).toBeTruthy(); // still shown with the submission status
+    expect(within(row).getAllByText("On time").length).toBeGreaterThan(0); // still shown with the submission status
   });
 
   it("expands every version with name, size, arrival time and SHA-256, and collapses again", async () => {

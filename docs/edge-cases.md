@@ -63,17 +63,23 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 ## Cross-cutting
 
 - [x] **M** — Access control test: a student cannot read another student's data by changing an ID in the URL or API call.
-- [ ] **M** — Two staff editing the same record: the second save gets a "changed, reload" conflict, not a silent overwrite.
-- [ ] **M** — Empty states, loading states, and keyboard-accessible forms with labels.
+- [x] **M** — Two staff editing the same record: the second save gets a "changed, reload" conflict, not a silent overwrite.
+  (Student edit and status change, assessment edit / close / reopen and marks all carry a `version`; 409
+  `VERSION_CONFLICT` is covered in the integration and component tests.)
+- [x] **M** — Empty states, loading states, and keyboard-accessible forms with labels.
+  (M17: axe-core finds no violations on 23 page states in light and dark; the five workflows were walked with the
+  keyboard alone, `npm run a11y` and `npm run keyboard`.)
 
 ## Extras
 
 - [ ] **S** — Seed data built around these edge cases, plus a "demo tour" section in the README telling graders where
   to see each one. Highest return on effort.
 - [x] **S** — Activity timeline on each student record: status changes, payments, published marks.
-- [ ] **S** — GitHub Actions CI: lint, type-check, tests, `prisma validate`.
+- [x] **S** — GitHub Actions CI: lint, type-check, tests, `prisma validate`.
 - [x] **C** — CSV export of the overdue list and marksheet.
-- [ ] **C** — Playwright end-to-end test of one complete flow.
+- [x] **C** — Playwright end-to-end test of one complete flow.
+  (Built as `npm run e2e`, a script that drives the installed Chrome over the DevTools Protocol: no Playwright
+  dependency. It covers payment -> student balance, upload -> staff view, mark -> publish -> student result.)
 - [x] **C** — Printable fee statement and marksheet (print stylesheet).
 - [ ] **C** — Per-student deadline extensions (DB-014).
 

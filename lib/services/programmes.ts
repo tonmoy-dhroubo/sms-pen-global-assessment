@@ -115,6 +115,23 @@ async function billedStudentCounts(programmeId: string): Promise<Map<string, num
   return new Map(rows.map((row) => [row.academic_year, Number(row.students)]));
 }
 
+/** The same counts for every programme in one query, for the Programmes page: programme id, then session. */
+async function billedStudentCountsByProgramme(): Promise<Map<string, Map<string, number>>> {
+  const rows = await db.$queryRaw<
+    { programme_id: string; academic_year: string; students: bigint }[]
+  >`
+    SELECT pf.programme_id::text AS programme_id, pf.academic_year, count(DISTINCT c.student_id) AS students
+    FROM programme_fees pf JOIN fee_charges c ON c.programme_fee_id = pf.id
+    GROUP BY pf.programme_id, pf.academic_year`;
+  const result = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    const bySession = result.get(row.programme_id) ?? new Map<string, number>();
+    bySession.set(row.academic_year, Number(row.students));
+    result.set(row.programme_id, bySession);
+  }
+  return result;
+}
+
 function toSchedules(fees: FeeRow[], billed: Map<string, number>): FeeSchedule[] {
   const bySession = new Map<string, FeeRow[]>();
   for (const fee of fees) {
@@ -157,16 +174,18 @@ export async function getProgramme(id: string): Promise<ProgrammeDetail> {
 
 /** Every programme with its modules and fee schedules, for the Programmes page. */
 export async function listProgrammeDetails(): Promise<ProgrammeDetail[]> {
-  const rows = await db.programme.findMany({
-    orderBy: [{ name: "asc" }],
-    include: { ...WITH_MODULES, fees: true },
-  });
-  return Promise.all(
-    rows.map(async (row) => ({
-      ...toSummary(row),
-      feeSchedules: toSchedules(row.fees, await billedStudentCounts(row.id)),
-    })),
-  );
+  const [rows, billed] = await Promise.all([
+    db.programme.findMany({
+      orderBy: [{ name: "asc" }],
+      include: { ...WITH_MODULES, fees: true },
+    }),
+    billedStudentCountsByProgramme(),
+  ]);
+  // Two queries however many programmes there are (the counts used to be one query per programme).
+  return rows.map((row) => ({
+    ...toSummary(row),
+    feeSchedules: toSchedules(row.fees, billed.get(row.id) ?? new Map()),
+  }));
 }
 
 export interface ScheduleResult {

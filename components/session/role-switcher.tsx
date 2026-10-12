@@ -67,12 +67,18 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" aria-haspopup="listbox" className="max-w-[14rem] gap-1.5">
-          <span className="sr-only sm:not-sr-only sm:text-muted-foreground">Viewing as:</span>
+          <span className="sr-only whitespace-nowrap sm:not-sr-only sm:text-muted-foreground">
+            Viewing as:
+          </span>
           <span className="truncate font-medium max-sm:max-w-24">{label}</span>
           <ChevronsUpDownIcon className="size-3.5 opacity-60" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(24rem,calc(100vw-2rem))] p-0">
+      <PopoverContent
+        aria-label="Choose who to view the app as"
+        align="end"
+        className="w-[min(24rem,calc(100vw-2rem))] p-0"
+      >
         <Command
           shouldFilter={false}
           value={highlighted}
@@ -134,24 +140,23 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
                 </CommandItem>
               ))}
             </CommandGroup>
-
-            <div role="status" className="px-3 py-3 text-center text-sm text-muted-foreground">
-              {status === "loading" ? (
-                "Searching…"
-              ) : status === "error" ? (
-                <>
-                  {error}{" "}
-                  <Button variant="link" size="sm" onClick={retry} className="h-auto p-0">
-                    Try again
-                  </Button>
-                </>
-              ) : students.length === 0 ? (
-                "No students match your search."
-              ) : total > students.length ? (
-                `Showing ${students.length} of ${total} students. Type to narrow the list.`
-              ) : null}
-            </div>
           </CommandList>
+          <div role="status" className="px-3 py-3 text-center text-sm text-muted-foreground">
+            {status === "loading" ? (
+              "Searching…"
+            ) : status === "error" ? (
+              <>
+                {error}{" "}
+                <Button variant="link" size="sm" onClick={retry} className="h-auto p-0">
+                  Try again
+                </Button>
+              </>
+            ) : students.length === 0 ? (
+              "No students match your search."
+            ) : total > students.length ? (
+              `Showing ${students.length} of ${total} students. Type to narrow the list.`
+            ) : null}
+          </div>
         </Command>
 
         {current ? (

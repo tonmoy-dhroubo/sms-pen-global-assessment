@@ -51,8 +51,9 @@ export function ReceiptCard({
   className,
 }: ReceiptCardProps) {
   return (
-    <section
+    <div
       data-slot="receipt"
+      role="group"
       aria-label={typeof title === "string" ? title : "Submission receipt"}
       className={cn("space-y-3 rounded-xl border bg-card p-4 text-card-foreground", className)}
     >
@@ -84,6 +85,6 @@ export function ReceiptCard({
           </dd>
         </div>
       </dl>
-    </section>
+    </div>
   );
 }

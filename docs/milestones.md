@@ -27,7 +27,7 @@ waiting on a decision.
 | M14 | Marksheet and results | M13 | Done | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
 | M15 | Student portal | M14 | Done | m15-student-portal | [#16](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/16) |
 | M16 | Activity timeline and extras | M15 | Done | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
-| M17 | Quality pass | M16 | Not started | | |
+| M17 | Quality pass | M16 | In review | m17-quality-pass | [#18](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/18) |
 | M18 | README, demo tour and submission | M17 | Not started | | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
 
@@ -523,22 +523,22 @@ Tasks:
 **References:** edge-cases.md (all), Definition of Done.
 
 Tasks:
-- [ ] **Gap from M16:** build the **Submissions** section of the staff student record (`/staff/students/[id]`, per
+- [x] **Gap from M16:** build the **Submissions** section of the staff student record (`/staff/students/[id]`, per
       pages.md: per assessment — deadline, status badge with late-by, file versions with receipts, download). It still
       shows a "Coming in M13" placeholder. Reuse the M12/M13 services and components.
-- [ ] Check the quick-search "view all" link: the Students list must honour `q` together with all four `status` values.
-- [ ] Walk every item in edge-cases.md against the running app; anything unticked is either fixed or explicitly
+- [x] Check the quick-search "view all" link: the Students list must honour `q` together with all four `status` values.
+- [x] Walk every item in edge-cases.md against the running app; anything unticked is either fixed or explicitly
       reported as dropped (with a reason).
-- [ ] Accessibility: keyboard-only walkthrough of each workflow; labels; focus states; contrast in both themes;
+- [x] Accessibility: keyboard-only walkthrough of each workflow; labels; focus states; contrast in both themes;
       run an automated check (axe) on the main pages.
-- [ ] Responsive check at 375 px, 768 px, 1280 px. Known item from M09: the student list's five filters stack
+- [x] Responsive check at 375 px, 768 px, 1280 px. Known item from M09: the student list's five filters stack
       tall at ~960 px and the fee column scrolls out of view; lay filters out in one row on wide screens and keep
       the fee badge visible.
-- [ ] Empty, loading and error states for every list and panel.
-- [ ] (Could) One Playwright test covering: staff records a payment → student sees the updated balance; student
+- [x] Empty, loading and error states for every list and panel.
+- [x] (Could) One Playwright test covering: staff records a payment → student sees the updated balance; student
       uploads → staff sees the submission; staff publishes → student sees the result.
-- [ ] Review indexes and query counts on the heaviest pages.
-- [ ] Dependency hygiene: move the `shadcn` CLI from `dependencies` to `devDependencies` (it pulls the `braces`
+- [x] Review indexes and query counts on the heaviest pages.
+- [x] Dependency hygiene: move the `shadcn` CLI from `dependencies` to `devDependencies` (it pulls the `braces`
       advisory into the production tree); re-run `npm audit --omit=dev` and record the result.
 
 ---

@@ -72,6 +72,26 @@ function StudentCell({ row }: { row: SubmissionRow }) {
         <span className="font-mono">{student.studentNumber}</span>
         <span title={student.programme.name}> &middot; {student.programme.code}</span>
       </div>
+      {/* Below the widest layout the status, times and file fold in here, so nothing scrolls out of view. */}
+      <div className="mt-1.5 space-y-1 text-xs whitespace-normal xl:hidden">
+        <StatusBadge
+          group="submission"
+          value={row.status}
+          detail={row.status === "LATE" ? row.lateBy : null}
+        />
+        <div className="text-muted-foreground">
+          Deadline <DateTime value={row.deadline} />
+          {row.extension ? " (extended)" : null}
+        </div>
+        {row.submission && row.currentFile ? (
+          <div className="text-muted-foreground">
+            Submitted <DateTime value={row.submission.lastSubmittedAt} />
+            <span className="block break-words">
+              {row.currentFile.fileName} &middot; {formatFileSize(row.currentFile.sizeBytes)}
+            </span>
+          </div>
+        ) : null}
+      </div>
       {!row.eligible ? (
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           <StatusBadge group="enrolment" value={student.status} />
@@ -137,10 +157,18 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead scope="col">Student</TableHead>
-              <TableHead scope="col">Status</TableHead>
-              <TableHead scope="col">Submitted</TableHead>
-              <TableHead scope="col">Current file</TableHead>
-              <TableHead scope="col">Deadline</TableHead>
+              <TableHead scope="col" className="max-xl:hidden">
+                Status
+              </TableHead>
+              <TableHead scope="col" className="max-xl:hidden">
+                Submitted
+              </TableHead>
+              <TableHead scope="col" className="max-xl:hidden">
+                Current file
+              </TableHead>
+              <TableHead scope="col" className="max-xl:hidden">
+                Deadline
+              </TableHead>
               <TableHead scope="col">
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -156,14 +184,14 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
                     <TableCell>
                       <StudentCell row={row} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-xl:hidden">
                       <StatusBadge
                         group="submission"
                         value={row.status}
                         detail={row.status === "LATE" ? row.lateBy : null}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-xl:hidden">
                       {row.submission ? (
                         <div className="min-w-32">
                           <DateTime value={row.submission.lastSubmittedAt} />
@@ -177,10 +205,10 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
                         <span className="text-muted-foreground">&mdash;</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-xl:hidden">
                       <FileCell file={row.currentFile} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-xl:hidden">
                       <div className="min-w-32">
                         <DateTime value={row.deadline} />
                         {row.extension ? (

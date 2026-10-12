@@ -62,7 +62,7 @@ export function AgeingBreakdown({ ageing }: { ageing: Dashboard["ageing"] }) {
                 );
               })}
             </div>
-            <dl className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3">
               {ageing.map((bucket) => (
                 <div key={bucket.bucket} className="flex items-start gap-2">
                   <span
@@ -72,7 +72,7 @@ export function AgeingBreakdown({ ageing }: { ageing: Dashboard["ageing"] }) {
                       BUCKET_STYLE[bucket.bucket].swatch,
                     )}
                   />
-                  <div>
+                  <dl>
                     <dt className="text-sm font-medium">{BUCKET_STYLE[bucket.bucket].label}</dt>
                     <dd className="text-sm tabular-nums">
                       {bucket.students} {bucket.students === 1 ? "student" : "students"}
@@ -80,10 +80,10 @@ export function AgeingBreakdown({ ageing }: { ageing: Dashboard["ageing"] }) {
                     <dd className="text-sm text-muted-foreground">
                       <Money value={bucket.amount} />
                     </dd>
-                  </div>
+                  </dl>
                 </div>
               ))}
-            </dl>
+            </div>
             <p className="text-xs text-muted-foreground">
               <Link href="/staff/fees?feeState=overdue" className="underline underline-offset-4">
                 Open the fees overview

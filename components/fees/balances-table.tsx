@@ -14,10 +14,51 @@ import type { BalanceItem } from "@/lib/services/fees";
 
 // The fees overview table (pages.md `/staff/fees`): every student with a balance, whatever their enrolment status (a
 // withdrawn student who still owes money stays on it), with overdue amount, how long, the last payment, and Record
-// payment. Sorting and paging are on the server through DataTable; sortable columns use the API's sort field names.
+// payment. Below the xl breakpoint the status, fee and payment columns fold into the student cell. Sorting and paging are on the server through DataTable; sortable columns use the API's sort field names.
 
 function days(count: number): string {
   return `${count} ${count === 1 ? "day" : "days"}`;
+}
+
+/** The status, fee figures and last payment as one block, shown under the name where those columns are hidden. */
+function FoldedDetails({ item }: { item: BalanceItem }) {
+  const { feeState, balance, credit, overdueAmount, oldestOverdueDays } = item.feeSummary;
+  return (
+    <div className="mt-1.5 space-y-1 text-xs whitespace-normal xl:hidden">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <StatusBadge group="enrolment" value={item.status} />
+        <StatusBadge group="fees" value={feeState} />
+      </div>
+      <div className="text-muted-foreground">
+        {feeState === "credit" ? (
+          <>
+            Credit <Money value={credit} />
+          </>
+        ) : (
+          <>
+            Balance <Money value={balance} />
+          </>
+        )}
+        {feeState === "overdue" ? (
+          <>
+            {" "}
+            &middot; <Money value={overdueAmount} /> overdue
+            {oldestOverdueDays !== null ? ` for ${days(oldestOverdueDays)}` : null}
+          </>
+        ) : null}
+      </div>
+      <div className="text-muted-foreground">
+        {item.lastPayment ? (
+          <>
+            Last payment <DateTime value={item.lastPayment.paidAt} /> (
+            <Money value={item.lastPayment.amount} />)
+          </>
+        ) : (
+          "No payment yet"
+        )}
+      </div>
+    </div>
+  );
 }
 
 const COLUMNS: ColumnDef<BalanceItem, unknown>[] = [
@@ -37,21 +78,26 @@ const COLUMNS: ColumnDef<BalanceItem, unknown>[] = [
           <span className="font-mono">{row.original.studentNumber}</span>
           <span title={row.original.programme.name}> &middot; {row.original.programme.code}</span>
         </div>
+        {/* Below the widest layout the other columns fold in here, so the money figures never scroll out of view. */}
+        <FoldedDetails item={row.original} />
       </div>
     ),
   },
   {
     id: "status",
     header: "Status",
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <StatusBadge group="enrolment" value={row.original.status} />,
   },
   {
     id: "fees",
     header: "Fees",
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => <StatusBadge group="fees" value={row.original.feeSummary.feeState} />,
   },
   {
     id: "balance",
+    meta: { className: "max-xl:hidden" },
     header: () => <span className="block text-right">Balance</span>,
     cell: ({ row }) => {
       const { feeState, balance, credit } = row.original.feeSummary;
@@ -73,6 +119,7 @@ const COLUMNS: ColumnDef<BalanceItem, unknown>[] = [
     id: "overdueAmount",
     header: () => <span className="block text-right">Overdue</span>,
     enableSorting: true,
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => (
       <div className="text-right">
         {row.original.feeSummary.feeState === "overdue" ? (
@@ -87,6 +134,7 @@ const COLUMNS: ColumnDef<BalanceItem, unknown>[] = [
     id: "oldestOverdueDays",
     header: "Overdue for",
     enableSorting: true,
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) => {
       const { oldestOverdueDays, ageingBucket } = row.original.feeSummary;
       return oldestOverdueDays === null ? (
@@ -104,6 +152,7 @@ const COLUMNS: ColumnDef<BalanceItem, unknown>[] = [
   {
     id: "lastPayment",
     header: "Last payment",
+    meta: { className: "max-xl:hidden" },
     cell: ({ row }) =>
       row.original.lastPayment ? (
         <>

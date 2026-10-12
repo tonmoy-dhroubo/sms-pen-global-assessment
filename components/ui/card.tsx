@@ -32,9 +32,10 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+// A real heading (h2) so a page's sections form an outline; sub-sections inside a card use h3.
+function CardTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
-    <div
+    <h2
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-normal font-medium group-data-[size=sm]/card:text-sm",

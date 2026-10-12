@@ -23,7 +23,7 @@ function Kpi({
 }) {
   return (
     <Card size="sm" className="min-w-0">
-      <div className="flex h-full flex-col gap-1 px-(--card-spacing)">
+      <dl className="flex h-full flex-col gap-1 px-(--card-spacing)">
         <dt className="text-sm text-muted-foreground">{label}</dt>
         <dd className="text-2xl font-semibold tracking-tight tabular-nums xl:text-xl">{value}</dd>
         <dd className="text-xs text-muted-foreground">{detail}</dd>
@@ -34,7 +34,7 @@ function Kpi({
             </Link>
           </dd>
         ) : null}
-      </div>
+      </dl>
     </Card>
   );
 }
@@ -49,7 +49,7 @@ export function KpiCards({ kpis }: { kpis: Dashboard["kpis"] }) {
 
   return (
     <section aria-label="Key figures">
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi
           label="Enrolled students"
           value={students.enrolled}
@@ -91,7 +91,7 @@ export function KpiCards({ kpis }: { kpis: Dashboard["kpis"] }) {
           href="/staff/assessments"
           linkLabel="View assessments"
         />
-      </dl>
+      </div>
     </section>
   );
 }
