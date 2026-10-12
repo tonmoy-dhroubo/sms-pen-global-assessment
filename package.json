@@ -25,6 +25,7 @@
     "db:drift": "prisma migrate diff --from-config-datasource --to-schema db/schema.prisma --exit-code",
     "db:seed": "tsx db/seed/index.ts",
     "db:reset": "tsx db/seed/reset.ts",
+    "uploads:cleanup": "tsx db/tools/uploads-cleanup.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

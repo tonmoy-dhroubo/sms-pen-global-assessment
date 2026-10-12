@@ -23,7 +23,7 @@ waiting on a decision.
 | M10 | Fees and payments | M09 | Done | m10-fees-payments | [#11](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/11) |
 | M11 | Staff dashboard | M10 | Done | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
 | M12 | Assessments (staff) | M09 | Done | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
-| M13 | Submissions (student upload flow) | M12 | Not started | | |
+| M13 | Submissions (student upload flow) | M12 | In review | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
 | M14 | Marksheet and results | M13 | Not started | | |
 | M15 | Student portal | M14 | Not started | | |
 | M16 | Activity timeline and extras | M15 | Not started | | |
@@ -446,15 +446,15 @@ Tasks:
 **References:** api.md (Submissions and files), D-013, D-023, DB-017, edge-cases.md (Submissions).
 
 Tasks:
-- [ ] `upload-url` endpoint: rule checks via `canUpload`, type/size checks, creates `PENDING_UPLOAD` (15-minute
+- [x] `upload-url` endpoint: rule checks via `canUpload`, type/size checks, creates `PENDING_UPLOAD` (15-minute
       expiry), returns presigned PUT.
-- [ ] `confirm` endpoint: idempotent; verifies object exists and size; magic bytes (PDF; DOCX zip with
+- [x] `confirm` endpoint: idempotent; verifies object exists and size; magic bytes (PDF; DOCX zip with
       `word/document.xml`; reject macro-enabled); rejects empty files; computes SHA-256; `uploadedAt` from the object's
       arrival time; creates or adds a version to the submission; deletes invalid objects; returns the receipt.
-- [ ] Cleanup script `npm run uploads:cleanup` for expired pending uploads.
-- [ ] UI: `/student/assessments` and `/student/assessments/[id]` — countdown, rules text, upload with progress,
+- [x] Cleanup script `npm run uploads:cleanup` for expired pending uploads.
+- [x] UI: `/student/assessments` and `/student/assessments/[id]` — countdown, rules text, upload with progress,
       replace, disabled states with reasons, receipt display.
-- [ ] Integration tests: every submission edge case, including double confirm, upload after close, on-time lock
+- [x] Integration tests: every submission edge case, including double confirm, upload after close, on-time lock
       after deadline, first upload after deadline flagged late, wrong content with a `.pdf` name, `.docm`, empty file,
       oversize, deferred student.
 

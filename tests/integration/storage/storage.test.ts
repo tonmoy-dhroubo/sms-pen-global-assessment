@@ -12,6 +12,7 @@ import {
   presignPut,
   putObject,
   readFirstBytes,
+  readRange,
   sha256,
 } from "@/lib/storage";
 import { createStorage } from "@/lib/storage-core";
@@ -78,6 +79,18 @@ describe("put, head, read, hash, delete", () => {
   it("readFirstBytes and sha256 throw ObjectNotFoundError for a missing key", async () => {
     await expect(readFirstBytes(scratch("missing"), 4)).rejects.toBeInstanceOf(ObjectNotFoundError);
     await expect(sha256(scratch("missing"))).rejects.toBeInstanceOf(ObjectNotFoundError);
+  });
+
+  it("readRange reads a slice from the middle and clips at the end of the object", async () => {
+    const key = scratch("range.bin");
+    await putObject(key, Buffer.from("0123456789"), "application/octet-stream");
+    expect((await readRange(key, 3, 4)).toString()).toBe("3456");
+    expect((await readRange(key, 6, 100)).toString()).toBe("6789");
+    expect((await readRange(key, 10, 5)).length).toBe(0); // starts at the end: nothing left
+    expect((await readRange(key, 50, 5)).length).toBe(0); // starts past the end
+    await expect(readRange(scratch("missing"), 0, 4)).rejects.toBeInstanceOf(ObjectNotFoundError);
+    await expect(readRange(key, -1, 4)).rejects.toBeInstanceOf(RangeError);
+    await expect(readRange(key, 0, 0)).rejects.toBeInstanceOf(RangeError);
   });
 
   it("hashes a multi-megabyte object by streaming", async () => {
