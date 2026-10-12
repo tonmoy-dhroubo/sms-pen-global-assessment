@@ -190,6 +190,19 @@ export class Page {
     });
   }
 
+  /** Attaches files to an `<input type="file">` (a native file chooser cannot be driven from outside the browser). */
+  async setFiles(selector: string, files: string[]): Promise<void> {
+    const document = (await this.send("DOM.getDocument", { depth: 0 })) as {
+      root: { nodeId: number };
+    };
+    const found = (await this.send("DOM.querySelector", {
+      nodeId: document.root.nodeId,
+      selector,
+    })) as { nodeId: number };
+    if (!found.nodeId) throw new Error(`No file input for ${selector}.`);
+    await this.send("DOM.setFileInputFiles", { nodeId: found.nodeId, files });
+  }
+
   async type(text: string): Promise<void> {
     await this.send("Input.insertText", { text });
   }

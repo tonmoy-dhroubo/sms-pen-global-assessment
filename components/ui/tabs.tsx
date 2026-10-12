@@ -70,7 +70,11 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn("flex-1 text-sm outline-none", className)}
+      // The panel is a tab stop (Radix gives it tabindex 0, so keyboard users can scroll it), so it needs a visible focus ring.
+      className={cn(
+        "flex-1 rounded-md text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        className,
+      )}
       {...props}
     />
   );
