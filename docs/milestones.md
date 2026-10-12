@@ -26,7 +26,7 @@ waiting on a decision.
 | M13 | Submissions (student upload flow) | M12 | Done | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
 | M14 | Marksheet and results | M13 | Done | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
 | M15 | Student portal | M14 | Done | m15-student-portal | [#16](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/16) |
-| M16 | Activity timeline and extras | M15 | In progress | m16-timeline-extras | |
+| M16 | Activity timeline and extras | M15 | In review | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
 | M17 | Quality pass | M16 | Not started | | |
 | M18 | README, demo tour and submission | M17 | Not started | | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
