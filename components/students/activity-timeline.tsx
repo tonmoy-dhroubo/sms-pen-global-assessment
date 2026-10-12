@@ -180,9 +180,54 @@ export interface ActivityTimelineProps {
   now: string;
 }
 
+/** Newest first; events at the same instant fall back to their id (the same order the server uses). */
+function newestFirst(a: TimelineEvent, b: TimelineEvent): number {
+  if (a.at !== b.at) return a.at < b.at ? 1 : -1;
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+}
+
+/**
+ * Folds a refreshed first page into what is already on screen: the union of both, newest first, each event once. Older
+ * events the visitor already loaded are kept, and so are events the new page pushed past its end.
+ */
+export function mergeFirstPage(
+  current: readonly TimelineEvent[],
+  fresh: readonly TimelineEvent[],
+): TimelineEvent[] {
+  const byId = new Map<string, TimelineEvent>();
+  for (const event of current) byId.set(event.id, event);
+  for (const event of fresh) byId.set(event.id, event);
+  return [...byId.values()].sort(newestFirst);
+}
+
+/**
+ * The cursor after a refresh. `null` means "nothing older": if either side knows that, it still holds (the new events
+ * are all newer, and the union covers both). Otherwise the older cursor wins, so nothing already loaded is skipped
+ * and nothing is lost to the page shift (cursors are ISO timestamps, which sort as text).
+ */
+function mergeCursor(current: string | null, fresh: string | null): string | null {
+  if (current === null || fresh === null) return null;
+  return current < fresh ? current : fresh;
+}
+
 export function ActivityTimeline({ studentId, initial, now }: ActivityTimelineProps) {
   const [events, setEvents] = useState<TimelineEvent[]>(initial.items);
   const [nextBefore, setNextBefore] = useState<string | null>(initial.nextBefore);
+  // `router.refresh()` re-renders this component with a new `initial` instead of remounting it, and useState only reads
+  // its argument once. So a new first page (after recording a payment, changing a status, publishing results) is
+  // folded into the state here, while rendering: React re-renders straight away, without a flash of the old list.
+  const [seen, setSeen] = useState({ studentId, initial });
+  if (seen.initial !== initial || seen.studentId !== studentId) {
+    setSeen({ studentId, initial });
+    if (seen.studentId !== studentId) {
+      // Another student's page, not a refresh of this one: start over.
+      setEvents(initial.items);
+      setNextBefore(initial.nextBefore);
+    } else {
+      setEvents((current) => mergeFirstPage(current, initial.items));
+      setNextBefore((current) => mergeCursor(current, initial.nextBefore));
+    }
+  }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");

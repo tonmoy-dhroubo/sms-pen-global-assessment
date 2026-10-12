@@ -161,4 +161,98 @@ describe("ActivityTimeline", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
     expect(screen.queryByRole("button", { name: /Load older|Try again/ })).toBeNull();
   });
+
+  describe("after the server refreshes the page (code review #5)", () => {
+    const NEW_PAYMENT = event({
+      id: "payment:9",
+      at: "2026-10-12T07:00:00.000Z",
+      summary: "Payment recorded: ৳5,000.00 by bkash, reference RCPT-9",
+    });
+
+    it("shows an event that arrives with a new first page", () => {
+      const { rerender } = render(<ActivityTimeline studentId="s1" initial={first} now={NOW} />);
+      expect(screen.queryByText(NEW_PAYMENT.summary)).toBeNull();
+
+      rerender(
+        <ActivityTimeline
+          studentId="s1"
+          initial={{ items: [NEW_PAYMENT, ...first.items], nextBefore: first.nextBefore }}
+          now={NOW}
+        />,
+      );
+
+      const items = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+      expect(items[0]).toContain("RCPT-9");
+      expect(items).toHaveLength(4);
+    });
+
+    it("keeps the older events already loaded, and does not offer them again", async () => {
+      const older = event({
+        id: "charge:5",
+        at: "2026-08-20T04:00:00.000Z",
+        type: "FEE_CHARGE",
+        summary: "Fee charged: Tuition (৳40,000.00)",
+      });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () =>
+          jsonResponse({ items: [older], nextBefore: null } satisfies StudentTimeline),
+        ),
+      );
+      const user = userEvent.setup();
+      const { rerender } = render(<ActivityTimeline studentId="s1" initial={first} now={NOW} />);
+      await user.click(screen.getByRole("button", { name: "Load older events" }));
+      await screen.findByText(older.summary);
+      expect(screen.getByText("That is everything on record.")).toBeTruthy();
+
+      // The refreshed first page is shifted by the new event: the last event of the old page falls off its end.
+      rerender(
+        <ActivityTimeline
+          studentId="s1"
+          initial={{
+            items: [NEW_PAYMENT, TODAY_PAYMENT, YESTERDAY_WITHHELD],
+            nextBefore: YESTERDAY_WITHHELD.at,
+          }}
+          now={NOW}
+        />,
+      );
+
+      expect(screen.getByText(NEW_PAYMENT.summary)).toBeTruthy();
+      expect(screen.getByText(older.summary)).toBeTruthy();
+      expect(screen.getAllByText(/Submitted Essay 1/)).toHaveLength(1);
+      // Everything older was already loaded, so there is nothing more to fetch.
+      expect(screen.queryByRole("button", { name: /Load older/ })).toBeNull();
+      expect(screen.getByText("That is everything on record.")).toBeTruthy();
+    });
+
+    it("keeps offering older events when none were loaded before the refresh", () => {
+      const { rerender } = render(<ActivityTimeline studentId="s1" initial={first} now={NOW} />);
+      rerender(
+        <ActivityTimeline
+          studentId="s1"
+          initial={{
+            items: [NEW_PAYMENT, TODAY_PAYMENT, YESTERDAY_WITHHELD],
+            nextBefore: YESTERDAY_WITHHELD.at,
+          }}
+          now={NOW}
+        />,
+      );
+      // The event the new page pushed past its end stays visible; the button is still there for what lies beyond.
+      expect(screen.getByText(/Submitted Essay 1/)).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Load older events" })).toBeTruthy();
+    });
+
+    it("starts over when the page switches to another student", () => {
+      const { rerender } = render(<ActivityTimeline studentId="s1" initial={first} now={NOW} />);
+      rerender(
+        <ActivityTimeline
+          studentId="s2"
+          initial={{ items: [NEW_PAYMENT], nextBefore: null }}
+          now={NOW}
+        />,
+      );
+      expect(screen.getAllByRole("listitem")).toHaveLength(1);
+      expect(screen.queryByText(PAYMENT_SUMMARY)).toBeNull();
+    });
+  });
 });

@@ -135,6 +135,34 @@ describe("Countdown", () => {
     expect(screen.getByRole("timer").getAttribute("data-past")).toBe("true");
   });
 
+  it("restarts from a refreshed server time instead of counting the elapsed time twice (code review #6)", () => {
+    const deadline = "2026-10-11T12:10:00Z";
+    const { rerender } = render(<Countdown deadline={deadline} serverNow="2026-10-11T12:00:00Z" />);
+    expect(screen.getByRole("timer").textContent).toBe("10m 0s");
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(screen.getByRole("timer").textContent).toBe("9m 0s");
+
+    // router.refresh() delivers the server's current time: one minute after the first render.
+    rerender(<Countdown deadline={deadline} serverNow="2026-10-11T12:01:00Z" />);
+    expect(screen.getByRole("timer").textContent).toBe("9m 0s");
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.getByRole("timer").textContent).toBe("8m 55s");
+  });
+
+  it("keeps ticking from the old baseline when the same server time is passed again", () => {
+    const deadline = "2026-10-11T12:10:00Z";
+    const { rerender } = render(<Countdown deadline={deadline} serverNow="2026-10-11T12:00:00Z" />);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    rerender(<Countdown deadline={deadline} serverNow="2026-10-11T12:00:00Z" />);
+    expect(screen.getByRole("timer").textContent).toBe("9m 0s");
+  });
+
   it("stops its timer when it unmounts", () => {
     const { unmount } = render(
       <Countdown deadline="2026-10-11T12:01:00Z" serverNow="2026-10-11T12:00:00Z" />,
