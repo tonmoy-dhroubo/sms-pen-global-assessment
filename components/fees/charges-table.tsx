@@ -32,7 +32,9 @@ export function ChargesTable({ charges }: { charges: ChargeDto[] }) {
         <TableHeader>
           <TableRow>
             <TableHead scope="col">Description</TableHead>
-            <TableHead scope="col">Type</TableHead>
+            <TableHead scope="col" className="max-sm:hidden">
+              Type
+            </TableHead>
             <TableHead scope="col">Due</TableHead>
             <TableHead scope="col" className="text-right">
               Amount
@@ -42,9 +44,13 @@ export function ChargesTable({ charges }: { charges: ChargeDto[] }) {
         <TableBody>
           {charges.map((charge) => (
             <TableRow key={charge.id}>
-              <TableCell className="max-w-72">
-                <span className="block truncate" title={charge.description}>
+              <TableCell className="max-w-72 whitespace-normal">
+                <span className="block sm:truncate" title={charge.description}>
                   {charge.description}
+                </span>
+                {/* The Type column is hidden on phones, so the kind shows here instead. */}
+                <span className="mt-1 block sm:hidden">
+                  <ChargeKindBadge kind={charge.kind} />
                 </span>
                 {charge.kind !== "PROGRAMME_FEE" && charge.createdBy ? (
                   <span className="block text-xs text-muted-foreground">
@@ -52,7 +58,7 @@ export function ChargesTable({ charges }: { charges: ChargeDto[] }) {
                   </span>
                 ) : null}
               </TableCell>
-              <TableCell>
+              <TableCell className="max-sm:hidden">
                 <ChargeKindBadge kind={charge.kind} />
               </TableCell>
               <TableCell>

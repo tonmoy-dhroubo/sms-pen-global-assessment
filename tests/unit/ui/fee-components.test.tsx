@@ -343,7 +343,8 @@ describe("ChargesTable", () => {
     expect(screen.getAllByText(/^Added by /).map((e) => e.textContent)).toEqual([
       "Added by Fatema Begum",
     ]);
-    expect(screen.getByText("Waiver")).toBeTruthy();
+    // The kind badge is repeated under the description on phones (CSS shows one of the two).
+    expect(screen.getAllByText("Waiver").length).toBeGreaterThan(0);
     expect(screen.getByText("-৳20,000.00")).toBeTruthy();
   });
 });

@@ -42,7 +42,7 @@ const COLUMNS: ColumnDef<StudentListItem, unknown>[] = [
         </Link>
         <div className="truncate text-xs text-muted-foreground">{row.original.email}</div>
         {/* Below the widest layout the Status and Fees columns are folded in here, so the fee badge never scrolls out of view. */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 xl:hidden">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal xl:hidden">
           <span className="text-xs text-muted-foreground sm:hidden">
             {row.original.programme.code}
           </span>
