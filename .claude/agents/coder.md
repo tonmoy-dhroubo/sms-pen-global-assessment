@@ -34,6 +34,9 @@ Read `AGENTS.md` and `docs/tech-stack.md`, plus any doc or decision the task ref
   fails or you skipped a step, say so.
 - Never commit credentials; keep `.env.example` in sync when you add an environment variable.
 - Commit and push your milestone branch regularly; never push code straight to `main`.
+- Leave nothing running when you finish: stop any dev/production server you started, and don't leave background
+  shell commands running. On this Windows machine use `node` (not `python3`, whose launcher can hang) for helper
+  scripts.
 
 ## Boundaries
 
