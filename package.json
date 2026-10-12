@@ -25,6 +25,7 @@
     "db:drift": "prisma migrate diff --from-config-datasource --to-schema db/schema.prisma --exit-code",
     "db:seed": "tsx db/seed/index.ts",
     "db:reset": "tsx db/seed/reset.ts",
+    "a11y": "tsx scripts/a11y-check.ts",
     "uploads:cleanup": "tsx db/tools/uploads-cleanup.ts",
     "db:studio": "prisma studio"
   },
@@ -64,6 +65,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^5.0.3",
+    "axe-core": "^4.11.1",
     "dotenv": "^18.0.7",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",

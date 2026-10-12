@@ -205,6 +205,7 @@ export function StaffQuickSearch() {
           </div>
         </PopoverAnchor>
         <PopoverContent
+          aria-label="Student search results"
           align="start"
           // Focus stays in the input; the list is only a view of what the input is searching for.
           onOpenAutoFocus={(event) => event.preventDefault()}
@@ -241,18 +242,18 @@ export function StaffQuickSearch() {
                 ) : null}
               </CommandGroup>
             ) : null}
-            <div role="status" className="px-3 py-3 text-center text-sm text-muted-foreground">
-              {text === ""
-                ? "Type a name, a Student ID or an email address."
-                : error
-                  ? error
-                  : waiting && students.length === 0
-                    ? "Searching…"
-                    : students.length === 0
-                      ? `No students match “${text}”.`
-                      : null}
-            </div>
           </CommandList>
+          <div role="status" className="px-3 py-3 text-center text-sm text-muted-foreground">
+            {text === ""
+              ? "Type a name, a Student ID or an email address."
+              : error
+                ? error
+                : waiting && students.length === 0
+                  ? "Searching…"
+                  : students.length === 0
+                    ? `No students match “${text}”.`
+                    : null}
+          </div>
         </PopoverContent>
       </Popover>
     </Command>
