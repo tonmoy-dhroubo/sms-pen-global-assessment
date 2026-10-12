@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ConstructionIcon, PencilIcon } from "lucide-react";
+import { ArrowLeftIcon, PencilIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,13 +11,15 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { ActivityTimeline } from "@/components/students/activity-timeline";
 import { FeeStatus } from "@/components/students/fee-status";
 import { StatusChangeDialog } from "@/components/students/status-change-dialog";
+import { StudentSubmissionsCard } from "@/components/students/student-submissions-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotFoundError } from "@/lib/api/errors";
 import { requireStaffPage } from "@/lib/page-guards";
 import { getStudentFees } from "@/lib/services/fees";
 import { getStudentResults } from "@/lib/services/marks";
 import { getStudent } from "@/lib/services/students";
+import { getStudentSubmissions } from "@/lib/services/submissions";
 import { getStudentTimeline } from "@/lib/services/timeline";
 
 export const metadata: Metadata = { title: "Student record" };
@@ -31,43 +33,18 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** A section whose content arrives in a later milestone (docs/milestones.md). */
-function ComingSoon({
-  title,
-  description,
-  milestone,
-}: {
-  title: string;
-  description: string;
-  milestone: string;
-}) {
-  return (
-    <Card className="print:hidden">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ConstructionIcon className="size-4" aria-hidden="true" />
-          Coming in {milestone}.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
 // The student record (pages.md `/staff/students/[id]`): the header with the profile and the status and fee badges, the
-// edit and status actions, the fees and results sections, and the sections that later milestones fill in.
+// edit and status actions, the fees, results and submissions sections, and the activity timeline.
 export default async function StudentRecordPage({ params }: { params: Promise<{ id: string }> }) {
   await requireStaffPage();
   const { id } = await params;
 
   const now = new Date();
-  const [student, fees, results, timeline] = await Promise.all([
+  const [student, fees, results, submissions, timeline] = await Promise.all([
     getStudent(id),
     getStudentFees(id),
     getStudentResults(id),
+    getStudentSubmissions(id),
     getStudentTimeline(id),
   ]).catch((error: unknown) => {
     if (error instanceof NotFoundError) notFound();
@@ -145,11 +122,7 @@ export default async function StudentRecordPage({ params }: { params: Promise<{ 
 
       <StudentResultsCard studentId={student.id} studentName={student.fullName} results={results} />
 
-      <ComingSoon
-        title="Submissions"
-        description="Each assessment's deadline, status, file versions and receipt."
-        milestone="M13"
-      />
+      <StudentSubmissionsCard studentName={student.fullName} assessments={submissions.items} />
       <ActivityTimeline studentId={student.id} initial={timeline} now={now.toISOString()} />
     </div>
   );

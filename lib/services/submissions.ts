@@ -687,3 +687,16 @@ export async function getMyAssessment(
   if (!row) throw new NotFoundError("Assessment not found.");
   return { now: now.toISOString(), assessment: toMyAssessment(row, me, now) };
 }
+
+/**
+ * A student's assessments as staff see them on the student record: the same list the student gets (their programme's
+ * modules plus anything they submitted to, each with the student's own deadline, status, and every file version with
+ * its receipt), read by student id instead of the session. An unknown student is a 404.
+ */
+export async function getStudentSubmissions(
+  studentId: string,
+  clock: Clock = systemClock,
+): Promise<MyAssessmentList> {
+  assertKnownId(studentId, "Student");
+  return listMyAssessments(studentId, clock);
+}
