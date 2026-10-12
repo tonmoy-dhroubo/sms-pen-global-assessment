@@ -235,7 +235,8 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 ## D-026: Cache Components off; M01 tooling notes
 
 - Date: 2026-10-12
-- Decision: `cacheComponents` and `partialPrefetching` are disabled in `next.config.ts`. Every page is per-user and
+- Decision: `cacheComponents` and `partialPrefetching` are off — `next.config.ts` simply doesn't enable them
+  (off is the default). Every page is per-user and
   dynamic (signed role cookie, live database data), so classic dynamic rendering is simpler and avoids
   Suspense/`"use cache"` requirements on every cookie or Prisma read.
 - Also recorded from M01:
@@ -464,3 +465,14 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     and noted in the README's known limitations.
   - Per-student deadline extensions (DB-014, Could) are **dropped**: the table and rules support them, but there is
     no endpoint or UI to create one.
+
+## D-041: `services:up` runs the bucket init separately (M18)
+
+- Date: 2026-10-12
+- Decision: `npm run services:up` = `docker compose up -d --wait postgres minio && docker compose run --rm minio-init`;
+  `services:reset` = `docker compose down -v && npm run services:up`.
+- Why: The fresh-clone rehearsal in M18 found that Docker Compose v5.4 makes `up --wait` exit 1 when the one-shot
+  `minio-init` container exits (even with code 0), so setup looked broken for a reviewer although everything was
+  healthy.
+- Also from M18: the README's "How I used AI" section is written in the candidate's voice from docs/ai-usage.md,
+  the decision log and git history; the user should read it before submitting.

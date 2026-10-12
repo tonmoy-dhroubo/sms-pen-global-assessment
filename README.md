@@ -294,7 +294,9 @@ was designed so that every choice and every AI contribution leaves a trace. The 
 **Tools.** [Claude Code](https://claude.com/claude-code) (desktop app) throughout, with **Claude Opus 5.5** as the main
 session, and two subagents defined in [`.claude/agents/`](.claude/agents/): a **`planner`** (Opus 5.5, high effort) for
 decisions, trade-offs and everything in `docs/`, which never writes app code, and a **`coder`** (**Claude Sonnet 5.5**, high
-effort) that implements recorded decisions, writes tests, and raises questions instead of deciding. **Claude Design**
+effort) that implements recorded decisions, writes tests, and raises questions instead of deciding. In practice the
+planning conversation happened with the main session directly (it had all the context), so the `planner` agent was
+defined but not used; every milestone was built by a fresh `coder` agent. **Claude Design**
 produced a three-screen mockup (staff dashboard, student record, student view) used as a layout reference only.
 
 **Workflow.**
@@ -320,8 +322,8 @@ produced a three-screen mockup (staff dashboard, student record, student view) u
   role switcher instead of real auth, the planner/coder split and model choice, milestone-by-milestone delivery with a
   PR each, the PNG of the ER diagram, and keeping the community MinIO images when the official ones disappeared (D-027).
   I also chose to let work continue overnight (D-025): the main session reviewed and squash-merged milestone PRs once CI
-  and the acceptance criteria were green, and I went through the merged PRs, reports and decision log when I came
-  back, then told it to keep going (D-039).
+  and the acceptance criteria were green. When I came back I read the status summary and the open questions,
+  answered them, and told it to keep going (D-039); the merged PRs and their reports remain for me to review.
 - Delegated to the AI, then accepted: library choices inside the shadcn ecosystem, the edge-case priorities (D-024),
   the status-badge conventions, database details such as keys, audit columns and indexes, and the many technical
   decisions recorded from milestone reports (D-026 to D-040).
