@@ -29,7 +29,7 @@ waiting on a decision.
 | M16 | Activity timeline and extras | M15 | Done | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
 | M17 | Quality pass | M16 | Done | m17-quality-pass | [#18](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/18) |
 | M18 | README, demo tour and submission | M17 | Done | m18-readme-submission | [#19](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/19) |
-| M18R | Code-review fixes | M18 | Not started | | |
+| M18R | Code-review fixes | M18 | In progress | m18r-review-fixes | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
@@ -579,7 +579,7 @@ Tasks:
       expiry inside the confirm transaction, and give cleanup a grace period (only rows expired for > 5 minutes). Test
       the interleaving the review describes (confirm commits after cleanup selected the row) — the confirmed file must
       survive.
-- [ ] **#3 (P2) Waivers and overdue ageing.** In `feeSummary`, the oldest unpaid overdue charge must be recomputed when
+- [x] **#3 (P2) Waivers and overdue ageing.** In `feeSummary`, the oldest unpaid overdue charge must be recomputed when
       the running total drops back to fully covered (e.g. after a waiver). Unit tests incl. the review's example
       (৳1,000 due 1 Jul, waived 1 Aug, ৳500 due 1 Oct, today 12 Oct → 11 days, bucket 1–30) and payment/waiver mixes;
       keep 100% rules coverage; re-run the seed self-check.
