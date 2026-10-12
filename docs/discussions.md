@@ -16,13 +16,12 @@ as resolved with the decision ID.
 - **Supabase presigned URLs (verify when building uploads).** D-013 relies on presigned `PUT`/`GET` URLs from
   Supabase's S3-compatible endpoint. Confirm this works with the AWS SDK presigner and that CORS can be set for the
   Vercel origin. Fallback: use Supabase's own signed upload URLs in the hosted storage adapter only.
-- **Colour palette.** Neutral base with one accent, or PEN Global's green branding? Until decided, use the mockup's
-  dark green accent (`#2F6B3F`) as a single CSS variable so it is a one-line change.
-
-- **MinIO image source (user to confirm).** Official images are gone; we use the `pgsty` community fork (D-027).
-  Keep it, or switch the local S3 server?
+- **Colour palette.** The user has not chosen; the dark green accent (`#2F6B3F`, the `--brand` token) stays unless
+  they decide otherwise. Changing it is a one-line edit in `app/globals.css`.
 
 ## Resolved
+
+- **MinIO image source** → user confirmed keeping the `pgsty` community fork (D-027).
 
 - **Command search** → header quick search with `Ctrl+K` for staff (milestone M16).
 - **Edge-case questions** → D-023, D-024, DB-019.

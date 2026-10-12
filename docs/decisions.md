@@ -257,7 +257,7 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   API and commands, so D-012 (MinIO locally) stands. Because MinIO does not implement per-bucket CORS, CORS is set
   server-wide via `MINIO_API_CORS_ALLOW_ORIGIN` (from `APP_ORIGIN`).
 - Why: Closest drop-in to the user's choice of MinIO, current releases, working console. Decided by Claude during
-  the overnight review (D-025); **flagged for the user to confirm** — it is a third-party image.
+  the overnight review (D-025); **confirmed by the user on 2026-10-12.**
 - Alternatives: `alpine/minio` (stale since 2025-10); switching to another S3 server such as Garage or SeaweedFS
   (would change the user's choice); building MinIO from source (slow, fragile for reviewers).
 - Also accepted from M02: `server-only` dependency; optional `DIRECT_URL`, `TEST_DATABASE_URL`,
@@ -438,3 +438,10 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     overdue students, honouring the page's programme and ageing filters.
   - Print stylesheet: the student record prints profile and fees; the marksheet prints from its tab.
   - The staff student record's Submissions section (still a placeholder) is assigned to M17.
+
+## D-039: Claude keeps reviewing and merging through M18
+
+- Date: 2026-10-12
+- Decision: After returning, the user asked Claude to keep going under D-025 (Claude reviews each milestone PR and
+  merges it when CI and the acceptance criteria pass). Also confirmed: keep the `pgsty` MinIO images (D-027); the
+  accent colour stays `#2F6B3F` until the user decides otherwise; add a PNG export of the ER diagram in M18.
