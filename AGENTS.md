@@ -35,6 +35,7 @@ This file stays short. All details, reasoning and discussion live in [`docs/`](d
 | [docs/decisions.md](docs/decisions.md) | Decision log: what we chose, why, and what we rejected |
 | [docs/discussions.md](docs/discussions.md) | Open questions and discussion notes that are not yet decisions |
 | [docs/ai-usage.md](docs/ai-usage.md) | Running log of how AI was used; feeds the README's AI section |
+| [docs/onboarding.md](docs/onboarding.md) | Guided tour of the codebase for the person who has to explain it: architecture, request walk-throughs, rules cheat-sheet, gotchas, interview prep |
 
 Read the relevant doc before starting work, and keep docs current as you go.
 
