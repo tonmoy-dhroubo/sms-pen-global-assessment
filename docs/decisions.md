@@ -408,3 +408,18 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   - `/api/me/results` lists every assessment relevant to the student; anything not published is
     `{status: "NOT_AVAILABLE", assessment}`, so draft, withheld and unmarked look identical to the student.
   - "Withhold this student's results" on the student record is added to M16.
+
+## D-037: Student portal details settled in M15
+
+- Date: 2026-10-12
+- Decision (accepted from the M15 report during the overnight review, D-025):
+  - `/api/me/fees` shows the student their own charges (waivers included), non-voided payments with their
+    reference, balance/credit, next due date and an overdue message — but no ageing bucket and no staff names,
+    voided payments or internal timestamps.
+  - Overview: "Next deadlines" = up to 3 open assessments by the student's own (extension-aware) deadline;
+    "Latest results" = 3 most recently published. Deferred, withdrawn and completed students get a notice that
+    uploads are blocked while fees, published results and their own file downloads stay available.
+  - Asking for an upload URL for a module outside the student's programme stays 422 `MODULE_NOT_IN_PROGRAMME`
+    (assessments aren't secret); student-scoped reads of other students' data return 404.
+  - Every Route Handler declares its access level; a test discovers all routes and fails if one is missing from
+    the reviewed access list, so a new staff route can't silently be open to students.
