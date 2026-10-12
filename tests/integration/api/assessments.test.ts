@@ -829,7 +829,7 @@ describe("update", () => {
       expect(result.body.version).toBe(2);
     });
 
-    it("is refused with 422 ASSESSMENT_HAS_SUBMISSIONS once someone has submitted, and nothing changes", async () => {
+    it("is refused with 422 ASSESSMENT_HAS_ACTIVITY once someone has submitted, and nothing changes", async () => {
       const { person, programme, mod, cookie } = await setup();
       const other = await createModule();
       const assessment = await createAssessment({
@@ -852,7 +852,7 @@ describe("update", () => {
       expect(result.status).toBe(422);
       expect(result.body.error).toMatchObject({
         code: "BUSINESS_RULE",
-        details: { rule: "ASSESSMENT_HAS_SUBMISSIONS", submissions: 1 },
+        details: { rule: "ASSESSMENT_HAS_ACTIVITY", submissions: 1, marks: 0 },
       });
       const stored = await db.assessment.findUniqueOrThrow({ where: { id: assessment.id } });
       expect(stored).toMatchObject({ moduleId: mod.id, title: "Keep", version: 1 });

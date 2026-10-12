@@ -306,7 +306,7 @@ describe("edit assessment form", () => {
           "BUSINESS_RULE",
           "The module cannot be changed because students have submitted.",
           {
-            rule: "ASSESSMENT_HAS_SUBMISSIONS",
+            rule: "ASSESSMENT_HAS_ACTIVITY",
           },
         ),
         422,

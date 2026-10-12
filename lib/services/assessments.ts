@@ -395,7 +395,7 @@ export async function getAssessment(
 }
 
 /**
- * Edits the title, the deadline and (only while nobody has submitted) the module. The caller sends the `version` it
+ * Edits the title, the deadline and (only while nobody has submitted and no mark exists) the module. The caller sends the `version` it
  * read (DB-016); a stale one throws `VersionConflictError`. Moving the deadline recalculates every late flag, because
  * they are derived: the result carries `LATE_FLAGS_RECALCULATED` with how many submissions changed between on time and
  * late (not added when the assessment has no submissions). Nothing is written, and the version does not move, when no
@@ -422,12 +422,15 @@ export async function updateAssessment(
 
     if (input.moduleId !== undefined && input.moduleId !== current.moduleId) {
       await assertModuleExists(tx, input.moduleId);
-      const submissions = await tx.submission.count({ where: { assessmentId: id } });
-      if (submissions > 0) {
+      const [submissions, marks] = await Promise.all([
+        tx.submission.count({ where: { assessmentId: id } }),
+        tx.mark.count({ where: { assessmentId: id } }),
+      ]);
+      if (submissions > 0 || marks > 0) {
         throw new BusinessRuleError(
-          "ASSESSMENT_HAS_SUBMISSIONS",
-          "The module cannot be changed because students have already submitted work for this assessment.",
-          { submissions },
+          "ASSESSMENT_HAS_ACTIVITY",
+          "The module cannot be changed because students have already submitted work or marks have been entered for this assessment.",
+          { submissions, marks },
         );
       }
       data.moduleId = input.moduleId;
@@ -549,13 +552,19 @@ function toFileDto(
   };
 }
 
-const STUDENT_SELECT = {
+/** The student fields every marksheet and submissions row shows. */
+export const STUDENT_SELECT = {
   id: true,
   studentNumber: true,
   fullName: true,
   status: true,
   programme: { select: { id: true, code: true, name: true } },
 } as const;
+
+/** Enrolled students whose programme includes the module: the base of "eligible" (D-035). */
+export function eligibleStudentWhere(moduleId: string): Prisma.StudentWhereInput {
+  return { status: "ENROLLED", programme: { modules: { some: { moduleId } } } };
+}
 
 /**
  * Every eligible student with their submission status, lateness and file versions: Enrolled students whose programme
@@ -573,10 +582,7 @@ export async function listSubmissions(id: string): Promise<AssessmentSubmissions
 
   const [eligibleStudents, submissions, extensions] = await Promise.all([
     db.student.findMany({
-      where: {
-        status: "ENROLLED",
-        programme: { modules: { some: { moduleId: assessment.moduleId } } },
-      },
+      where: eligibleStudentWhere(assessment.moduleId),
       select: STUDENT_SELECT,
     }),
     db.submission.findMany({

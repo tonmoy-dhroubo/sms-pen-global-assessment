@@ -99,6 +99,7 @@ export function AssessmentActions({ assessment, modules, now }: AssessmentAction
               id: assessment.id,
               version: assessment.version,
               submitted: assessment.counts.submitted,
+              marked: assessment.counts.marked,
             }}
             modules={modules}
             now={now}
