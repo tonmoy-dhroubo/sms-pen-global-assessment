@@ -11,6 +11,7 @@ import { launchBrowser } from "./browser/cdp";
 //   npm run responsive                              # report only
 //   npm run responsive -- --shots=docs/screenshots/m17   # also save a full-page PNG per page and width
 //   npm run responsive -- --theme=dark --only=/staff/fees --width=375
+//   npm run responsive -- --only=/staff/students/ --shots=out --section=Submissions   # one card only
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
@@ -18,6 +19,8 @@ const widths = flag("width") ? [Number(flag("width"))] : [375, 768, 1280];
 const theme = (flag("theme") ?? "light") as "light" | "dark";
 const only = flag("only");
 const shots = flag("shots");
+const studentName = flag("student") ?? "Tahmid"; // whose record and portal the pages show
+const section = flag("section"); // with --shots: capture only the card with this heading
 
 interface Overflow {
   scrollWidth: number;
@@ -27,7 +30,7 @@ interface Overflow {
 
 async function main() {
   const staff = await signInFirstStaff();
-  const tahmid = await findStudent("Tahmid");
+  const tahmid = await findStudent(studentName);
   const student: Identity = await signIn("student", tahmid.id);
   const essay = await findAssessment(staff, "Essay 1");
   const all: Array<{ name: string; role: "staff" | "student" | "public"; path: string }> = [
@@ -98,7 +101,13 @@ async function main() {
                 : ""),
           );
           if (shots) {
-            await page.screenshot(path.join(shots, `${target.name}-${theme}-${width}.png`), true);
+            const file = path.join(
+              shots,
+              `${target.name}${section ? `-${section.toLowerCase()}` : ""}-${theme}-${width}.png`,
+            );
+            if (section)
+              await page.screenshotSection(file, section).catch(() => undefined); // pages without the section are skipped
+            else await page.screenshot(file, true);
           }
         } finally {
           page.close();

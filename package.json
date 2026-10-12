@@ -26,6 +26,7 @@
     "db:seed": "tsx db/seed/index.ts",
     "db:reset": "tsx db/seed/reset.ts",
     "a11y": "tsx scripts/a11y-check.ts",
+    "e2e": "tsx scripts/e2e-flow.ts",
     "keyboard": "tsx scripts/keyboard-walkthrough.ts",
     "responsive": "tsx scripts/responsive-check.ts",
     "uploads:cleanup": "tsx db/tools/uploads-cleanup.ts",

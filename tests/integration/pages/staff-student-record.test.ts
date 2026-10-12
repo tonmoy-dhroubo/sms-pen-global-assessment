@@ -75,7 +75,7 @@ describe("getStudentSubmissions", () => {
     const { staff, student, make } = await setup();
     const onTime = await make({ title: "On time essay", deadline: new Date(NOW.getTime() + DAY) });
     const late = await make({ title: "Late report", deadline: new Date(NOW.getTime() - 3 * DAY) });
-    const never = await make({
+    await make({
       title: "Never handed in",
       deadline: new Date(NOW.getTime() + 5 * DAY),
     });

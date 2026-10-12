@@ -117,7 +117,9 @@ async function billedStudentCounts(programmeId: string): Promise<Map<string, num
 
 /** The same counts for every programme in one query, for the Programmes page: programme id, then session. */
 async function billedStudentCountsByProgramme(): Promise<Map<string, Map<string, number>>> {
-  const rows = await db.$queryRaw<{ programme_id: string; academic_year: string; students: bigint }[]>`
+  const rows = await db.$queryRaw<
+    { programme_id: string; academic_year: string; students: bigint }[]
+  >`
     SELECT pf.programme_id::text AS programme_id, pf.academic_year, count(DISTINCT c.student_id) AS students
     FROM programme_fees pf JOIN fee_charges c ON c.programme_fee_id = pf.id
     GROUP BY pf.programme_id, pf.academic_year`;

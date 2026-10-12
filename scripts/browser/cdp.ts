@@ -224,6 +224,29 @@ export class Page {
     writeFileSync(file, Buffer.from(shot.data, "base64"));
   }
 
+  /** Saves a PNG of the card whose heading starts with `heading` (for documentation screenshots of one section). */
+  async screenshotSection(file: string, heading: string): Promise<void> {
+    const rect = await this.evaluate<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    } | null>(`(() => {
+      const h = [...document.querySelectorAll("h2")].find((el) => el.textContent?.trim().startsWith(${JSON.stringify(heading)}));
+      const card = h?.closest('[data-slot="card"]');
+      if (!card) return null;
+      const r = card.getBoundingClientRect();
+      return { x: r.left + scrollX, y: r.top + scrollY, width: r.width, height: r.height };
+    })()`);
+    if (!rect) throw new Error(`No section headed "${heading}".`);
+    const shot = (await this.send("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: true,
+      clip: { ...rect, scale: 1 },
+    })) as { data: string };
+    writeFileSync(file, Buffer.from(shot.data, "base64"));
+  }
+
   close(): void {
     this.socket.close();
   }
