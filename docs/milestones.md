@@ -29,6 +29,7 @@ waiting on a decision.
 | M16 | Activity timeline and extras | M15 | Done | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
 | M17 | Quality pass | M16 | Done | m17-quality-pass | [#18](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/18) |
 | M18 | README, demo tour and submission | M17 | Done | m18-readme-submission | [#19](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/19) |
+| M18R | Code-review fixes | M18 | Not started | | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
@@ -559,6 +560,46 @@ Tasks:
       mermaid library, like the screenshots — avoid adding heavy dependencies) and link it from `db/README.md` and
       `db/er-diagram.md`.
 - [x] Final check that no secrets or the brief PDF are in the repo history.
+
+---
+
+## M18R — Code-review fixes
+
+**Goal:** fix the seven defects found by the independent review in
+[code-reviews/code-review-2026-10-12.md](code-reviews/code-review-2026-10-12.md), each with a regression test that
+reproduces the reported case first. **References:** D-042, D-013, D-023, D-028, D-030, DB-017, DB-024, DB-025.
+
+Tasks:
+- [ ] **#1 (P1) Confirmed file can be overwritten.** At confirm, copy the uploaded object server-side (`CopyObject`) from
+      the pending key to a new, server-only **final key** that no presigned URL can write; run the size check, content
+      inspection and SHA-256 on the final copy; record the final key in `SUBMISSION_FILE`; delete the pending key. The
+      arrival time stays the pending object's `LastModified` (D-023). Test: after a successful confirm, a PUT with the
+      original presigned URL (different bytes, same size) does not change what download returns or its fingerprint.
+- [ ] **#2 (P2) Cleanup race.** With #1, cleanup only ever deletes pending keys, never final ones. Additionally re-check
+      expiry inside the confirm transaction, and give cleanup a grace period (only rows expired for > 5 minutes). Test
+      the interleaving the review describes (confirm commits after cleanup selected the row) — the confirmed file must
+      survive.
+- [ ] **#3 (P2) Waivers and overdue ageing.** In `feeSummary`, the oldest unpaid overdue charge must be recomputed when
+      the running total drops back to fully covered (e.g. after a waiver). Unit tests incl. the review's example
+      (৳1,000 due 1 Jul, waived 1 Aug, ৳500 due 1 Oct, today 12 Oct → 11 days, bucket 1–30) and payment/waiver mixes;
+      keep 100% rules coverage; re-run the seed self-check.
+- [ ] **#4 (P3) Arrival time nudged by 1 ms.** Stop altering `uploadedAt`. Add a `version` integer to `SUBMISSION_FILE`
+      (1, 2, 3… per submission, unique with `submissionId`; new migration, backfill existing rows by `uploadedAt`, `id`)
+      and order versions by it. `lastSubmittedAt` = the newest version's real arrival time. Test: two files in the
+      deadline's final second both stay on time.
+- [ ] **#5 (P2) Timeline stale after refresh.** When the server sends a new first page (after `router.refresh()`),
+      merge it into the loaded events (new events on top, keep "Load older" state) or remount deliberately. Component
+      test: rerender with a new event → it appears.
+- [ ] **#6 (P2) Countdown double-counts.** Reset the elapsed-time baseline whenever `serverNow` changes. Component test
+      with fake timers reproducing the review's 10 → 9 → (refresh) → 9 minutes, not 8.
+- [ ] **#7 (P2) Nested headings.** Remove the inner `<h2>` inside `CardTitle` everywhere (search the whole codebase, not
+      just the dashboard). Make component tests **fail on React hydration/DOM-nesting errors** (fail on
+      `console.error` in the jsdom setup, with a short allow-list if truly needed), so this class can't slip through.
+- [ ] Update `db/er-diagram.md` (version column), `docs/api.md` if any shape changes, and `docs/ai-usage.md`.
+- [ ] Re-run `npm run a11y` and `npm run e2e` locally after the fixes.
+
+Acceptance criteria: every finding has a test that fails on the old code and passes on the new; all CI jobs green;
+`npm run db:reset` self-check passes.
 
 ---
 

@@ -476,3 +476,17 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   healthy.
 - Also from M18: the README's "How I used AI" section is written in the candidate's voice from docs/ai-usage.md,
   the decision log and git history; the user should read it before submitting.
+
+## D-042: Accept the independent code review; fix in M18R
+
+- Date: 2026-10-12
+- Context: The user had an independent whole-system review done with Codex
+  ([code-reviews/code-review-2026-10-12.md](code-reviews/code-review-2026-10-12.md)). Claude checked each finding
+  against the code; all seven are real.
+- Decision: Fix all seven in milestone M18R before M19, each with a regression test. Severity adjustments: #2
+  (cleanup race) P2 rather than P1 — narrow window, manual script, and removed entirely by the #1 fix; #4 (1 ms
+  nudge) P3. Approach: confirmed files are copied to a server-only final key (no presigned URL can write it);
+  ageing recomputes the oldest unpaid charge after waivers; versions get their own order number instead of nudged
+  arrival times; client components resync when the server refreshes; component tests fail on hydration errors.
+- Why: Two findings threaten the integrity of submitted files (the core promise of the receipt). The rest are
+  boundary and timing cases our tests didn't cover — the review showed where the test suite was blind.
