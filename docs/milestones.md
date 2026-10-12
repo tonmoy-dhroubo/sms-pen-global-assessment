@@ -24,7 +24,7 @@ waiting on a decision.
 | M11 | Staff dashboard | M10 | Done | m11-staff-dashboard | [#12](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/12) |
 | M12 | Assessments (staff) | M09 | Done | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
 | M13 | Submissions (student upload flow) | M12 | Done | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
-| M14 | Marksheet and results | M13 | In review | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
+| M14 | Marksheet and results | M13 | Done | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
 | M15 | Student portal | M14 | Not started | | |
 | M16 | Activity timeline and extras | M15 | Not started | | |
 | M17 | Quality pass | M16 | Not started | | |
@@ -509,6 +509,8 @@ Tasks:
 - [ ] `GET /api/students/{id}/timeline` and the timeline section on the student record.
 - [ ] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
       opens it).
+- [ ] "Withhold this student's results…" on the student record Results section (reason required; same service as the
+      marksheet), next to "Publish all for this student…" — pages.md lists both.
 - [ ] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
 - [ ] (Could) CSV exports: overdue list and marksheet.
 - [ ] (Could) Print stylesheet for the student record's fee statement and marksheet.

@@ -390,3 +390,21 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     (shown with a "no longer eligible" label). Lateness uses the latest file vs the effective deadline.
   - File downloads: staff, or the owning student whatever their status; anyone else gets 404.
   - Duplicate assessment titles within a module are allowed.
+
+## D-036: Marksheet and results details settled in M14
+
+- Date: 2026-10-12
+- Decision (accepted from the M14 report during the overnight review, D-025):
+  - Keyboard: Tab keeps its natural order (mark box → NS → next row) so every control stays reachable; Enter,
+    Shift+Enter and ↑/↓ move between rows.
+  - Marking a student not on the marksheet → 422 `STUDENT_NOT_ELIGIBLE`; marks are serialised with one decimal
+    (`"70.0"`); updating an existing mark without `version` → 409.
+  - Module change is blocked by any submission **or** mark: 422 `ASSESSMENT_HAS_ACTIVITY` with `{submissions, marks}`.
+  - Publish preview "missing marks": assessment scope = every marksheet student; student scope = assessments past
+    deadline or closed, plus any the student submitted to; explicit `markIds` = none.
+  - Withhold/unpublish skip marks already in the target state (keeping their reasons), clear `publishedAt`, and
+    return `{changed, skipped, markIds}`. Release history rows carry null old/new marks.
+  - NS is classified `FAIL` in the API and shown as "NS" in the UI.
+  - `/api/me/results` lists every assessment relevant to the student; anything not published is
+    `{status: "NOT_AVAILABLE", assessment}`, so draft, withheld and unmarked look identical to the student.
+  - "Withhold this student's results" on the student record is added to M16.
