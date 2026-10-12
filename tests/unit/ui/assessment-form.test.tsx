@@ -38,9 +38,9 @@ function renderForm(overrides: Partial<AssessmentFormProps> = {}) {
   );
 }
 
-function renderEdit(submitted = 0) {
+function renderEdit(submitted = 0, marked = 0) {
   return renderForm({
-    mode: { kind: "edit", id: ID, version: 3, submitted },
+    mode: { kind: "edit", id: ID, version: 3, submitted, marked },
     initialValues: {
       moduleId: MODULE_ID,
       title: "Essay 1",
@@ -260,6 +260,14 @@ describe("edit assessment form", () => {
     expect(screen.getByRole("combobox", { name: "Module" }).hasAttribute("disabled")).toBe(true);
     expect(
       screen.getByText(/cannot be changed because 1 student has already submitted/),
+    ).toBeTruthy();
+  });
+
+  it("locks the module once marks have been entered, even with no submissions", () => {
+    renderEdit(0, 2);
+    expect(screen.getByRole("combobox", { name: "Module" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByText(/cannot be changed because 2 marks have already been entered/),
     ).toBeTruthy();
   });
 
