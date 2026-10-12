@@ -5,6 +5,7 @@ Everything about the database lives here.
 | Path | What it holds |
 | --- | --- |
 | [er-diagram.md](er-diagram.md) | Mermaid ER diagram of all tables and relationships |
+| [er-diagram.png](er-diagram.png) | The same diagram as an image (`npm run er:png` regenerates it) |
 | [decisions.md](decisions.md) | Database decisions (DB-NNN): keys, money, auditing and rules |
 | [seed-plan.md](seed-plan.md) | Demo data plan: 30 students, personas, relative dates |
 | `schema.prisma` | Prisma schema — the source of truth |
