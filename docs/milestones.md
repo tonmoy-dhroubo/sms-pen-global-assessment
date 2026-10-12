@@ -506,14 +506,14 @@ Acceptance criteria: the cross-cutting access-control item in edge-cases.md tick
 **References:** edge-cases.md (Extras), DB-020.
 
 Tasks:
-- [ ] `GET /api/students/{id}/timeline` and the timeline section on the student record.
-- [ ] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
+- [x] `GET /api/students/{id}/timeline` and the timeline section on the student record.
+- [x] Header quick search for staff: type a name or partial ID, jump to the record (keyboard shortcut `Ctrl+K`
       opens it).
-- [ ] "Withhold this student's results…" on the student record Results section (reason required; same service as the
+- [x] "Withhold this student's results…" on the student record Results section (reason required; same service as the
       marksheet), next to "Publish all for this student…" — pages.md lists both.
-- [ ] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
-- [ ] (Could) CSV exports: overdue list and marksheet.
-- [ ] (Could) Print stylesheet for the student record's fee statement and marksheet.
+- [x] "Change role" entry in the header switcher: calls `DELETE /api/session` and returns to the role picker `/`.
+- [x] (Could) CSV exports: overdue list and marksheet.
+- [x] (Could) Print stylesheet for the student record's fee statement and marksheet.
 
 ---
 

@@ -70,11 +70,11 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 - [ ] **S** — Seed data built around these edge cases, plus a "demo tour" section in the README telling graders where
   to see each one. Highest return on effort.
-- [ ] **S** — Activity timeline on each student record: status changes, payments, published marks.
+- [x] **S** — Activity timeline on each student record: status changes, payments, published marks.
 - [ ] **S** — GitHub Actions CI: lint, type-check, tests, `prisma validate`.
-- [ ] **C** — CSV export of the overdue list and marksheet.
+- [x] **C** — CSV export of the overdue list and marksheet.
 - [ ] **C** — Playwright end-to-end test of one complete flow.
-- [ ] **C** — Printable fee statement and marksheet (print stylesheet).
+- [x] **C** — Printable fee statement and marksheet (print stylesheet).
 - [ ] **C** — Per-student deadline extensions (DB-014).
 
 ## Resolved questions

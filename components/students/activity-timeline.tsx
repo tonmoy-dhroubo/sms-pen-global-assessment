@@ -215,7 +215,7 @@ export function ActivityTimeline({ studentId, initial, now }: ActivityTimelinePr
   const days = groupByDay(events, now);
 
   return (
-    <Card id="activity-timeline">
+    <Card id="activity-timeline" className="print:hidden">
       <CardHeader>
         <CardTitle>Activity timeline</CardTitle>
         <CardDescription>

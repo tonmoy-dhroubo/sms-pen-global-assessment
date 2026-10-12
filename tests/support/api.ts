@@ -33,7 +33,7 @@ type Handler = (request: Request, context?: { params: Promise<never> }) => Promi
 export interface ApiResult<T = unknown> {
   response: Response;
   status: number;
-  /** Parsed JSON body (`null` when the response has none). */
+  /** Parsed JSON body (`null` when the response has none; the raw text for a response that is not JSON, such as a CSV). */
   body: T;
   /** Every `Set-Cookie` header on the response. */
   setCookies: string[];
@@ -62,10 +62,11 @@ export async function call<T = unknown>(
   });
 
   const text = await response.text();
+  const isJson = (response.headers.get("content-type") ?? "").includes("json");
   return {
     response,
     status: response.status,
-    body: (text ? JSON.parse(text) : null) as T,
+    body: (text ? (isJson ? JSON.parse(text) : text) : null) as T,
     setCookies: response.headers.getSetCookie(),
   };
 }

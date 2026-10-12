@@ -180,3 +180,67 @@
     @apply font-sans;
   }
 }
+
+/* Printing (M16): the student record's fee statement and an assessment's marksheet. The page prints as it is, minus
+   the app chrome and anything you click; a dark screen still prints dark text on white paper. The student record
+   prints its profile and fees only (the Results, Submissions and Activity cards carry `print:hidden`); the marksheet
+   prints from its tab. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  .dark {
+    --background: #ffffff;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+    --muted: #f4f4f5;
+    --muted-foreground: #52525b;
+    --border: #d4d4d8;
+    --input: #d4d4d8;
+    --destructive: #b91c1c;
+    --tone-green-bg: #dcfce7;
+    --tone-green-fg: #14532d;
+    --tone-amber-bg: #fef3c7;
+    --tone-amber-fg: #78350f;
+    --tone-grey-bg: #f4f4f5;
+    --tone-grey-fg: #3f3f46;
+    --tone-blue-bg: #dbeafe;
+    --tone-blue-fg: #1e3a8a;
+    --tone-red-bg: #fee2e2;
+    --tone-red-fg: #7f1d1d;
+  }
+
+  /* The app chrome, the section tabs and every button or button-styled link (they do nothing on paper). */
+  header,
+  aside,
+  [role="tablist"],
+  [data-slot="button"],
+  [data-slot="toaster"] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Keep a table row on one page, and repeat the heading row on each page. */
+  tr {
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  [data-slot="card"] {
+    break-inside: auto;
+    box-shadow: none !important;
+  }
+  /* Scrolling tables print in full. */
+  [data-slot="table-container"],
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+}

@@ -123,7 +123,7 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 | GET | `/api/students/{id}` | Staff | Full record: profile, `version`, fee summary |
 | PATCH | `/api/students/{id}` | Staff | Edit profile fields with `version`. Changing programme does **not** touch existing charges (edge-cases.md) |
 | POST | `/api/students/{id}/status` | Staff | `{ "toStatus": "WITHDRAWN", "reason": "…", "version": 3 }`. Allowed transitions only (see below); 422 `BUSINESS_RULE` otherwise |
-| GET | `/api/students/{id}/timeline` | Staff | Activity events, newest first: status changes, charges, payments, voids, mark changes and releases |
+| GET | `/api/students/{id}/timeline` | Staff | Activity events, newest first: status changes, charges, payments, voids, submissions, mark changes and releases. Query: `before` (ISO 8601 timestamp, the previous page's `nextBefore`), `limit` (default 50, max 100) |
 
 **Shapes** (settled in M09; `GET /api/students/{id}`, and the 200/201 body of every write):
 
@@ -137,6 +137,21 @@ normalised name then Student ID, limited to `limit`; `total` counts every match.
 - **Update** (`PATCH /api/students/{id}`): any of `fullName`, `email`, `dateOfBirth`, `programmeId`, `academicYear`, `yearOfStudy`, plus the `version` that was read (at least one field is required; `status` and `studentNumber` are not editable here). Stale version: 409 `VERSION_CONFLICT` with `details.currentVersion`. When no field actually changes the record is returned as it is and the version does not move. Changing the programme never touches existing charges and adds the warning `PROGRAMME_CHANGED`.
 - **Status** (`POST /api/students/{id}/status`): 200 with the updated record. A transition the table does not allow, or to the current status: 422 `BUSINESS_RULE` with `details: { rule: "STATUS_TRANSITION", from, to }`. A missing or blank reason where one is required: 400 `VALIDATION_ERROR` on `reason`. A reason sent for a transition that does not need one is kept. Order of checks: version (409), allowed (422), reason (400).
 - An id that is not a UUID is a 404, like an unknown one.
+- **Quick search** (the staff header, M16) is `GET /api/students?q=&pageSize=8` with all four `status` values repeated, so withdrawn and completed students are found too (the list's default hides them).
+
+**Timeline** (`GET /api/students/{id}/timeline`, settled in M16): `{ items, nextBefore }`, newest first. Unlike the other lists it pages by cursor, because the events come from six tables: `before` returns only events strictly older than that instant, and `nextBefore` is the value to send next (`null` when nothing older exists). `limit` is 1-100 (default 50); a malformed `before` or `limit` is 400. Each event is `{ id, type, at, actor, summary, details, href? }`: `id` is unique (`<kind>:<row id>`); `at` is an ISO instant; `actor` is `{ id, fullName }` of the staff member who did it, or `null` for a student's own upload; `summary` is one sentence without the actor; `details` is a flat object of the facts behind it; `href` (a staff path, only when there is one) opens the assessment. Events at the same instant are never split across pages, so a page can hold more than `limit` rows when a publish wrote many rows at once.
+
+| `type` | Comes from | `summary` (example) | `details` |
+| --- | --- | --- | --- |
+| `STATUS_CHANGE` | `status_changes` | `Status changed from Enrolled to Deferred`, or `Enrolled as a new student (Enrolled)` for the first row | `fromStatus` (null on creation), `toStatus`, `reason` |
+| `FEE_CHARGE` | `fee_charges`, at `createdAt`; `actor` = `createdBy` | `Fee charged: Tuition 2026-27, instalment 1 (৳40,000.00)`; `Adjustment added: ...`; `Waiver applied: ...` | `chargeId`, `kind`, `description`, `amount` (negative for a waiver), `dueDate`, `academicYear` |
+| `PAYMENT_RECORDED` | `payments`, at `recordedAt`; `actor` = `recordedBy` | `Payment recorded: ৳15,000.00 by bank transfer, reference TRX 9F3` | `paymentId`, `amount`, `method`, `paidAt`, `reference` |
+| `PAYMENT_VOIDED` | the same payment row, at `voidedAt`; `actor` = `voidedBy` | `Payment voided: ৳15,000.00, reference TRX 9F3` | `paymentId`, `amount`, `method`, `reference`, `reason` |
+| `SUBMISSION` | `submission_files`, one per uploaded version, at `uploadedAt`; `actor` null | `Submitted Essay 1 (essay.pdf), late by 2 hours` | `assessmentId`, `assessmentTitle`, `moduleCode`, `fileName`, `sizeBytes`, `late`, `lateBy` (null when on time), `deadline` (the student's own, extension included) |
+| `MARK_CHANGED` | `mark_changes` `MARK` | `Mark changed for Essay 1: 55.0 to 62.5` (`NS` for a non-submission) | `markId`, `assessmentId`, `assessmentTitle`, `moduleCode`, `reason`, `oldMark`, `newMark` (null = non-submission) |
+| `MARK_PUBLISHED`, `MARK_WITHHELD`, `MARK_UNPUBLISHED` | `mark_changes` `PUBLISH`, `WITHHOLD`, `UNPUBLISH` | `Result published: Essay 1` | `markId`, `assessmentId`, `assessmentTitle`, `moduleCode`, `reason` (null for a publish) |
+
+The first entry of a mark writes no history row (DB-023), so it has no event. Each source is read with one query limited to `limit + 1` rows (plus one for the student's extensions), so the cost does not grow with the length of the history.
 
 **Status transitions** (enforced in `lib/services`):
 
@@ -344,5 +359,12 @@ per-assessment reasons (closed, deadline passed, module not in programme) belong
 
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/exports/overdue.csv` | Staff | Overdue list with ageing |
+| GET | `/api/exports/overdue.csv` | Staff | Overdue list with ageing. Optional query `programmeId` and `ageingBucket` (the Fees page passes the filters it is showing) |
 | GET | `/api/exports/marksheet/{assessmentId}.csv` | Staff | Marksheet for one assessment |
+
+**Shapes** (settled in M16):
+
+- **Download:** `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment` with a dated file name (`overdue-fees-2026-10-12.csv`, `marksheet-cse101-essay-1-2026-10-12.csv`, the date in Dhaka), `Cache-Control: no-store`. Errors are the usual JSON bodies (401, 403, 400 for a bad filter, 404 for an unknown assessment). Next.js cannot mix a parameter with the fixed `.csv` suffix in one folder name, so the marksheet route lives at `app/api/exports/marksheet/[file]` and strips the `.csv`; any other name is a 404.
+- **Format:** UTF-8 with a byte order mark (so Excel shows Bengali text and the taka sign), a header row, RFC 4180 quoting (a field with a comma, quote or line break is quoted, quotes are doubled) and CRLF line endings. Text that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets an apostrophe in front so a spreadsheet cannot run it as a formula; numbers are never changed.
+- **Overdue list:** one row per student whose fee state is overdue, whatever their enrolment status, longest overdue first: `Student ID, Full name, Email, Programme code, Programme, Session, Year of study, Enrolment status, Overdue amount (BDT), Oldest overdue (days), Ageing bucket, Balance (BDT), Last payment date, Last payment amount (BDT)`. Money is plain two-decimal text (`40000.00`), dates are `YYYY-MM-DD`.
+- **Marksheet:** one row per student on the marksheet (the same rows as `GET /api/assessments/{id}/marks`): `Student ID, Full name, Programme code, Enrolment status, Currently eligible, Submission, Late by, Last submitted (Dhaka time), Mark, Classification, Release status, Withheld reason, Published at (Dhaka time)`. Moments read `2026-10-12 11:01`. A non-submission reads `NS` in Mark and Classification; a student with no mark yet has those cells and the release cells empty.

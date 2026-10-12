@@ -42,7 +42,7 @@ function ComingSoon({
   milestone: string;
 }) {
   return (
-    <Card>
+    <Card className="print:hidden">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClassificationBadge } from "@/components/marks/classification-badge";
 import { PublishPreviewDialog } from "@/components/marks/publish-preview-dialog";
+import { ExportCsvButton } from "@/components/shared/export-csv-button";
 import { ReasonDialog } from "@/components/dialogs/reason-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -503,6 +504,10 @@ export function MarksheetGrid({ assessmentId, assessmentTitle, initial }: Marksh
           <strong className="font-medium text-foreground">{summary.missing}</strong> to mark.
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <ExportCsvButton
+            href={`/api/exports/marksheet/${assessmentId}.csv`}
+            label="Export CSV: marksheet"
+          />
           <Button type="button" onClick={() => setDialog("publish")}>
             <SendIcon data-icon="inline-start" aria-hidden="true" />
             Publish…

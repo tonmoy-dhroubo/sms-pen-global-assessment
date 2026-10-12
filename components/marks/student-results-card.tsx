@@ -78,7 +78,7 @@ export function StudentResultsCard({ studentId, studentName, results }: StudentR
   }
 
   return (
-    <Card>
+    <Card className="print:hidden">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <CardTitle>Results</CardTitle>
