@@ -15,7 +15,8 @@ import type { DateOnly, FeeChargeKind } from "./types";
 // oldest overdue age is measured from the due date of the first unpaid charge that is already past due, and the
 // next due date is the first unpaid charge due today or later. Charges sharing a due date are settled together.
 // A waiver is a negative charge, so it can bring the running total back down to what is paid; a debt it cleared must
-// not keep ageing (code review 2026-10-12), so the "first unpaid" date is reset whenever the total is covered again.
+// not keep ageing (code review 2026-10-12), so the "first unpaid" dates (oldest overdue and next due) are reset whenever
+// the total is covered again.
 
 export const AGEING_BUCKETS = ["1-30", "31-60", "60+"] as const;
 export type AgeingBucket = (typeof AGEING_BUCKETS)[number];
@@ -101,7 +102,11 @@ export function feeSummary(
       // the earlier due date no longer counts and the age restarts from the next charge that is still unpaid.
       if (!unpaid) oldestUnpaidOverdue = null;
       else if (oldestUnpaidOverdue === null) oldestUnpaidOverdue = due;
-    } else if (unpaid && nextDueDate === null) {
+    } else if (!unpaid) {
+      // Same reset as above: a later-dated waiver (or payment) that brings the total back to what is paid clears the
+      // earlier future charges too, so they are no longer "next".
+      nextDueDate = null;
+    } else if (nextDueDate === null) {
       nextDueDate = due;
     }
   }
