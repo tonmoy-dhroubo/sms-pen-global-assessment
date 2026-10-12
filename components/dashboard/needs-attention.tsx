@@ -72,9 +72,7 @@ export function NeedsAttention({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          <h2>Needs attention</h2>
-        </CardTitle>
+        <CardTitle>Needs attention</CardTitle>
         <CardDescription>
           Late work, held-back results and marks waiting to be published.
         </CardDescription>

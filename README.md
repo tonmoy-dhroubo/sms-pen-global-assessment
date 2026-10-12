@@ -255,9 +255,11 @@ app/                      pages (Server Components) and app/api/* Route Handlers
   route and fails if one is missing from the reviewed access list.
 - **Uploads** never pass through the app server (D-013): (1) the browser asks for an upload URL; the server checks the
   role, the student's status, the deadline and the file type and size, and returns a short-lived presigned `PUT` for a
-  key it chose; (2) the browser uploads straight to the private bucket; (3) the browser calls confirm; the server reads
-  the stored object, checks size and magic bytes (PDF; DOCX with `word/document.xml`, macro-enabled files rejected),
-  computes SHA-256, takes the arrival time as the submission time (D-023) and records a version in one transaction.
+  key it chose (a staging key under `pending/`); (2) the browser uploads straight to the private bucket; (3) the
+  browser calls confirm; the server checks the size, copies the object inside storage to a final key no URL can write
+  (D-042), then checks the copy's magic bytes (PDF; DOCX with `word/document.xml`, macro-enabled files rejected),
+  computes its SHA-256, takes the arrival time as the submission time (D-023) and records the next version number in
+  one transaction. A later PUT to the still-valid upload URL therefore cannot change a confirmed file.
   Downloads are presigned `GET`s issued after a permission check.
 - **Derived values** (balance, overdue, late, classification) are calculated by the services, never stored, so they
   cannot drift (see [db/README.md](db/README.md)). Money is `Decimal`/`numeric(12,2)`, times are UTC shown in Asia/Dhaka.
@@ -272,9 +274,9 @@ Details: [docs/api.md](docs/api.md) (the API contract), [docs/pages.md](docs/pag
 
 | Suite                    | Command                    | Size on a fresh run                  | Covers                                                                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit and component       | `npm test`                 | 1,070 tests in 59 files (about 25 s) | Domain rules (money, Dhaka time, student IDs, status matrix, fee ageing, deadlines, upload rules, marks and boundaries, publish preview), Zod schemas, session cookie, CSV, env validation, seed helpers, jsdom tests for forms, dialogs, the marksheet grid and the timeline |
+| Unit and component       | `npm test`                 | 1,100 tests in 60 files (about 25 s) | Domain rules (money, Dhaka time, student IDs, status matrix, fee ageing, deadlines, upload rules, marks and boundaries, publish preview), Zod schemas, session cookie, CSV, env validation, seed helpers, jsdom tests for forms, dialogs, the marksheet grid and the timeline |
 | Rules coverage gate      | `npm run test:coverage`    | 100 % lines and branches on `lib/services/rules` (gate: 95 %) | The pure rule functions                                                                                                      |
-| Integration              | `npm run test:integration` | 782 tests in 28 files (about 3.5 min) | Real PostgreSQL and MinIO: schema constraints, every endpoint, access control for every route, the upload edge cases with real presigned PUTs, races (simultaneous payments, voids, confirms, Student IDs), query counts, the seed and the dashboard figures |
+| Integration              | `npm run test:integration` | 800 tests in 29 files (about 3.5 min) | Real PostgreSQL and MinIO: schema constraints, every endpoint, access control for every route, the upload edge cases with real presigned PUTs, races (simultaneous payments, voids, confirms, Student IDs), query counts, the seed and the dashboard figures |
 | Accessibility            | `npm run a11y`             | 0 axe violations on 23 page states, light and dark | Run against a production build                                                                                                |
 | Responsive, keyboard, e2e | `npm run responsive` / `keyboard` / `e2e` | scripts | No page scrolls sideways at 375/768/1280 px; five workflows by keyboard alone; three staff/student hand-offs in a real browser          |
 

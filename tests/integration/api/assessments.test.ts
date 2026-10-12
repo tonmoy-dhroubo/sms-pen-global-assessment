@@ -397,6 +397,34 @@ describe("eligibility and counts", () => {
     });
   });
 
+  it("puts versions in version order even when a later version arrived earlier (code review #4)", async () => {
+    const { assessment, cookie, s } = await scenario();
+    const submission = await db.submission.findFirstOrThrow({
+      where: { assessmentId: assessment.id, studentId: s.s1.id },
+    });
+    await createSubmissionFile({
+      submissionId: submission.id,
+      version: 1,
+      uploadedAt: at(-6 * DAY),
+      originalName: "first.pdf",
+    });
+    await createSubmissionFile({
+      submissionId: submission.id,
+      version: 2,
+      uploadedAt: at(-7 * DAY),
+      originalName: "second.pdf",
+    });
+
+    const row = (await rows(assessment.id, cookie)).body.items.find(
+      (r) => r.student.id === s.s1.id,
+    )!;
+    expect(row.currentFile?.fileName).toBe("second.pdf");
+    expect(row.versions.map((v) => [v.version, v.fileName])).toEqual([
+      [2, "second.pdf"],
+      [1, "first.pdf"],
+    ]);
+  });
+
   it("returns the current file and every version, newest first, with name, size, time and SHA-256", async () => {
     const { assessment, cookie, s } = await scenario();
     const submission = await db.submission.findFirstOrThrow({

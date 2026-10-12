@@ -37,7 +37,8 @@ export interface CountdownProps {
   /**
    * The server's "now" (ISO). The first render, on the server and in the browser, is computed from this exact
    * moment so the markup matches and hydration does not mismatch; afterwards the browser's own elapsed time is
-   * added on top so it ticks without trusting the visitor's clock.
+   * added on top so it ticks without trusting the visitor's clock. When a new `serverNow` arrives (after
+   * `router.refresh()`), the elapsed time restarts from zero, because the new value already includes it.
    */
   serverNow: string;
   className?: string;
@@ -46,13 +47,19 @@ export interface CountdownProps {
 export function Countdown({ deadline, serverNow, className }: CountdownProps) {
   const deadlineMs = new Date(deadline).getTime();
   const startMs = new Date(serverNow).getTime();
-  const [elapsed, setElapsed] = useState(0);
+  // Elapsed browser time is kept together with the `serverNow` it is measured from: a value measured from an older
+  // `serverNow` is ignored the moment a new one arrives, so the same stretch of time is never counted twice.
+  const [tick, setTick] = useState({ since: serverNow, elapsed: 0 });
+  const elapsed = tick.since === serverNow ? tick.elapsed : 0;
 
   useEffect(() => {
-    const mountedAt = performance.now();
-    const id = window.setInterval(() => setElapsed(performance.now() - mountedAt), SECOND);
+    const startedAt = performance.now();
+    const id = window.setInterval(
+      () => setTick({ since: serverNow, elapsed: performance.now() - startedAt }),
+      SECOND,
+    );
     return () => window.clearInterval(id);
-  }, []);
+  }, [serverNow]);
 
   if (Number.isNaN(deadlineMs) || Number.isNaN(startMs))
     return <span className={className}>&mdash;</span>;

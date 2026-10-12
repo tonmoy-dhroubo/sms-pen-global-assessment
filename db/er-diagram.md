@@ -138,7 +138,8 @@ erDiagram
     uuid id PK
     uuid assessmentId FK
     uuid studentId FK
-    string objectKey UK
+    string objectKey UK "pending key (pending/...): the only key the upload URL can write"
+    string finalObjectKey UK "set at confirm: the server-only copy; null until confirmed"
     string originalName "as declared when the URL was issued"
     string mimeType "declared: PDF or DOCX"
     int sizeBytes "declared; re-checked at confirm"
@@ -154,13 +155,14 @@ erDiagram
   }
   SUBMISSION_FILE {
     uuid id PK
-    uuid submissionId FK
-    string objectKey UK "S3 key, server-generated"
+    uuid submissionId FK "unique with version"
+    int version "1, 2, 3... within the submission; the order of versions"
+    string objectKey UK "final S3 key (submissions/...), written only by the server"
     string originalName
     string mimeType "PDF or DOCX"
     int sizeBytes
     string sha256 "receipt fingerprint"
-    timestamptz uploadedAt "when the file arrived"
+    timestamptz uploadedAt "when the file arrived, as storage reported it (never adjusted)"
   }
   MARK {
     uuid id PK
@@ -193,7 +195,7 @@ erDiagram
   plural snake_case (`programme_fees`) and columns snake_case (`programme_id`), mapped with `@@map` / `@map`.
 - **Nullable columns** the diagram leaves implicit: `STATUS_CHANGE.fromStatus` and `reason`, `ASSESSMENT.closedAt`,
   `PAYMENT.voidedAt` / `voidedById` / `voidReason`, `MARK.mark` / `withheldReason` / `publishedAt`, `MARK_CHANGE.oldMark` /
-  `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt`, `FEE_CHARGE.programmeFeeId`, `FEE_CHARGE.createdById` (null only for rows from before
+  `newMark` / `reason`, `PENDING_UPLOAD.confirmedAt` / `finalObjectKey`, `FEE_CHARGE.programmeFeeId`, `FEE_CHARGE.createdById` (null only for rows from before
   the column existed). Everything else is `NOT NULL`.
 - **Enums** (Postgres enum types): `EnrolmentStatus`, `FeeChargeKind`, `PaymentMethod`, `ReleaseStatus`, `MarkChangeType`
   (`MARK_CHANGE.change`).
@@ -216,5 +218,7 @@ erDiagram
 - `STUDENT_ID_SEQUENCE` stands alone; it only issues Student IDs (DB-004, DB-015).
 - `MARK` and `SUBMISSION` are not linked directly. Both are keyed on (assessment, student), so a mark can exist
   without a submission (e.g. a non-submission).
-- `PENDING_UPLOAD` backs the three-step upload flow (D-013, DB-017); unconfirmed rows past `expiresAt` are cleaned up. It also holds what the student declared when the URL was issued (`originalName`, `mimeType`, `sizeBytes`, added in M13), because confirm only receives the pending id.
+- `PENDING_UPLOAD` backs the three-step upload flow (D-013, DB-017); unconfirmed rows that expired more than ten minutes ago are cleaned up. It also holds what the student declared when the URL was issued (`originalName`, `mimeType`, `sizeBytes`, added in M13), because confirm only receives the pending id.
+- **Pending key versus final key (M18R, D-042):** `PENDING_UPLOAD.objectKey` (`pending/...`) is the only key a presigned PUT is signed for. Confirm copies the object to a new `submissions/...` key, records that as `SUBMISSION_FILE.objectKey` and in `PENDING_UPLOAD.finalObjectKey` (which lets a repeated confirm find its receipt), and deletes the pending object. No URL can write a final key.
+- **File versions (M18R):** `SUBMISSION_FILE.version` numbers a submission's files 1, 2, 3... (unique with `submissionId`) and is what orders them; `uploadedAt` is only the real arrival time (one-second resolution), so two files may share it. Migration `20261013090000_confirmed_file_keys_and_versions` backfilled existing files by `uploadedAt`, `id`.
 - Values such as balance, overdue, late and classification are calculated, not stored — see [README.md](README.md).

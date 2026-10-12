@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  PENDING_PREFIX,
+  buildPendingKey,
   buildSubmissionKey,
   contentDisposition,
   createStorage,
+  isPendingKey,
   submissionPrefix,
 } from "@/lib/storage-core";
 
@@ -36,6 +39,45 @@ describe("buildSubmissionKey", () => {
     expect(() => buildSubmissionKey(ASSESSMENT, STUDENT, "pdf/../x" as "pdf")).toThrow(
       /Unsupported/,
     );
+  });
+});
+
+describe("buildPendingKey", () => {
+  it("is pending/<assessmentId>/<studentId>/<uuid>.<ext>, apart from every final key", () => {
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "docx");
+    expect(key).toMatch(
+      new RegExp("^pending/" + ASSESSMENT + "/" + STUDENT + "/" + UUID_V4 + "\.docx$"),
+    );
+    expect(isPendingKey(key)).toBe(true);
+    expect(key.startsWith(PENDING_PREFIX)).toBe(true);
+    // A pending key can never also be a final key, and the other way round.
+    expect(key.startsWith(submissionPrefix(ASSESSMENT, STUDENT))).toBe(false);
+    const final = buildSubmissionKey(ASSESSMENT, STUDENT, "docx");
+    expect(isPendingKey(final)).toBe(false);
+  });
+
+  it("is different every time", () => {
+    expect(buildPendingKey(ASSESSMENT, STUDENT, "pdf")).not.toBe(
+      buildPendingKey(ASSESSMENT, STUDENT, "pdf"),
+    );
+  });
+
+  it("applies the same checks as a final key", () => {
+    expect(() => buildPendingKey("../x", STUDENT, "pdf")).toThrow(TypeError);
+    expect(() => buildPendingKey(ASSESSMENT, "a/b", "pdf")).toThrow(TypeError);
+    expect(() => buildPendingKey(ASSESSMENT, STUDENT, "exe" as "pdf")).toThrow(/Unsupported/);
+  });
+});
+
+describe("isPendingKey", () => {
+  it.each([
+    ["pending/x/y.pdf", true],
+    ["submissions/x/y.pdf", false],
+    ["tests/pending/x.pdf", false],
+    ["pending", false],
+    ["", false],
+  ])("%j -> %s", (key, expected) => {
+    expect(isPendingKey(key)).toBe(expected);
   });
 });
 

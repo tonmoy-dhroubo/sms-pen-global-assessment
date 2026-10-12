@@ -404,6 +404,7 @@ export async function buildSeed(ctx: BuildContext): Promise<BuildSummary> {
         const bengali = spec.code === BENGALI_FILE.assessment && n === BENGALI_FILE.n;
         const base = `${slug(persona.name)}_${slug(spec.title)}`;
         return {
+          version: index + 1,
           objectKey: key,
           originalName: bengali
             ? BENGALI_FILE.name

@@ -284,15 +284,16 @@ model Extension {
 
 // Backs the three-step upload flow (D-013, DB-017).
 model PendingUpload {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  assessmentId String    @map("assessment_id") @db.Uuid
-  studentId    String    @map("student_id") @db.Uuid
-  objectKey    String    @unique @map("object_key")
-  originalName String    @map("original_name") // as the student named it; copied to SUBMISSION_FILE at confirm
-  mimeType     String    @map("mime_type") // declared at issue; PDF or DOCX
-  sizeBytes    Int       @map("size_bytes") // declared at issue; the presigned PUT signs it and confirm re-checks it
-  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
-  confirmedAt  DateTime? @map("confirmed_at") @db.Timestamptz(3) // null until confirmed
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assessmentId   String    @map("assessment_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  objectKey      String    @unique @map("object_key") // pending key (prefix "pending/"): the only key the presigned PUT can write
+  finalObjectKey String?   @unique @map("final_object_key") // set at confirm: the server-only copy, which is SUBMISSION_FILE.object_key
+  originalName   String    @map("original_name") // as the student named it; copied to SUBMISSION_FILE at confirm
+  mimeType       String    @map("mime_type") // declared at issue; PDF or DOCX
+  sizeBytes      Int       @map("size_bytes") // declared at issue; the presigned PUT signs it and confirm re-checks it
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  confirmedAt    DateTime? @map("confirmed_at") @db.Timestamptz(3) // null until confirmed
 
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Restrict)
@@ -324,7 +325,8 @@ model Submission {
 model SubmissionFile {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   submissionId String   @map("submission_id") @db.Uuid
-  objectKey    String   @unique @map("object_key") // S3 key, server-generated
+  version      Int // 1, 2, 3... within the submission; the order of versions (uploadedAt is the real arrival time, not an order)
+  objectKey    String   @unique @map("object_key") // S3 key, server-generated; written only by the server (never by a presigned URL)
   originalName String   @map("original_name")
   mimeType     String   @map("mime_type") // PDF or DOCX
   sizeBytes    Int      @map("size_bytes")
@@ -333,6 +335,7 @@ model SubmissionFile {
 
   submission Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
 
+  @@unique([submissionId, version])
   @@index([submissionId])
   @@map("submission_files")
 }

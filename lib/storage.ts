@@ -8,10 +8,14 @@ import type { Storage } from "./storage-core";
 // Callers use the functions below; the S3 details stay in `storage-core.ts`.
 
 export {
+  ObjectChangedError,
   ObjectNotFoundError,
+  PENDING_PREFIX,
   SUBMISSION_EXTENSIONS,
+  buildPendingKey,
   buildSubmissionKey,
   contentDisposition,
+  isPendingKey,
   submissionPrefix,
 } from "./storage-core";
 export type {
@@ -45,6 +49,7 @@ export const readFirstBytes: Storage["readFirstBytes"] = (...args) =>
   storage().readFirstBytes(...args);
 export const readRange: Storage["readRange"] = (...args) => storage().readRange(...args);
 export const sha256: Storage["sha256"] = (...args) => storage().sha256(...args);
+export const copyObject: Storage["copyObject"] = (...args) => storage().copyObject(...args);
 export const putObject: Storage["putObject"] = (...args) => storage().putObject(...args);
 export const deleteObject: Storage["deleteObject"] = (...args) => storage().deleteObject(...args);
 export const deletePrefix: Storage["deletePrefix"] = (...args) => storage().deletePrefix(...args);

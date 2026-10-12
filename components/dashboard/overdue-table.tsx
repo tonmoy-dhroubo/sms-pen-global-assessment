@@ -28,9 +28,7 @@ export function OverdueTable({ overdue }: { overdue: Dashboard["overdue"] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          <h2>Overdue balances</h2>
-        </CardTitle>
+        <CardTitle>Overdue balances</CardTitle>
         <CardDescription>Longest overdue first.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

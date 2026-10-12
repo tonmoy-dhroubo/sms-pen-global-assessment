@@ -222,6 +222,131 @@ describe("feeSummary: waivers and adjustments (DB-018)", () => {
   });
 });
 
+describe("feeSummary: ageing after waivers clear an older debt (code review 2026-10-12, #3)", () => {
+  // The review's case: 1,000 due 1 Jul, fully waived on 1 Aug, then 500 due 1 Oct. Today is 12 Oct.
+  it("measures age from the charge still owed, not from a charge a waiver cleared", () => {
+    const s = feeSummary(
+      [fee("1000", "2026-07-01"), waiver("1000", "2026-08-01"), fee("500", "2026-10-01")],
+      [],
+      TODAY,
+    );
+    expect(money(s).overdue).toBe("500.00");
+    expect(s.oldestOverdueDays).toBe(11);
+    expect(s.ageingBucket).toBe("1-30");
+  });
+
+  it("keeps the older charge when a waiver only reduces it", () => {
+    const s = feeSummary(
+      [fee("1000", "2026-07-01"), waiver("400", "2026-08-01"), fee("500", "2026-10-01")],
+      [],
+      TODAY,
+    );
+    expect(money(s).overdue).toBe("1100.00");
+    expect(s.oldestOverdueDays).toBe(103);
+    expect(s.ageingBucket).toBe("60+");
+  });
+
+  it("applies a payment on top of a waiver: the waiver clears one charge, the payment the next", () => {
+    const s = feeSummary(
+      [
+        fee("1000", "2026-07-01"),
+        waiver("1000", "2026-08-01"),
+        fee("500", "2026-09-01"),
+        fee("500", "2026-10-01"),
+      ],
+      [pay("500")],
+      TODAY,
+    );
+    expect(money(s).overdue).toBe("500.00");
+    expect(s.oldestOverdueDays).toBe(11);
+    expect(s.ageingBucket).toBe("1-30");
+  });
+
+  it("recomputes more than once when several waivers clear several debts", () => {
+    const s = feeSummary(
+      [
+        fee("100", "2026-05-01"),
+        waiver("100", "2026-05-15"),
+        fee("200", "2026-07-01"),
+        waiver("200", "2026-07-15"),
+        fee("300", "2026-10-10"),
+      ],
+      [],
+      TODAY,
+    );
+    expect(money(s).overdue).toBe("300.00");
+    expect(s.oldestOverdueDays).toBe(2);
+  });
+
+  it("a waiver dated before the charge it clears leaves nothing overdue", () => {
+    const s = feeSummary([waiver("1000", "2026-06-01"), fee("1000", "2026-07-01")], [], TODAY);
+    expect(money(s).overdue).toBe("0.00");
+    expect(s.oldestOverdueDays).toBeNull();
+    expect(s.feeState).toBe("paid");
+  });
+
+  it("still reports nothing overdue when a payment covers what a waiver left", () => {
+    const s = feeSummary(
+      [fee("1000", "2026-07-01"), waiver("400", "2026-08-01"), fee("500", "2026-10-01")],
+      [pay("1100")],
+      TODAY,
+    );
+    expect(money(s).overdue).toBe("0.00");
+    expect(s.oldestOverdueDays).toBeNull();
+    expect(s.ageingBucket).toBeNull();
+  });
+
+  it("does not let a future-dated waiver hide an overdue charge", () => {
+    const s = feeSummary([fee("1000", "2026-07-01"), waiver("1000", "2026-11-01")], [], TODAY);
+    expect(money(s).overdue).toBe("1000.00");
+    expect(s.oldestOverdueDays).toBe(103);
+  });
+});
+
+describe("feeSummary: next due date after waivers (same pattern as code review #3)", () => {
+  it("skips a future charge that a later-dated waiver clears entirely", () => {
+    const s = feeSummary(
+      [fee("1000", offset(10)), waiver("1000", offset(20)), fee("500", offset(30))],
+      [],
+      TODAY,
+    );
+    expect(s.nextDueDate).toBe(offset(30));
+  });
+
+  it("keeps the earlier charge when a later-dated waiver only covers part of it", () => {
+    const s = feeSummary(
+      [fee("1000", offset(10)), waiver("400", offset(20)), fee("500", offset(30))],
+      [],
+      TODAY,
+    );
+    expect(s.nextDueDate).toBe(offset(10));
+  });
+
+  it("has no next due date when everything still to fall due is waived", () => {
+    const s = feeSummary([fee("1000", offset(10)), waiver("1000", offset(20))], [], TODAY);
+    expect(s.nextDueDate).toBeNull();
+  });
+
+  it("combines with payments: the payment and the waiver together clear the first charge", () => {
+    const s = feeSummary(
+      [fee("1000", offset(10)), waiver("600", offset(20)), fee("500", offset(30))],
+      [pay("400")],
+      TODAY,
+    );
+    expect(s.nextDueDate).toBe(offset(30));
+  });
+
+  it("is unaffected by an overdue charge that a waiver cleared", () => {
+    const s = feeSummary(
+      [fee("1000", offset(-20)), waiver("1000", offset(-10)), fee("500", offset(5))],
+      [],
+      TODAY,
+    );
+    expect(s.nextDueDate).toBe(offset(5));
+    expect(money(s).overdue).toBe("0.00");
+  });
+});
+
 describe("feeSummary: overdue age boundaries (days past the due date)", () => {
   it.each([
     [0, null, null],

@@ -13,7 +13,11 @@ import type { AssessmentState } from "@/lib/services/rules/deadlines";
 import { canUpload, uploadBlockMessage } from "@/lib/services/rules/submission-rules";
 import type { UploadBlockReason } from "@/lib/services/rules/submission-rules";
 import {
+  ObjectChangedError,
+  ObjectNotFoundError,
+  buildPendingKey,
   buildSubmissionKey,
+  copyObject,
   deleteObject,
   headObject,
   presignPut,
@@ -28,8 +32,13 @@ import type { UploadExtension, UploadUrlInput } from "@/lib/validation/submissio
 //   1. `issueUploadUrl`  checks the rules, records a PENDING_UPLOAD (15 minutes) and signs a PUT for a key the server
 //      chose. The signature covers the declared type and size, so storage itself refuses anything else.
 //   2. The browser PUTs the file straight to the bucket (it never passes through this server).
-//   3. `confirmUpload`   reads the stored object, checks it, re-runs the rules with the moment the file ARRIVED as "now"
-//      (D-023: submission time is when the upload finishes, not when it started), and records the version.
+//   3. `confirmUpload`   checks the stored object, copies it on the storage side to a final key that no URL can write,
+//      inspects and fingerprints THAT copy, re-runs the rules with the moment the file ARRIVED as "now" (D-023:
+//      submission time is when the upload finishes, not when it started), and records the version (D-042).
+//
+// The pending key stays writable until its URL expires, so it is only a staging area: whatever the student does to it
+// after the copy cannot change the recorded file. The ETag the file was examined under is passed to the copy, so a
+// replacement between "looked at" and "copied" is refused instead of recorded.
 //
 // Confirm is idempotent (a second call returns the same receipt) and safe against two confirms at once: everything that
 // writes runs inside one transaction that first takes a per-student, per-assessment lock, so one version is created.
@@ -235,7 +244,7 @@ export async function issueUploadUrl(
 
   const extension = uploadExtensionOf(input.fileName)!; // the schema only lets .pdf and .docx through
   const mimeType = UPLOAD_MIME_TYPES[extension];
-  const objectKey = buildSubmissionKey(assessmentId, studentId, extension);
+  const objectKey = buildPendingKey(assessmentId, studentId, extension);
   const expiresAt = new Date(now.getTime() + UPLOAD_URL_SECONDS * 1000);
 
   const presigned = await presignPut(objectKey, mimeType, input.sizeBytes, UPLOAD_URL_SECONDS);
@@ -268,6 +277,7 @@ interface PendingRow {
   assessmentId: string;
   studentId: string;
   objectKey: string;
+  finalObjectKey: string | null;
   originalName: string;
   mimeType: string;
   sizeBytes: number;
@@ -276,11 +286,16 @@ interface PendingRow {
 }
 
 /**
- * Removes a pending upload that will never be confirmed: the object first, then the row. If storage cannot be reached
- * the row stays, so `npm run uploads:cleanup` finds it later; the caller's error is not replaced by this one.
+ * Removes a pending upload that will never be confirmed: its objects first (the pending one, and the final copy if one
+ * was already made for this attempt), then the row. If storage cannot be reached the row stays, so
+ * `npm run uploads:cleanup` finds it later; the caller's error is not replaced by this one.
  */
-async function discardPending(pending: Pick<PendingRow, "id" | "objectKey">): Promise<void> {
+async function discardPending(
+  pending: Pick<PendingRow, "id" | "objectKey">,
+  finalKey?: string,
+): Promise<void> {
   try {
+    if (finalKey) await deleteObject(finalKey);
     await deleteObject(pending.objectKey);
   } catch (error) {
     logError("Could not delete a rejected upload from storage", error, {
@@ -293,9 +308,18 @@ async function discardPending(pending: Pick<PendingRow, "id" | "objectKey">): Pr
 }
 
 /** Deletes the pending upload and answers 400: the stored file is not an acceptable submission. */
-async function rejectFile(pending: PendingRow, message: string): Promise<never> {
-  await discardPending(pending);
+async function rejectFile(pending: PendingRow, message: string, finalKey?: string): Promise<never> {
+  await discardPending(pending, finalKey);
   throw new ValidationError({ fieldErrors: { file: [message] } }, message);
+}
+
+/** Best effort: removes this attempt's final copy when it was not recorded. A failure is logged, never thrown. */
+async function dropFinalCopy(finalKey: string): Promise<void> {
+  try {
+    await deleteObject(finalKey);
+  } catch (error) {
+    logError("Could not delete an unused final copy from storage", error, { objectKey: finalKey });
+  }
 }
 
 function receiptFrom(
@@ -317,10 +341,11 @@ function receiptFrom(
 /** The receipt of a file that was already recorded for this pending upload (a repeated confirm). */
 async function existingReceipt(
   client: Client,
-  pending: Pick<PendingRow, "objectKey" | "assessmentId" | "studentId">,
+  pending: Pick<PendingRow, "finalObjectKey" | "assessmentId" | "studentId">,
 ): Promise<Receipt> {
+  if (!pending.finalObjectKey) throw new NotFoundError("Upload not found.");
   const file = await client.submissionFile.findUnique({
-    where: { objectKey: pending.objectKey },
+    where: { objectKey: pending.finalObjectKey },
     select: {
       originalName: true,
       sizeBytes: true,
@@ -356,6 +381,7 @@ type Outcome =
   | { kind: "created"; receipt: Receipt }
   | { kind: "already" }
   | { kind: "gone" }
+  | { kind: "expired" }
   | { kind: "blocked"; reason: UploadBlockReason };
 
 /**
@@ -363,9 +389,12 @@ type Outcome =
  *
  * Checks, in order: the pending upload is this student's for this assessment (404 otherwise) -> already confirmed
  * (the same receipt again) -> not expired (422 `UPLOAD_EXPIRED`, the object and row are removed) -> the object exists
- * (422 `UPLOAD_NOT_FOUND`) -> not empty, within `MAX_UPLOAD_MB`, exactly the declared size, and a real PDF / macro-free
- * DOCX by content (otherwise the object and row are removed and the answer is 400) -> the upload rules again, with the
- * moment the file arrived as "now" (422 with the rule, object removed). Then one transaction records the version.
+ * (422 `UPLOAD_NOT_FOUND`) -> not empty, within `MAX_UPLOAD_MB` and exactly the declared size. Then the object is
+ * copied to a final key (refused with 400 if it was replaced since it was examined) and the COPY is checked: a real PDF /
+ * macro-free DOCX by content (otherwise the copy, the object and the row are removed and the answer is 400) and
+ * fingerprinted. Then one transaction, under a lock, checks again that the pending upload has not expired or been
+ * removed, re-runs the upload rules with the moment the file arrived as "now" (422 with the rule, objects removed) and
+ * records the next version. The pending object is deleted once the version is recorded.
  */
 export async function confirmUpload(
   studentId: string,
@@ -390,12 +419,7 @@ export async function confirmUpload(
   }
 
   const head = await headObject(pending.objectKey);
-  if (!head) {
-    throw new BusinessRuleError(
-      "UPLOAD_NOT_FOUND",
-      "We could not find your uploaded file. Upload it again.",
-    );
-  }
+  if (!head) return missingObject(pendingUploadId, assessmentId, studentId);
 
   const limit = maxUploadBytes();
   if (head.sizeBytes === 0) {
@@ -414,24 +438,38 @@ export async function confirmUpload(
     );
   }
 
-  const inspection = await inspectUpload(
-    kindOf(pending.mimeType),
-    head.sizeBytes,
-    (offset, length) => readRange(pending.objectKey, offset, length),
-  );
-  if (!inspection.ok) return rejectFile(pending, inspection.message);
-
-  const digest = await sha256(pending.objectKey);
-  // The signed URL stays valid for 15 minutes, so the object could have been replaced while it was being read. If it
-  // changed, the fingerprint no longer describes the stored file: refuse rather than record a wrong receipt.
-  const after = await headObject(pending.objectKey);
-  if (
-    !after ||
-    after.etag !== head.etag ||
-    after.lastModified.getTime() !== head.lastModified.getTime()
-  ) {
-    return rejectFile(pending, "The file changed while it was being checked. Upload it again.");
+  // The upload URL stays valid for 15 minutes and always writes the pending key, so that object is never trusted past
+  // this point. It is copied, on the storage side, to a key only the server writes (a new one for every attempt, so two
+  // confirms racing each other cannot overwrite one another's copy). Everything below reads the copy.
+  const kind = kindOf(pending.mimeType);
+  const finalKey = buildSubmissionKey(assessmentId, studentId, kind);
+  try {
+    // `ifMatch`: the copy only happens if the object is still the one whose size and arrival time were read above, so
+    // a file swapped in between is refused here instead of being recorded under the first file's details.
+    await copyObject(pending.objectKey, finalKey, { ifMatch: head.etag });
+  } catch (error) {
+    if (error instanceof ObjectChangedError) {
+      return rejectFile(pending, "The file changed while it was being checked. Upload it again.");
+    }
+    if (error instanceof ObjectNotFoundError) {
+      return missingObject(pendingUploadId, assessmentId, studentId);
+    }
+    throw error;
   }
+
+  const copy = await headObject(finalKey);
+  if (!copy || copy.sizeBytes !== head.sizeBytes) {
+    return rejectFile(
+      pending,
+      "The file changed while it was being checked. Upload it again.",
+      finalKey,
+    );
+  }
+  const inspection = await inspectUpload(kind, copy.sizeBytes, (offset, length) =>
+    readRange(finalKey, offset, length),
+  );
+  if (!inspection.ok) return rejectFile(pending, inspection.message, finalKey);
+  const digest = await sha256(finalKey);
 
   const outcome: Outcome = await db.$transaction(async (tx) => {
     // One confirm at a time per student and assessment: a second one waits here, then finds the first one's work.
@@ -444,6 +482,10 @@ export async function confirmUpload(
     if (!fresh) return { kind: "gone" };
     if (fresh.confirmedAt) return { kind: "already" };
 
+    // The URL's lifetime is checked again at the moment of recording: checking and reading the file took time, and the
+    // cleanup command treats an upload that stayed unconfirmed past its expiry as abandoned (D-042).
+    if (pending.expiresAt.getTime() <= clock().getTime()) return { kind: "expired" };
+
     // The rules again, now with the arrival time as "now" (D-023, D-030): the assessment may have been closed, or the
     // student's status changed, since the URL was issued; a file that arrived after the deadline cannot replace an
     // on-time one.
@@ -451,19 +493,16 @@ export async function confirmUpload(
     const decision = decide(context, head.lastModified);
     if (!decision.allowed) return { kind: "blocked", reason: decision.reason };
 
-    // Versions are ordered by arrival time, which has a one-second resolution in storage. A newer file must sort after
-    // the one it replaces even when both arrived in the same second, so it is nudged by a millisecond if needed.
+    // The file keeps the arrival time storage gave it, as is (D-023). Versions are ordered by their own number, because
+    // storage reports whole seconds and two files can arrive in the same one (D-042).
+    const uploadedAt = head.lastModified;
     const latest = context.existing
       ? await tx.submissionFile.findFirst({
           where: { submissionId: context.existing.id },
-          orderBy: [{ uploadedAt: "desc" }, { id: "desc" }],
-          select: { uploadedAt: true },
+          orderBy: { version: "desc" },
+          select: { version: true },
         })
       : null;
-    const uploadedAt =
-      latest && head.lastModified.getTime() <= latest.uploadedAt.getTime()
-        ? new Date(latest.uploadedAt.getTime() + 1)
-        : head.lastModified;
 
     const submission = context.existing
       ? await tx.submission.update({
@@ -483,16 +522,20 @@ export async function confirmUpload(
     const file = await tx.submissionFile.create({
       data: {
         submissionId: submission.id,
-        objectKey: pending.objectKey,
+        version: (latest?.version ?? 0) + 1,
+        objectKey: finalKey,
         originalName: pending.originalName,
         mimeType: pending.mimeType,
-        sizeBytes: head.sizeBytes,
+        sizeBytes: copy.sizeBytes,
         sha256: digest,
         uploadedAt,
       },
       select: { originalName: true, sizeBytes: true, sha256: true, uploadedAt: true },
     });
-    await tx.pendingUpload.update({ where: { id: pending.id }, data: { confirmedAt: now } });
+    await tx.pendingUpload.update({
+      where: { id: pending.id },
+      data: { confirmedAt: now, finalObjectKey: finalKey },
+    });
 
     const deadline = effectiveDeadline(
       context.assessment.deadline,
@@ -503,15 +546,66 @@ export async function confirmUpload(
 
   switch (outcome.kind) {
     case "created":
+      // The staging object has done its job. If it cannot be deleted now it is harmless (nothing reads it).
+      try {
+        await deleteObject(pending.objectKey);
+      } catch (error) {
+        logError("Could not delete a confirmed upload's pending object", error, {
+          pendingUploadId: pending.id,
+          objectKey: pending.objectKey,
+        });
+      }
       return outcome.receipt;
     case "already":
-      return existingReceipt(db, pending);
+      // Another confirm of this upload won; its copy is the recorded file, ours is surplus.
+      await dropFinalCopy(finalKey);
+      return recordedReceipt(pendingUploadId, assessmentId, studentId);
     case "gone":
+      await dropFinalCopy(finalKey);
       throw new NotFoundError("Upload not found.");
+    case "expired":
+      await discardPending(pending, finalKey);
+      throw new BusinessRuleError(
+        "UPLOAD_EXPIRED",
+        "This upload took too long and has expired. Choose the file and upload it again.",
+      );
     case "blocked":
-      await discardPending(pending);
+      await discardPending(pending, finalKey);
       throw blocked(outcome.reason);
   }
+}
+
+/**
+ * The staging object is not there. Usually the upload never arrived (422 `UPLOAD_NOT_FOUND`); but a second confirm of
+ * the same upload (a double click) can get here just after the first one recorded the file and deleted the object, and
+ * must then answer with the same receipt, not an error.
+ */
+async function missingObject(
+  pendingUploadId: string,
+  assessmentId: string,
+  studentId: string,
+): Promise<Receipt> {
+  const row = await db.pendingUpload.findFirst({
+    where: { id: pendingUploadId, assessmentId, studentId },
+  });
+  if (row?.confirmedAt) return existingReceipt(db, row);
+  throw new BusinessRuleError(
+    "UPLOAD_NOT_FOUND",
+    "We could not find your uploaded file. Upload it again.",
+  );
+}
+
+/** The receipt of an upload another confirm has just recorded: re-reads the pending row for its final key. */
+async function recordedReceipt(
+  pendingUploadId: string,
+  assessmentId: string,
+  studentId: string,
+): Promise<Receipt> {
+  const recorded = await db.pendingUpload.findFirst({
+    where: { id: pendingUploadId, assessmentId, studentId },
+  });
+  if (!recorded) throw new NotFoundError("Upload not found.");
+  return existingReceipt(db, recorded);
 }
 
 // --- The student's own view -----------------------------------------------------------------------------------------
@@ -532,9 +626,10 @@ const MY_ASSESSMENT_SELECT = (studentId: string) =>
         firstSubmittedAt: true,
         lastSubmittedAt: true,
         files: {
-          orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
+          orderBy: { version: "asc" },
           select: {
             id: true,
+            version: true,
             originalName: true,
             mimeType: true,
             sizeBytes: true,
@@ -570,9 +665,9 @@ function toMyAssessment(row: MyAssessmentRow, me: Me, now: Date): MyAssessment {
   const deadline = effectiveDeadline(row.deadline, extension);
 
   const versions: MyFileVersion[] = (submission?.files ?? [])
-    .map((file, index) => ({
+    .map((file) => ({
       id: file.id,
-      version: index + 1,
+      version: file.version,
       fileName: file.originalName,
       mimeType: file.mimeType,
       sizeBytes: file.sizeBytes,

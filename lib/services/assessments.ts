@@ -530,20 +530,18 @@ export async function reopenAssessment(
 
 // --- Submissions ----------------------------------------------------------------------------------------------------
 
-function toFileDto(
-  file: {
-    id: string;
-    originalName: string;
-    mimeType: string;
-    sizeBytes: number;
-    sha256: string;
-    uploadedAt: Date;
-  },
-  version: number,
-): SubmissionFileDto {
+function toFileDto(file: {
+  id: string;
+  version: number;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256: string;
+  uploadedAt: Date;
+}): SubmissionFileDto {
   return {
     id: file.id,
-    version,
+    version: file.version,
     fileName: file.originalName,
     mimeType: file.mimeType,
     sizeBytes: file.sizeBytes,
@@ -594,9 +592,10 @@ export async function listSubmissions(id: string): Promise<AssessmentSubmissions
         lastSubmittedAt: true,
         student: { select: STUDENT_SELECT },
         files: {
-          orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
+          orderBy: { version: "asc" },
           select: {
             id: true,
+            version: true,
             originalName: true,
             mimeType: true,
             sizeBytes: true,
@@ -632,7 +631,7 @@ export async function listSubmissions(id: string): Promise<AssessmentSubmissions
     const extension = extensionOf.get(student.id) ?? null;
     const deadline = effectiveDeadline(assessment.deadline, extension);
 
-    const files = (submission?.files ?? []).map((file, index) => toFileDto(file, index + 1));
+    const files = (submission?.files ?? []).map(toFileDto);
     const versions = [...files].reverse();
 
     let status: SubmissionStatus = "NOT_SUBMITTED";
