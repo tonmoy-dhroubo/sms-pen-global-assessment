@@ -10,7 +10,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { CurrentIdentity } from "@/components/session/current-identity";
@@ -23,8 +22,6 @@ import type { SwitchSessionInput } from "@/lib/client/session";
 // `PUT /api/session` and lands on that role's home. The search is done by the server (it matches regardless of case
 // and accents), so the command list does no filtering of its own for students; the field is a plain combobox that
 // arrow keys, Enter and Escape drive. "Change role" at the bottom clears the session and returns to the role picker.
-
-const CHANGE_ROLE_VALUE = "change-role";
 
 export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
   const [open, setOpen] = useState(false);
@@ -47,7 +44,6 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
   const values = [
     ...staff.map((member) => `staff-${member.id}`),
     ...students.map((student) => `student-${student.id}`),
-    ...(current ? [CHANGE_ROLE_VALUE] : []),
   ];
   const [picked, setPicked] = useState("");
   const highlighted = values.includes(picked) ? picked : (values[0] ?? "");
@@ -155,23 +151,28 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
                 `Showing ${students.length} of ${total} students. Type to narrow the list.`
               ) : null}
             </div>
-
-            {current ? (
-              <>
-                <CommandSeparator alwaysRender />
-                <CommandGroup>
-                  <CommandItem value={CHANGE_ROLE_VALUE} disabled={busy} onSelect={leave}>
-                    <LogOutIcon aria-hidden="true" />
-                    <span className="flex-1">Change role</span>
-                    {pendingId === CHANGE_ROLE_PENDING ? (
-                      <Loader2Icon className="animate-spin" aria-hidden="true" />
-                    ) : null}
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            ) : null}
           </CommandList>
         </Command>
+
+        {current ? (
+          // Outside the scrolling list, so it is always in view at the bottom of the switcher.
+          <div className="border-t p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-start"
+              disabled={busy}
+              onClick={leave}
+            >
+              {pendingId === CHANGE_ROLE_PENDING ? (
+                <Loader2Icon className="animate-spin" data-icon="inline-start" aria-hidden="true" />
+              ) : (
+                <LogOutIcon data-icon="inline-start" aria-hidden="true" />
+              )}
+              Change role
+            </Button>
+          </div>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

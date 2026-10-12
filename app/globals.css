@@ -218,7 +218,8 @@
   header,
   aside,
   [role="tablist"],
-  [data-slot="button"],
+  [data-slot="button"]:not(th *),
+  [data-slot$="-trigger"],
   [data-slot="toaster"] {
     display: none !important;
   }

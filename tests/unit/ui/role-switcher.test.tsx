@@ -248,15 +248,18 @@ describe("RoleSwitcher: Change role", () => {
   } as const;
   const deleteCalls = () => calls.filter((call) => call.init?.method === "DELETE");
 
-  it("is the last entry of the list, after the students", async () => {
+  it("sits at the bottom of the switcher, below the list of people", async () => {
     mockApi();
     const user = userEvent.setup();
     render(<RoleSwitcher current={STAFF_NOW} />);
 
     await user.click(screen.getByRole("button", { name: /Viewing as/ }));
     await screen.findByText("Fatema Begum");
-    const options = screen.getAllByRole("option");
-    expect(options[options.length - 1]!.textContent).toContain("Change role");
+    const button = screen.getByRole("button", { name: "Change role" });
+    const list = screen.getByRole("listbox");
+    // After the list in the document, and not inside it.
+    expect(list.contains(button)).toBe(false);
+    expect(list.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("is not offered when nobody has been chosen yet", async () => {
@@ -265,7 +268,7 @@ describe("RoleSwitcher: Change role", () => {
     render(<RoleSwitcher current={null} />);
     await user.click(screen.getByRole("button", { name: /Not selected/ }));
     await screen.findByText("Fatema Begum");
-    expect(screen.queryByText("Change role")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Change role" })).toBeNull();
   });
 
   it("clears the session with DELETE /api/session, then goes to the role picker with a refresh", async () => {
@@ -274,7 +277,7 @@ describe("RoleSwitcher: Change role", () => {
     render(<RoleSwitcher current={STAFF_NOW} />);
 
     await user.click(screen.getByRole("button", { name: /Viewing as/ }));
-    await user.click(await screen.findByText("Change role"));
+    await user.click(await screen.findByRole("button", { name: "Change role" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -290,11 +293,9 @@ describe("RoleSwitcher: Change role", () => {
 
     await user.click(screen.getByRole("button", { name: /Viewing as/ }));
     await screen.findByText("Tanvir Hasan");
-    // From the first staff row to the last entry: two staff, one student, then Change role.
-    await user.keyboard("{End}");
-    expect(screen.getByRole("option", { name: /Change role/ }).getAttribute("aria-selected")).toBe(
-      "true",
-    );
+    // Focus starts in the search box; Tab moves on to the button under the list.
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Change role" }));
     await user.keyboard("{Enter}");
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
@@ -307,7 +308,7 @@ describe("RoleSwitcher: Change role", () => {
     render(<RoleSwitcher current={STAFF_NOW} />);
 
     await user.click(screen.getByRole("button", { name: /Viewing as/ }));
-    await user.click(await screen.findByText("Change role"));
+    await user.click(await screen.findByRole("button", { name: "Change role" }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Try again later."));
     expect(push).not.toHaveBeenCalled();
