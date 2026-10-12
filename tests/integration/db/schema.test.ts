@@ -245,6 +245,36 @@ describe("delete rules (DB-005)", () => {
     );
   });
 
+  it("refuses two files with the same version in one submission", async () => {
+    const file = (objectKey: string) => ({
+      version: 1,
+      objectKey,
+      originalName: "essay.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 1024,
+      sha256: "0".repeat(64),
+      uploadedAt: new Date(),
+    });
+    const submission = await prisma.submission.create({
+      data: {
+        assessmentId: base.assessment.id,
+        studentId: base.student.id,
+        firstSubmittedAt: new Date(),
+        lastSubmittedAt: new Date(),
+        files: { create: file("submissions/a/b/one.pdf") },
+      },
+    });
+    await expect(
+      prisma.submissionFile.create({
+        data: { submissionId: submission.id, ...file("submissions/a/b/two.pdf") },
+      }),
+    ).rejects.toThrow(/unique/i);
+    // Only the first one was stored.
+    expect(
+      await prisma.submissionFile.count({ where: { submissionId: submission.id, version: 1 } }),
+    ).toBe(1);
+  });
+
   it("refuses to delete a submission that has files", async () => {
     const submission = await prisma.submission.create({
       data: {
@@ -254,6 +284,7 @@ describe("delete rules (DB-005)", () => {
         lastSubmittedAt: new Date(),
         files: {
           create: {
+            version: 1,
             objectKey: "submissions/a/b/c.pdf",
             originalName: "essay.pdf",
             mimeType: "application/pdf",

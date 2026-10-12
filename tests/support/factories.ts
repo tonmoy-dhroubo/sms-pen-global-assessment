@@ -167,15 +167,26 @@ export async function createSubmission(input: {
 export async function createSubmissionFile(input: {
   submissionId: string;
   uploadedAt: Date;
+  /** The version number; by default the next one for the submission (1, 2, 3...). */
+  version?: number;
   originalName?: string;
   objectKey?: string;
   sizeBytes?: number;
   sha256?: string;
 }) {
   const n = next();
+  const version =
+    input.version ??
+    ((
+      await db.submissionFile.aggregate({
+        where: { submissionId: input.submissionId },
+        _max: { version: true },
+      })
+    )._max.version ?? 0) + 1;
   return db.submissionFile.create({
     data: {
       submissionId: input.submissionId,
+      version,
       objectKey: input.objectKey ?? `tests/files/${n}-${Math.random().toString(36).slice(2)}.pdf`,
       originalName: input.originalName ?? `report-${n}.pdf`,
       mimeType: "application/pdf",

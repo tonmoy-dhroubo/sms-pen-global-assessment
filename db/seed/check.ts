@@ -439,7 +439,7 @@ export async function selfCheck(input: {
     for (const sub of s.submissions) {
       const code = codeOfAssessment.get(sub.assessmentId)!;
       const assessment = assessmentRows.find((a) => a.id === sub.assessmentId)!;
-      const files = [...sub.files].sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
+      const files = [...sub.files].sort((a, b) => a.version - b.version);
       versions += files.length;
       for (const f of files) checkedFiles.push({ key: f.objectKey, size: f.sizeBytes });
       const deadline = effectiveDeadline(assessment.deadline, null);
@@ -643,7 +643,7 @@ export async function selfCheck(input: {
       submissions: s.submissions
         .map((sub) => {
           const assessment = assessmentRows.find((a) => a.id === sub.assessmentId)!;
-          const last = [...sub.files].sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime()).pop()!;
+          const last = [...sub.files].sort((a, b) => a.version - b.version).pop()!;
           return `${codeOfAssessment.get(sub.assessmentId)}:${sub.files.length}:${lateBy(last.uploadedAt, assessment.deadline) ?? "on time"}:${sub.files.map((f) => f.originalName).sort().join("+")}`;
         })
         .sort(),

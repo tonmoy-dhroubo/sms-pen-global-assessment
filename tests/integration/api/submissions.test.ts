@@ -15,7 +15,7 @@ import type {
   UploadUrlResult,
 } from "@/lib/services/submissions";
 import { UPLOAD_URL_SECONDS } from "@/lib/services/submissions";
-import { headObject, putObject } from "@/lib/storage";
+import { deletePrefix, headObject, putObject, submissionPrefix } from "@/lib/storage";
 import { UPLOAD_MIME_TYPES } from "@/lib/validation/submissions";
 import { asStaff, asStudent, call } from "../../support/api";
 import {
@@ -185,10 +185,12 @@ describe("POST /api/assessments/{id}/submission/upload-url", () => {
       confirmedAt: null,
     });
     expect(pending.expiresAt.toISOString()).toBe(issued.expiresAt);
-    // The key is the server's: it never contains the student's file name.
+    // The key is the server's: it never contains the student's file name. It is a pending key, not the final home of
+    // the file: that one is made at confirm, and no URL is ever signed for it (D-042).
     expect(pending.objectKey).toMatch(
-      new RegExp(`^submissions/${ctx.assessment.id}/${ctx.student.id}/[0-9a-f-]{36}\\.pdf$`),
+      new RegExp(`^pending/${ctx.assessment.id}/${ctx.student.id}/[0-9a-f-]{36}\\.pdf$`),
     );
+    expect(pending.finalObjectKey).toBeNull();
     expect(issued.uploadUrl).not.toContain("Essay");
 
     const stored = await put(issued, bytes);
@@ -418,7 +420,15 @@ describe("POST /api/assessments/{id}/submission/confirm", () => {
       sizeBytes: bytes.length,
       sha256: sha(bytes),
     });
-    expect((await pendingRow(issued.pendingUploadId)).confirmedAt).not.toBeNull();
+    const confirmedPending = await pendingRow(issued.pendingUploadId);
+    expect(confirmedPending.confirmedAt).not.toBeNull();
+    // The file is recorded at its own server-only key; the staging object the URL wrote is gone (D-042).
+    expect(submission.files[0]!.objectKey).toMatch(
+      new RegExp(`^submissions/${ctx.assessment.id}/${ctx.student.id}/[0-9a-f-]{36}\\.pdf$`),
+    );
+    expect(confirmedPending.finalObjectKey).toBe(submission.files[0]!.objectKey);
+    expect(submission.files[0]!.version).toBe(1);
+    expect(await headObject(confirmedPending.objectKey)).toBeNull();
 
     // The student can download exactly what they uploaded.
     const fileId = submission.files[0]!.id;
@@ -471,6 +481,12 @@ describe("POST /api/assessments/{id}/submission/confirm", () => {
     expect(new Set(results.map((r) => JSON.stringify(r.body))).size).toBe(1);
     expect(await db.submissionFile.count()).toBe(1);
     expect(await db.submission.count()).toBe(1);
+    // Each racing confirm made its own copy; all but the recorded one were deleted again (D-042).
+    const file = await db.submissionFile.findFirstOrThrow();
+    expect(await deletePrefix(submissionPrefix(ctx.assessment.id, ctx.student.id))).toBe(1);
+    expect(file.objectKey.startsWith(submissionPrefix(ctx.assessment.id, ctx.student.id))).toBe(
+      true,
+    );
   });
 
   it("creates two versions, in order, when two different uploads are confirmed at once", async () => {
@@ -486,9 +502,12 @@ describe("POST /api/assessments/{id}/submission/confirm", () => {
     ]);
     expect(results.map((r) => r.status)).toEqual([200, 200]);
     expect(await db.submission.count()).toBe(1);
-    const files = await db.submissionFile.findMany({ orderBy: { uploadedAt: "asc" } });
-    expect(files).toHaveLength(2);
-    expect(new Set(files.map((f) => f.uploadedAt.getTime())).size).toBe(2); // strictly ordered
+    // Versions have their own numbers: 1 and 2, whichever order the two confirms ran in, even in the same second.
+    const files = await db.submissionFile.findMany({ orderBy: { version: "asc" } });
+    expect(files.map((f) => f.version)).toEqual([1, 2]);
+    expect(files.map((f) => f.originalName).sort()).toEqual(["a.pdf", "b.pdf"]);
+    const submission = await db.submission.findFirstOrThrow();
+    expect(submission.lastSubmittedAt.toISOString()).toBe(files[1]!.uploadedAt.toISOString());
   });
 
   it("adds a version when the student replaces their file, keeping the first time", async () => {
@@ -502,7 +521,8 @@ describe("POST /api/assessments/{id}/submission/confirm", () => {
     });
     expect(submission.firstSubmittedAt.toISOString()).toBe(first.result.body.uploadedAt);
     expect(submission.lastSubmittedAt.toISOString()).toBe(second.result.body.uploadedAt);
-    expect(new Date(second.result.body.uploadedAt).getTime()).toBeGreaterThan(
+    // Arrival times are kept exactly as storage gave them (one-second resolution), so two files can share a time.
+    expect(new Date(second.result.body.uploadedAt).getTime()).toBeGreaterThanOrEqual(
       new Date(first.result.body.uploadedAt).getTime(),
     );
 
@@ -667,6 +687,12 @@ describe("POST /api/assessments/{id}/submission/confirm", () => {
       expect(await headObject(outcome.pending.objectKey)).toBeNull();
       expect(await db.pendingUpload.count({ where: { id: outcome.pending.id } })).toBe(0);
       expect(await db.submission.count()).toBe(0);
+      // No copy of the rejected file is left under a final key.
+      expect(
+        await deletePrefix(
+          submissionPrefix(outcome.pending.assessmentId, outcome.pending.studentId),
+        ),
+      ).toBe(0);
     }
 
     it("rejects text with a .pdf name (checked by content, not extension)", async () => {
@@ -934,6 +960,35 @@ describe("GET /api/me/assessments", () => {
       canUpload: { allowed: true, reason: null, message: null, late: false },
       submission: null,
     });
+  });
+
+  it("orders versions by their version number, not by arrival time (code review #4)", async () => {
+    const ctx = await setup({ deadlineIn: DAY });
+    const submission = await createSubmission({
+      assessmentId: ctx.assessment.id,
+      studentId: ctx.student.id,
+      submittedAt: new Date(Date.now() - 2 * HOUR),
+    });
+    // Version 2 was confirmed after version 1 but its file reached storage earlier.
+    await createSubmissionFile({
+      submissionId: submission.id,
+      version: 1,
+      uploadedAt: new Date(Date.now() - HOUR),
+      originalName: "one.pdf",
+    });
+    await createSubmissionFile({
+      submissionId: submission.id,
+      version: 2,
+      uploadedAt: new Date(Date.now() - 2 * HOUR),
+      originalName: "two.pdf",
+    });
+
+    const mine = (await myList(ctx.cookie)).body.items[0]!.submission!;
+    expect(mine.versions.map((v) => [v.version, v.fileName])).toEqual([
+      [2, "two.pdf"],
+      [1, "one.pdf"],
+    ]);
+    expect(mine.currentFile.fileName).toBe("two.pdf");
   });
 
   it("shows the student's own deadline when they have an extension", async () => {

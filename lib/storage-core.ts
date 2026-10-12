@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
 import {
+  CopyObjectCommand,
   CreateBucketCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -58,6 +59,17 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown by `copyObject` when the source is no longer the object that was examined (its ETag differs from the one
+ * the caller passed): it was replaced in between.
+ */
+export class ObjectChangedError extends Error {
+  constructor(readonly key: string) {
+    super(`Storage object changed while it was being copied: ${key}`);
+    this.name = "ObjectChangedError";
+  }
+}
+
 // --- Object keys -------------------------------------------------------------------------------------------------
 
 /** The only file types a submission may have. The extension comes from here, never from the uploaded name. */
@@ -79,8 +91,21 @@ export function submissionPrefix(assessmentId: string, studentId?: string): stri
 }
 
 /**
- * `submissions/<assessmentId>/<studentId>/<uuid>.<ext>`. Server-generated: the uploaded file name is never part of
- * a key (it is kept only as database metadata), so a key can never carry path tricks or unexpected characters.
+ * Where a presigned upload lands before it is confirmed. Only keys under this prefix are ever signed for a browser, and
+ * the cleanup command deletes only keys under it; confirmed files live under `submissionPrefix` (D-042).
+ */
+export const PENDING_PREFIX = "pending/";
+
+/** Whether a key is under the pending prefix, i.e. one a presigned PUT may have written. */
+export function isPendingKey(key: string): boolean {
+  return key.startsWith(PENDING_PREFIX);
+}
+
+/**
+ * `submissions/<assessmentId>/<studentId>/<uuid>.<ext>`: the final home of a confirmed (or seeded) file. Server-generated:
+ * the uploaded file name is never part of a key (it is kept only as database metadata), so a key can never carry path
+ * tricks or unexpected characters. No presigned PUT URL is ever signed for such a key, so nothing a student holds can
+ * change what is stored there.
  */
 export function buildSubmissionKey(
   assessmentId: string,
@@ -91,6 +116,20 @@ export function buildSubmissionKey(
     throw new TypeError(`Unsupported submission extension "${extension}"`);
   }
   return `${submissionPrefix(assessmentId, studentId)}${randomUUID()}.${extension}`;
+}
+
+/**
+ * `pending/<assessmentId>/<studentId>/<uuid>.<ext>`: the key an upload URL is signed for. A student can write to it for
+ * as long as the URL lives, so it is only ever a staging area: confirm copies the object to a final key (D-042).
+ */
+export function buildPendingKey(
+  assessmentId: string,
+  studentId: string,
+  extension: SubmissionExtension,
+): string {
+  // Same checks and shape as a final key, under the pending prefix instead of `submissions/`.
+  const finalShape = buildSubmissionKey(assessmentId, studentId, extension);
+  return `${PENDING_PREFIX}${finalShape.slice("submissions/".length)}`;
 }
 
 // --- Download file names -----------------------------------------------------------------------------------------
@@ -148,6 +187,11 @@ function assertExpiry(expiresIn: number): void {
 function isMissingObject(error: unknown): boolean {
   const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
   return e?.name === "NoSuchKey" || e?.name === "NotFound" || e?.$metadata?.httpStatusCode === 404;
+}
+
+function isPreconditionFailed(error: unknown): boolean {
+  const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+  return e?.name === "PreconditionFailed" || e?.$metadata?.httpStatusCode === 412;
 }
 
 function isInvalidRange(error: unknown): boolean {
@@ -254,6 +298,38 @@ export function createStorage(config: StorageConfig) {
         };
       } catch (error) {
         if (isMissingObject(error)) return null;
+        throw error;
+      }
+    },
+
+    /**
+     * Copies an object inside the bucket, on the storage side (nothing passes through this server). `ifMatch` is the ETag
+     * the caller examined: if the source has a different ETag by now it was replaced, nothing is copied and
+     * `ObjectChangedError` is thrown (S3's `x-amz-copy-source-if-match`, also honoured by MinIO). A missing source is
+     * `ObjectNotFoundError`. Returns the copy's ETag and time. The metadata (content type) is carried over.
+     */
+    async copyObject(
+      sourceKey: string,
+      destinationKey: string,
+      options: { ifMatch?: string | null } = {},
+    ): Promise<{ etag: string | null; lastModified: Date }> {
+      try {
+        const result = await client.send(
+          new CopyObjectCommand({
+            Bucket,
+            Key: destinationKey,
+            CopySource: `${encodeURIComponent(Bucket)}/${sourceKey.split("/").map(encodeURIComponent).join("/")}`,
+            MetadataDirective: "COPY",
+            ...(options.ifMatch ? { CopySourceIfMatch: options.ifMatch } : {}),
+          }),
+        );
+        return {
+          etag: result.CopyObjectResult?.ETag ?? null,
+          lastModified: result.CopyObjectResult?.LastModified ?? new Date(),
+        };
+      } catch (error) {
+        if (isMissingObject(error)) throw new ObjectNotFoundError(sourceKey);
+        if (isPreconditionFailed(error)) throw new ObjectChangedError(sourceKey);
         throw error;
       }
     },

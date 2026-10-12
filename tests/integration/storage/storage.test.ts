@@ -3,8 +3,11 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { afterAll, describe, expect, it } from "vitest";
 import {
+  ObjectChangedError,
   ObjectNotFoundError,
+  buildPendingKey,
   buildSubmissionKey,
+  copyObject,
   deleteObject,
   deletePrefix,
   headObject,
@@ -31,6 +34,7 @@ const scratch = (name: string) => `tests/${RUN}/${name}`;
 afterAll(async () => {
   await deletePrefix(`tests/${RUN}/`);
   await deletePrefix(`submissions/${ASSESSMENT}/`);
+  await deletePrefix(`pending/${ASSESSMENT}/`);
 });
 
 async function browserPut(
@@ -244,6 +248,81 @@ describe("presigned GET", () => {
     );
     expect(tampered).not.toBe(url);
     expect((await fetch(tampered)).status).toBe(403);
+  });
+});
+
+describe("copyObject (confirm copies a pending upload to a final key, D-042)", () => {
+  it("copies the bytes and the content type, and leaves the source in place", async () => {
+    const source = scratch("copy-source.pdf");
+    const destination = scratch("copy-destination.pdf");
+    await putObject(source, PDF, "application/pdf");
+    const head = await headObject(source);
+
+    const copy = await copyObject(source, destination);
+
+    expect(copy.etag).toBe(head!.etag);
+    expect(await headObject(destination)).toMatchObject({
+      sizeBytes: PDF.length,
+      contentType: "application/pdf",
+      etag: head!.etag,
+    });
+    expect(await sha256(destination)).toBe(createHash("sha256").update(PDF).digest("hex"));
+    expect(await headObject(source)).not.toBeNull();
+  });
+
+  it("copies when the source still has the ETag that was examined", async () => {
+    const source = scratch("copy-if-match.pdf");
+    const destination = scratch("copy-if-match-destination.pdf");
+    await putObject(source, PDF, "application/pdf");
+    const { etag } = (await headObject(source))!;
+    await copyObject(source, destination, { ifMatch: etag });
+    expect(await headObject(destination)).not.toBeNull();
+  });
+
+  it("refuses with ObjectChangedError, and copies nothing, when the source was replaced since", async () => {
+    const source = scratch("copy-replaced.pdf");
+    const destination = scratch("copy-replaced-destination.pdf");
+    await putObject(source, PDF, "application/pdf");
+    const { etag } = (await headObject(source))!;
+    await putObject(
+      source,
+      Buffer.concat([PDF.subarray(0, PDF.length - 1), Buffer.from("!")]),
+      "application/pdf",
+    );
+
+    await expect(copyObject(source, destination, { ifMatch: etag })).rejects.toBeInstanceOf(
+      ObjectChangedError,
+    );
+    expect(await headObject(destination)).toBeNull();
+  });
+
+  it("throws ObjectNotFoundError when the source does not exist", async () => {
+    await expect(
+      copyObject(scratch("copy-missing.pdf"), scratch("copy-missing-destination.pdf")),
+    ).rejects.toBeInstanceOf(ObjectNotFoundError);
+  });
+
+  it("handles keys with spaces and punctuation", async () => {
+    const source = scratch("a file (1)+x.pdf");
+    const destination = scratch("copy of a file (1)+x.pdf");
+    await putObject(source, PDF, "application/pdf");
+    await copyObject(source, destination);
+    expect((await headObject(destination))!.sizeBytes).toBe(PDF.length);
+  });
+
+  it("the copy is unaffected when the source is later overwritten through its presigned URL", async () => {
+    const source = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
+    const destination = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+    const upload = await presignPut(source, "application/pdf", PDF.length, 300);
+    expect((await browserPut(upload, PDF)).status).toBe(200);
+
+    await copyObject(source, destination);
+
+    const other = Buffer.from(PDF);
+    other[other.length - 1] = other[other.length - 1]! ^ 0xff;
+    expect((await browserPut(upload, other)).status).toBe(200); // the URL still works on the pending key ...
+    expect(await sha256(source)).toBe(createHash("sha256").update(other).digest("hex"));
+    expect(await sha256(destination)).toBe(createHash("sha256").update(PDF).digest("hex")); // ... and only there
   });
 });
 
