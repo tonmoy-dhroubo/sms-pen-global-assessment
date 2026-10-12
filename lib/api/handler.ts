@@ -190,11 +190,20 @@ function parseWith<T>(schema: ZodType<T, ZodTypeDef, unknown>, input: unknown): 
 
 type RouteContext<P> = { params: Promise<P> };
 
+/**
+ * A Route Handler built by `route()`. It carries the `access` level it was declared with, so a test can discover every
+ * route in `app/api` and prove each one enforces its role (tests/integration/api/route-access.test.ts).
+ */
+export type RouteHandler<A extends Access, P = Record<string, never>> = ((
+  request: Request,
+  routeContext?: RouteContext<P>,
+) => Promise<Response>) & { readonly access: A };
+
 export function route<A extends Access, P = Record<string, never>, Q = undefined, B = undefined>(
   options: RouteOptions<A, Q, B>,
   handler: (context: HandlerContext<A, P, Q, B>) => Promise<unknown> | unknown,
 ) {
-  return async (request: Request, routeContext?: RouteContext<P>): Promise<Response> => {
+  const handle = async (request: Request, routeContext?: RouteContext<P>): Promise<Response> => {
     const requestId = requestIdFor(request);
     try {
       // Role first, so a student hitting a staff endpoint gets 403 whatever they sent (and 401 without a session).
@@ -225,4 +234,5 @@ export function route<A extends Access, P = Record<string, never>, Q = undefined
       return errorResponse(error, request, requestId);
     }
   };
+  return Object.assign(handle, { access: options.access }) as RouteHandler<A, P>;
 }

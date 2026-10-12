@@ -9,7 +9,7 @@ import { assertKnownId, dateColumn } from "@/lib/services/ids";
 import { Decimal, formatBdt, toApiString } from "@/lib/services/rules/money";
 import { formatDate, todayIn, toDateOnly } from "@/lib/services/rules/time";
 import type { DateOnly, FeeChargeKind } from "@/lib/services/rules/types";
-import { feeSummary, type FeeSummary } from "@/lib/services/rules/fees";
+import { feeSummary, overdueNotice, type FeeSummary } from "@/lib/services/rules/fees";
 import {
   FUTURE_PAYMENT_MESSAGE,
   type BalanceSortField,
@@ -179,6 +179,114 @@ export async function getStudentFees(
     summary: toFeeSummaryDto(summary),
     charges: charges.map(toChargeDto),
     payments: payments.map(toPaymentDto),
+  };
+}
+
+// --- The student's own view -----------------------------------------------------------------------------------------
+
+/**
+ * The student's fee summary: the staff summary without `ageingBucket`, which is the Registry's own way of grouping
+ * debtors and means nothing to the student.
+ */
+export type MyFeeSummaryDto = Omit<FeeSummaryDto, "ageingBucket">;
+
+/** A charge as the student sees it. No staff names: who added an adjustment or waiver is the Registry's business. */
+export interface MyChargeDto {
+  id: string;
+  kind: FeeChargeKind;
+  academicYear: string;
+  description: string;
+  /** Negative for a waiver, as stored. */
+  amount: string;
+  dueDate: DateOnly;
+}
+
+/** A payment as the student sees it: what they paid, when, how and under which reference. Never voided ones. */
+export interface MyPaymentDto {
+  id: string;
+  amount: string;
+  method: PaymentMethodValue;
+  paidAt: DateOnly;
+  reference: string;
+}
+
+/** `GET /api/me/fees`. */
+export interface MyFees {
+  /** The server's "now" (ISO): the date the summary was worked out for, and the clock for "due in N days". */
+  now: string;
+  summary: MyFeeSummaryDto;
+  charges: MyChargeDto[];
+  payments: MyPaymentDto[];
+  /** Set exactly when the fee state is `overdue`: the amount, the age, and the sentence to show the student. */
+  overdue: { amount: string; days: number; message: string } | null;
+}
+
+/**
+ * The signed-in student's own fees (api.md "Student self-service"): the summary, every charge (waivers included, as
+ * negative amounts) oldest due date first, and the payments that count, newest first. A voided payment is not read at
+ * all, so neither it nor its reason nor the staff member who recorded or voided it can reach the student.
+ */
+export async function getMyFees(studentId: string, clock: Clock = systemClock): Promise<MyFees> {
+  await requireStudent(studentId);
+  const now = clock();
+  const [charges, payments] = await Promise.all([
+    db.feeCharge.findMany({
+      where: { studentId },
+      select: {
+        id: true,
+        kind: true,
+        academicYear: true,
+        description: true,
+        amount: true,
+        dueDate: true,
+      },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+    }),
+    db.payment.findMany({
+      where: { studentId, voidedAt: null },
+      select: { id: true, amount: true, method: true, paidAt: true, reference: true },
+      orderBy: [{ paidAt: "desc" }, { recordedAt: "desc" }, { id: "asc" }],
+    }),
+  ]);
+
+  const full = toFeeSummaryDto(feeSummary(charges, payments, todayIn(now)));
+  const summary: MyFeeSummaryDto = {
+    charged: full.charged,
+    waived: full.waived,
+    paid: full.paid,
+    balance: full.balance,
+    credit: full.credit,
+    overdueAmount: full.overdueAmount,
+    oldestOverdueDays: full.oldestOverdueDays,
+    nextDueDate: full.nextDueDate,
+    feeState: full.feeState,
+  };
+  return {
+    now: now.toISOString(),
+    summary,
+    charges: charges.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      academicYear: row.academicYear,
+      description: row.description,
+      amount: toApiString(row.amount),
+      dueDate: toDateOnly(row.dueDate),
+    })),
+    payments: payments.map((row) => ({
+      id: row.id,
+      amount: toApiString(row.amount),
+      method: row.method,
+      paidAt: toDateOnly(row.paidAt),
+      reference: row.reference,
+    })),
+    overdue:
+      summary.feeState === "overdue" && summary.oldestOverdueDays !== null
+        ? {
+            amount: summary.overdueAmount,
+            days: summary.oldestOverdueDays,
+            message: overdueNotice(summary.oldestOverdueDays),
+          }
+        : null,
   };
 }
 

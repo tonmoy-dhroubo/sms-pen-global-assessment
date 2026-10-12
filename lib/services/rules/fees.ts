@@ -128,3 +128,8 @@ function feeStateOf(balance: Decimal, overdueAmount: Decimal): FeeState {
   if (balance.greaterThan(0)) return "outstanding";
   return "paid";
 }
+
+/** What a student reads when fees are overdue (pages.md `/student/fees`): how long, and who to talk to. */
+export function overdueNotice(days: number): string {
+  return `Overdue by ${days} ${days === 1 ? "day" : "days"}. Please contact the Registry office.`;
+}
