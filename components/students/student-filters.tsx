@@ -163,7 +163,7 @@ export function StudentFilters({ programmes, academicYears, maxYearOfStudy }: St
   const years = Array.from({ length: maxYearOfStudy }, (_, i) => String(i + 1));
 
   return (
-    <section aria-label="Search and filters" className="space-y-3" aria-busy={isPending}>
+    <section aria-label="Search and filters" className="@container space-y-3" aria-busy={isPending}>
       <Field>
         <FieldLabel htmlFor="student-search" className="sr-only">
           Search students
@@ -183,7 +183,7 @@ export function StudentFilters({ programmes, academicYears, maxYearOfStudy }: St
         </InputGroup>
       </Field>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 @sm:grid-cols-2 @xl:grid-cols-3 @3xl:grid-cols-5">
         <FilterSelect
           id="filter-programme"
           label="Programme"
