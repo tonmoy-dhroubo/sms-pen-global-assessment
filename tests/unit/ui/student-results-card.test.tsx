@@ -2,6 +2,7 @@
 import { jsonResponse } from "@/tests/support/dom";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudentResultsCard } from "@/components/marks/student-results-card";
 import type { StudentResultItem, StudentResults } from "@/lib/services/marks";
@@ -158,5 +159,71 @@ describe("StudentResultsCard", () => {
     render(<StudentResultsCard studentId="s1" studentName="Ayesha Rahman" results={results()} />);
     expect(screen.getByText("No marks yet")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Publish all/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Withhold this student/ })).toBeNull();
+  });
+});
+
+describe("StudentResultsCard: withhold this student's results", () => {
+  const DRAFT = item({
+    markId: "k3",
+    assessment: { id: "a3", title: "Report", deadline: "2026-10-01T17:59:00.000Z", module: MODULE },
+    releaseStatus: "DRAFT",
+    publishedAt: null,
+  });
+
+  function body(fetchMock: ReturnType<typeof vi.fn>): { markIds: string[]; reason: string } {
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    return JSON.parse(String(init.body));
+  }
+
+  it("shows how many marks it will hold back, then withholds them with the reason", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ changed: 2, skipped: 0, markIds: ["k1", "k3"] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    refresh.mockClear();
+    vi.mocked(toast.success).mockClear();
+    const user = userEvent.setup();
+    render(
+      <StudentResultsCard
+        studentId="s1"
+        studentName="Ayesha Rahman"
+        results={results(APPEALED, WITHHELD, DRAFT)}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Withhold this student.s results/ }));
+    const dialog = await screen.findByRole("dialog", { name: /Withhold Ayesha Rahman.s results/ });
+    // The two marks that are not withheld yet; the withheld one keeps its reason.
+    expect(
+      within(dialog).getByText(/2 marks \(1 published, 1 draft\) will be hidden/),
+    ).toBeTruthy();
+    expect(within(dialog).getByText(/1 already withheld mark keeps its own reason/)).toBeTruthy();
+
+    // A reason is required.
+    await user.click(within(dialog).getByRole("button", { name: "Withhold 2 marks" }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      await within(dialog).findByText(/reason/i, { selector: "[data-slot=field-error]" }),
+    ).toBeTruthy();
+
+    await user.type(within(dialog).getByLabelText("Reason"), "Outstanding fees");
+    await user.click(within(dialog).getByRole("button", { name: "Withhold 2 marks" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe("/api/marks/withhold");
+    expect(body(fetchMock)).toEqual({ markIds: ["k1", "k3"], reason: "Outstanding fees" });
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(toast.success).toHaveBeenCalledWith("Withheld 2 marks for Ayesha Rahman.");
+  });
+
+  it("is disabled, with the reason, when every mark is already withheld", () => {
+    render(
+      <StudentResultsCard studentId="s1" studentName="Ayesha Rahman" results={results(WITHHELD)} />,
+    );
+    const button = screen.getByRole("button", { name: /Withhold this student.s results/ });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(button.getAttribute("aria-describedby")).toBe("withhold-none");
+    expect(screen.getByText("Every mark is already withheld.")).toBeTruthy();
   });
 });

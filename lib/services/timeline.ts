@@ -393,8 +393,9 @@ export async function getStudentTimeline(
 
   if (merged[limit]!.at === boundary) {
     // The page ends inside a tie: take every event at that instant, whichever source it came from.
-    const ties = (await Promise.all(sources.map((source) => source({ equals: new Date(boundary) }))))
-      .flat();
+    const ties = (
+      await Promise.all(sources.map((source) => source({ equals: new Date(boundary) })))
+    ).flat();
     page = [...merged.filter((event) => event.at > boundary), ...ties].sort(newestFirst);
     // Only the tie was left over, so look for anything older before promising another page.
     more =

@@ -56,7 +56,13 @@ type FetchCall = { url: string; init?: RequestInit };
 let calls: FetchCall[];
 
 /** Answers `/api/session/options` and `PUT /api/session` like the real routes. */
-function mockApi(overrides: { put?: () => Response; options?: (url: string) => Response } = {}) {
+function mockApi(
+  overrides: {
+    put?: () => Response;
+    options?: (url: string) => Response;
+    del?: () => Response;
+  } = {},
+) {
   calls = [];
   vi.stubGlobal(
     "fetch",
@@ -67,6 +73,9 @@ function mockApi(overrides: { put?: () => Response; options?: (url: string) => R
       }
       if (url === "/api/session" && init?.method === "PUT") {
         return overrides.put?.() ?? jsonResponse({ role: JSON.parse(String(init.body)).role });
+      }
+      if (url === "/api/session" && init?.method === "DELETE") {
+        return overrides.del?.() ?? jsonResponse({ role: null });
       }
       throw new Error(`Unexpected request ${url}`);
     }),
@@ -227,6 +236,82 @@ describe("RoleSwitcher", () => {
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Fatema Begum")).toBeTruthy();
+  });
+});
+
+describe("RoleSwitcher: Change role", () => {
+  const STAFF_NOW = {
+    role: "staff",
+    id: STAFF_ID,
+    fullName: "Kamrul Hasan",
+    jobTitle: "x",
+  } as const;
+  const deleteCalls = () => calls.filter((call) => call.init?.method === "DELETE");
+
+  it("is the last entry of the list, after the students", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    render(<RoleSwitcher current={STAFF_NOW} />);
+
+    await user.click(screen.getByRole("button", { name: /Viewing as/ }));
+    await screen.findByText("Fatema Begum");
+    const options = screen.getAllByRole("option");
+    expect(options[options.length - 1]!.textContent).toContain("Change role");
+  });
+
+  it("is not offered when nobody has been chosen yet", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    render(<RoleSwitcher current={null} />);
+    await user.click(screen.getByRole("button", { name: /Not selected/ }));
+    await screen.findByText("Fatema Begum");
+    expect(screen.queryByText("Change role")).toBeNull();
+  });
+
+  it("clears the session with DELETE /api/session, then goes to the role picker with a refresh", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    render(<RoleSwitcher current={STAFF_NOW} />);
+
+    await user.click(screen.getByRole("button", { name: /Viewing as/ }));
+    await user.click(await screen.findByText("Change role"));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(deleteCalls()).toHaveLength(1);
+    expect(deleteCalls()[0]!.url).toBe("/api/session");
+    expect(putCalls()).toHaveLength(0);
+  });
+
+  it("can be reached and chosen from the keyboard", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    render(<RoleSwitcher current={STAFF_NOW} />);
+
+    await user.click(screen.getByRole("button", { name: /Viewing as/ }));
+    await screen.findByText("Tanvir Hasan");
+    // From the first staff row to the last entry: two staff, one student, then Change role.
+    await user.keyboard("{End}");
+    expect(screen.getByRole("option", { name: /Change role/ }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+    expect(deleteCalls()).toHaveLength(1);
+  });
+
+  it("shows an error toast and stays put when the session cannot be cleared", async () => {
+    mockApi({ del: () => jsonResponse(apiErrorBody("INTERNAL_ERROR", "Try again later."), 500) });
+    const user = userEvent.setup();
+    render(<RoleSwitcher current={STAFF_NOW} />);
+
+    await user.click(screen.getByRole("button", { name: /Viewing as/ }));
+    await user.click(await screen.findByText("Change role"));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Try again later."));
+    expect(push).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 

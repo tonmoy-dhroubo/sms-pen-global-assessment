@@ -261,7 +261,10 @@ describe("GET /api/students/{id}/timeline: events", () => {
 
   it("shows a non-submission in a mark change as NS", async () => {
     const ctx = await setup();
-    const assessment = await createAssessment({ moduleId: ctx.mod.id, createdById: ctx.officer.id });
+    const assessment = await createAssessment({
+      moduleId: ctx.mod.id,
+      createdById: ctx.officer.id,
+    });
     const mark = await createMark({
       assessmentId: assessment.id,
       studentId: ctx.student.id,
