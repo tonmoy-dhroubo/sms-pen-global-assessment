@@ -490,10 +490,10 @@ Acceptance criteria and edge cases: all Marks and results items ticked, includin
 **References:** pages.md (Student), api.md (`/api/me`).
 
 Tasks:
-- [ ] `/api/me`, `/api/me/fees`, `/api/me/assessments`, `/api/me/results` completed.
-- [ ] UI: overview, fees, assessments (from M13), results (published only; "Not yet available" otherwise); notices
+- [x] `/api/me`, `/api/me/fees`, `/api/me/assessments`, `/api/me/results` completed.
+- [x] UI: overview, fees, assessments (from M13), results (published only; "Not yet available" otherwise); notices
       for deferred/withdrawn students.
-- [ ] Access tests: for every student-facing endpoint, using another student's IDs returns 404; staff-only
+- [x] Access tests: for every student-facing endpoint, using another student's IDs returns 404; staff-only
       endpoints return 403 for students.
 
 Acceptance criteria: the cross-cutting access-control item in edge-cases.md ticked.
