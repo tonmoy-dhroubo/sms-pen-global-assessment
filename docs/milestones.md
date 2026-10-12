@@ -28,7 +28,7 @@ waiting on a decision.
 | M15 | Student portal | M14 | Done | m15-student-portal | [#16](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/16) |
 | M16 | Activity timeline and extras | M15 | Done | m16-timeline-extras | [#17](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/17) |
 | M17 | Quality pass | M16 | Done | m17-quality-pass | [#18](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/18) |
-| M18 | README, demo tour and submission | M17 | Not started | | |
+| M18 | README, demo tour and submission | M17 | In progress | m18-readme-submission | |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
@@ -549,13 +549,13 @@ Tasks:
 **References:** requirements.md (Deliverables), ai-usage.md, seed-plan.md.
 
 Tasks:
-- [ ] README: overview; screenshots; tech stack; **run locally** (exact commands from a fresh clone); **every `.env`
+- [x] README: overview; screenshots; tech stack; **run locally** (exact commands from a fresh clone); **every `.env`
       variable explained**; npm scripts; architecture summary; links to docs, API and ER diagram; testing;
       **demo tour** (which student to open to see each edge case); **"How I used AI"** section summarising
       ai-usage.md (tools, how the work was split between planner and coder agents, what was reviewed or rejected);
       known limitations.
 - [ ] Fresh-clone rehearsal: follow the README exactly on a clean checkout; fix anything that doesn't work.
-- [ ] Render the final Mermaid ER diagram to `db/er-diagram.png` (the user asked for it; e.g. headless Chrome + the
+- [x] Render the final Mermaid ER diagram to `db/er-diagram.png` (the user asked for it; e.g. headless Chrome + the
       mermaid library, like the screenshots — avoid adding heavy dependencies) and link it from `db/README.md` and
       `db/er-diagram.md`.
 - [ ] Final check that no secrets or the brief PDF are in the repo history.

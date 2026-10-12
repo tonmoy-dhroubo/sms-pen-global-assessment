@@ -72,7 +72,7 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Extras
 
-- [ ] **S** — Seed data built around these edge cases, plus a "demo tour" section in the README telling graders where
+- [x] **S** — Seed data built around these edge cases, plus a "demo tour" section in the README telling graders where
   to see each one. Highest return on effort.
 - [x] **S** — Activity timeline on each student record: status changes, payments, published marks.
 - [x] **S** — GitHub Actions CI: lint, type-check, tests, `prisma validate`.
