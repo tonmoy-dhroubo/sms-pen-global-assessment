@@ -227,3 +227,11 @@ delegated the remaining open choices.
   object). Rejected uploads (bad content, expired, rule failure at confirm) delete both the object and the pending
   row; rejections are not stored.
 - Why: Recorded from the M13 pull request during the overnight review (D-025).
+
+## DB-026: Index on submissions.last_submitted_at (M17)
+
+- Status: Accepted
+- Date: 2026-10-12
+- Decision: Migration `20261012200000_submission_last_submitted_index` indexes `submissions.last_submitted_at` for
+  the dashboard's 14-day late-submission window. A query-count test proves 11 services issue the same number of
+  statements for 3 and 30 students.

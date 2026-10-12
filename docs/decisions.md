@@ -445,3 +445,22 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Decision: After returning, the user asked Claude to keep going under D-025 (Claude reviews each milestone PR and
   merges it when CI and the acceptance criteria pass). Also confirmed: keep the `pgsty` MinIO images (D-027); the
   accent colour stays `#2F6B3F` until the user decides otherwise; add a PNG export of the ER diagram in M18.
+
+## D-040: Quality-pass outcomes (M17)
+
+- Date: 2026-10-12
+- Decision (accepted from the M17 report, D-039):
+  - Accessibility, responsive, keyboard and end-to-end checks are scripts driving the installed Chrome over the
+    DevTools Protocol (`npm run a11y`, `responsive`, `keyboard`, `e2e`) with `axe-core` as the only new dev
+    dependency — no Playwright. Result: 0 axe violations on 23 page states in light and dark. The e2e script runs
+    locally only and changes demo data (run `db:reset` afterwards).
+  - `--muted-foreground` darkened (oklch 0.556 → 0.52) for contrast; `CardTitle` renders as `h2`.
+  - Narrow screens fold secondary table columns into the first cell; some wide tables (payments, marksheet,
+    results) scroll inside their card by design, key columns first.
+  - The staff record's Submissions section shows exactly what the student sees, including assessments the student
+    submitted to outside their programme.
+  - `shadcn` moved to devDependencies. Remaining `npm audit --omit=dev` findings (4 high) come through Prisma's
+    optional `prisma` peer of `@prisma/client`; the only offered fix is a breaking downgrade, so they are accepted
+    and noted in the README's known limitations.
+  - Per-student deadline extensions (DB-014, Could) are **dropped**: the table and rules support them, but there is
+    no endpoint or UI to create one.
