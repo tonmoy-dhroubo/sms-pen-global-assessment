@@ -423,3 +423,18 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
     (assessments aren't secret); student-scoped reads of other students' data return 404.
   - Every Route Handler declares its access level; a test discovers all routes and fails if one is missing from
     the reviewed access list, so a new staff route can't silently be open to students.
+
+## D-038: Timeline, quick search and export details settled in M16
+
+- Date: 2026-10-12
+- Decision (accepted from the M16 report during the overnight review, D-025):
+  - Timeline event types: `STATUS_CHANGE`, `FEE_CHARGE`, `PAYMENT_RECORDED`, `PAYMENT_VOIDED`, `SUBMISSION`,
+    `MARK_CHANGED`, `MARK_PUBLISHED`, `MARK_WITHHELD`, `MARK_UNPUBLISHED`. Response `{items, nextBefore}` with
+    cursor paging; events sharing a timestamp are never split across pages (a page may exceed `limit`). A student's
+    own upload has `actor: null`; the first entry of a mark has no event (DB-023).
+  - Staff quick search (Ctrl/⌘+K) includes all statuses, shows 8 results and links to the full list.
+  - CSV exports: UTF-8 with BOM, RFC 4180, formula-injection guard, dated filenames, times as
+    `YYYY-MM-DD HH:mm` Dhaka time, money as plain `40000.00`, NS as "NS". The overdue export always lists
+    overdue students, honouring the page's programme and ageing filters.
+  - Print stylesheet: the student record prints profile and fees; the marksheet prints from its tab.
+  - The staff student record's Submissions section (still a placeholder) is assigned to M17.
