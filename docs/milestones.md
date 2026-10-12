@@ -570,12 +570,12 @@ Tasks:
 reproduces the reported case first. **References:** D-042, D-013, D-023, D-028, D-030, DB-017, DB-024, DB-025.
 
 Tasks:
-- [ ] **#1 (P1) Confirmed file can be overwritten.** At confirm, copy the uploaded object server-side (`CopyObject`) from
+- [x] **#1 (P1) Confirmed file can be overwritten.** At confirm, copy the uploaded object server-side (`CopyObject`) from
       the pending key to a new, server-only **final key** that no presigned URL can write; run the size check, content
       inspection and SHA-256 on the final copy; record the final key in `SUBMISSION_FILE`; delete the pending key. The
       arrival time stays the pending object's `LastModified` (D-023). Test: after a successful confirm, a PUT with the
       original presigned URL (different bytes, same size) does not change what download returns or its fingerprint.
-- [ ] **#2 (P2) Cleanup race.** With #1, cleanup only ever deletes pending keys, never final ones. Additionally re-check
+- [x] **#2 (P2) Cleanup race.** With #1, cleanup only ever deletes pending keys, never final ones. Additionally re-check
       expiry inside the confirm transaction, and give cleanup a grace period (only rows expired for > 5 minutes). Test
       the interleaving the review describes (confirm commits after cleanup selected the row) — the confirmed file must
       survive.
@@ -583,20 +583,20 @@ Tasks:
       the running total drops back to fully covered (e.g. after a waiver). Unit tests incl. the review's example
       (৳1,000 due 1 Jul, waived 1 Aug, ৳500 due 1 Oct, today 12 Oct → 11 days, bucket 1–30) and payment/waiver mixes;
       keep 100% rules coverage; re-run the seed self-check.
-- [ ] **#4 (P3) Arrival time nudged by 1 ms.** Stop altering `uploadedAt`. Add a `version` integer to `SUBMISSION_FILE`
+- [x] **#4 (P3) Arrival time nudged by 1 ms.** Stop altering `uploadedAt`. Add a `version` integer to `SUBMISSION_FILE`
       (1, 2, 3… per submission, unique with `submissionId`; new migration, backfill existing rows by `uploadedAt`, `id`)
       and order versions by it. `lastSubmittedAt` = the newest version's real arrival time. Test: two files in the
       deadline's final second both stay on time.
-- [ ] **#5 (P2) Timeline stale after refresh.** When the server sends a new first page (after `router.refresh()`),
+- [x] **#5 (P2) Timeline stale after refresh.** When the server sends a new first page (after `router.refresh()`),
       merge it into the loaded events (new events on top, keep "Load older" state) or remount deliberately. Component
       test: rerender with a new event → it appears.
-- [ ] **#6 (P2) Countdown double-counts.** Reset the elapsed-time baseline whenever `serverNow` changes. Component test
+- [x] **#6 (P2) Countdown double-counts.** Reset the elapsed-time baseline whenever `serverNow` changes. Component test
       with fake timers reproducing the review's 10 → 9 → (refresh) → 9 minutes, not 8.
-- [ ] **#7 (P2) Nested headings.** Remove the inner `<h2>` inside `CardTitle` everywhere (search the whole codebase, not
+- [x] **#7 (P2) Nested headings.** Remove the inner `<h2>` inside `CardTitle` everywhere (search the whole codebase, not
       just the dashboard). Make component tests **fail on React hydration/DOM-nesting errors** (fail on
       `console.error` in the jsdom setup, with a short allow-list if truly needed), so this class can't slip through.
-- [ ] Update `db/er-diagram.md` (version column), `docs/api.md` if any shape changes, and `docs/ai-usage.md`.
-- [ ] Re-run `npm run a11y` and `npm run e2e` locally after the fixes.
+- [x] Update `db/er-diagram.md` (version column), `docs/api.md` if any shape changes, and `docs/ai-usage.md`.
+- [x] Re-run `npm run a11y` and `npm run e2e` locally after the fixes.
 
 Acceptance criteria: every finding has a test that fails on the old code and passes on the new; all CI jobs green;
 `npm run db:reset` self-check passes.
