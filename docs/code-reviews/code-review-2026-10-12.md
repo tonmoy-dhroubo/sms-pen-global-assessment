@@ -14,7 +14,7 @@ The review covered documented requirements, API routes, business services, datab
 
 ### 1. [P1] A confirmed submission can still be overwritten using its upload URL
 
-Source: [lib/services/submissions.ts, line 486](../lib/services/submissions.ts#L486)
+Source: [lib/services/submissions.ts, line 486](../../lib/services/submissions.ts#L486)
 
 Confirmation records the same object key that the 15-minute presigned PUT URL can write. After confirmation succeeds, the student can reuse that URL with different contents of the same size. Downloads then return changed contents while the database retains the original fingerprint, submission time, and validation result. This also bypasses the on-time replacement restriction.
 
@@ -22,7 +22,7 @@ Confirmation records the same object key that the 15-minute presigned PUT URL ca
 
 ### 2. [P1] Upload cleanup can delete a successfully confirmed submission
 
-Source: [lib/services/upload-cleanup.ts, line 45](../lib/services/upload-cleanup.ts#L45)
+Source: [lib/services/upload-cleanup.ts, line 45](../../lib/services/upload-cleanup.ts#L45)
 
 Cleanup selects expired, unconfirmed rows and deletes their objects before conditionally deleting the database rows. A confirmation that began before expiry can commit after cleanup's selection. Cleanup then deletes the confirmed file; its `confirmedAt: null` condition preserves the row but cannot restore the object.
 
@@ -32,7 +32,7 @@ Cleanup selects expired, unconfirmed rows and deletes their objects before condi
 
 ### 3. [P2] Waivers can leave cleared charges contributing to overdue ageing
 
-Source: [lib/services/rules/fees.ts, line 98](../lib/services/rules/fees.ts#L98)
+Source: [lib/services/rules/fees.ts, line 98](../../lib/services/rules/fees.ts#L98)
 
 `oldestUnpaidOverdue` is set on the first uncovered charge and never reconsidered when a later waiver clears that debt.
 
@@ -42,7 +42,7 @@ Source: [lib/services/rules/fees.ts, line 98](../lib/services/rules/fees.ts#L98)
 
 ### 4. [P2] Submission ordering changes the recorded arrival time and can incorrectly mark work late
 
-Source: [lib/services/submissions.ts, line 463](../lib/services/submissions.ts#L463)
+Source: [lib/services/submissions.ts, line 463](../../lib/services/submissions.ts#L463)
 
 To order versions, confirmation moves an arrival timestamp forward by one millisecond when it is equal to or earlier than the previous version. Two files arriving in the deadline's final second can therefore pass the on-time validation, yet the second receipt becomes late. That late classification subsequently permits replacement after the deadline.
 
@@ -52,7 +52,7 @@ To order versions, confirmation moves an arrival timestamp forward by one millis
 
 ### 5. [P2] The activity timeline remains stale after successful changes
 
-Source: [components/students/activity-timeline.tsx, line 184](../components/students/activity-timeline.tsx#L184)
+Source: [components/students/activity-timeline.tsx, line 184](../../components/students/activity-timeline.tsx#L184)
 
 Events and pagination state are initialized from props only once. Recording a payment, changing status, or publishing results calls `router.refresh()`, but the mounted timeline ignores the newly supplied events. Staff can see updated balances alongside a history missing the action they just performed.
 
@@ -62,7 +62,7 @@ Events and pagination state are initialized from props only once. Recording a pa
 
 ### 6. [P2] Countdown timers double-count elapsed time after a server refresh
 
-Source: [components/format/countdown.tsx, line 51](../components/format/countdown.tsx#L51)
+Source: [components/format/countdown.tsx, line 51](../../components/format/countdown.tsx#L51)
 
 The timer keeps elapsed time measured from its original mount while accepting an updated `serverNow`. After `router.refresh()`, both values account for the same elapsed period.
 
@@ -72,7 +72,7 @@ The timer keeps elapsed time measured from its original mount while accepting an
 
 ### 7. [P2] Dashboard cards contain invalid nested headings
 
-Source: [components/dashboard/ageing-breakdown.tsx, line 31](../components/dashboard/ageing-breakdown.tsx#L31)
+Source: [components/dashboard/ageing-breakdown.tsx, line 31](../../components/dashboard/ageing-breakdown.tsx#L31)
 
 `CardTitle` already renders `<h2>`, but Ageing Breakdown, Overdue Balances, and Needs Attention each put another `<h2>` inside it. React explicitly reports this as a hydration error during the existing tests.
 

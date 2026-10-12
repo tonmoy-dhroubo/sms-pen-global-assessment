@@ -35,7 +35,7 @@ This file stays short. All details, reasoning and discussion live in [`docs/`](d
 | [docs/decisions.md](docs/decisions.md) | Decision log: what we chose, why, and what we rejected |
 | [docs/discussions.md](docs/discussions.md) | Open questions and discussion notes that are not yet decisions |
 | [docs/ai-usage.md](docs/ai-usage.md) | Running log of how AI was used; feeds the README's AI section |
-| [docs/code-review-2026-10-12.md](docs/code-review-2026-10-12.md) | Whole-system review: seven findings, recommendations, verification and limitations |
+| [docs/code-reviews/code-review-2026-10-12.md](docs/code-reviews/code-review-2026-10-12.md) | Whole-system review: seven findings, recommendations, verification and limitations |
 
 Read the relevant doc before starting work, and keep docs current as you go.
 
