@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.{ts,tsx}", "lib/**/*.test.{ts,tsx}"],
+    // In jsdom tests every console.error (React's hydration and DOM-nesting warnings included) fails the test.
+    setupFiles: ["tests/support/unit-setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

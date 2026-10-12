@@ -202,3 +202,18 @@ describe("NeedsAttention", () => {
     expect(screen.getByText("Every entered mark has been published or withheld.")).toBeTruthy();
   });
 });
+
+describe("dashboard card titles (code review #7)", () => {
+  // CardTitle already renders an <h2>; React reports a nested heading as a hydration error, but only once per
+  // pair of tags, so each card is checked on its own as well as by the console.error guard in the test setup.
+  it.each([
+    ["Overdue ageing", () => <AgeingBreakdown ageing={ageing} />],
+    ["Overdue balances", () => <OverdueTable overdue={overdue} />],
+    ["Needs attention", () => <NeedsAttention needsAttention={needsAttention} now={NOW} />],
+  ])("%s is one heading, not a heading inside a heading", (title, card) => {
+    const { container } = render(card());
+    const heading = screen.getByRole("heading", { level: 2, name: title });
+    expect(heading.querySelector("h1, h2, h3, h4, h5, h6")).toBeNull();
+    expect(container.querySelectorAll("h2 h2")).toHaveLength(0);
+  });
+});

@@ -28,9 +28,7 @@ export function AgeingBreakdown({ ageing }: { ageing: Dashboard["ageing"] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          <h2>Overdue ageing</h2>
-        </CardTitle>
+        <CardTitle>Overdue ageing</CardTitle>
         <CardDescription>
           How long overdue balances have been unpaid, counted from the oldest unpaid charge.
         </CardDescription>
