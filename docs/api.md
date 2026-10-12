@@ -27,6 +27,7 @@ with Zod schemas in `lib/validation/`, shared with the forms.
 - The cookie is `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when `NODE_ENV=production`. Pages under `/staff` and
   `/student` are guarded by `proxy.ts` (signature, age and role only, no database lookup); Route Handlers and server code
   re-verify and confirm the record still exists.
+- Roles are tested route by route: `tests/integration/api/route-access.test.ts` discovers every `route.ts` under `app/api`, checks it against a reviewed list of who may call it, and proves a student gets `403` from every staff-only route (a new route fails the test until it is added to that list). `tests/integration/api/student-access.test.ts` aims every student-facing endpoint at another student's ids.
 
 ### Errors
 
@@ -315,7 +316,7 @@ per-assessment reasons (closed, deadline passed, module not in programme) belong
 | Method | Path | Who | Purpose |
 | --- | --- | --- | --- |
 | GET | `/api/me` | Student | Profile and status, plus what they may do (`canSubmit`, with reason if not). Staff → 403 |
-| GET | `/api/me/fees` | Student | Summary, charges, non-voided payments |
+| GET | `/api/me/fees` | Student | Summary, charges, non-voided payments, overdue message (shape under "Student fees" below) |
 | GET | `/api/me/assessments` | Student | Assessments for their programme's modules with deadline, countdown data, own submission status |
 | GET | `/api/me/results` | Student | Published marks with classification; other results as `{ "status": "NOT_AVAILABLE" }` only (shape under "Student results" below) |
 
@@ -330,6 +331,14 @@ per-assessment reasons (closed, deadline passed, module not in programme) belong
 - `GET /api/me/results` answers `{ items }`, not paged, newest assessment deadline first. There is one entry per assessment that is the student's: those of their programme's modules, any they submitted to, and any they were marked on.
 - A **published** mark: `{ status: "PUBLISHED", assessment: { id, title, module: { id, code, title } }, mark, isNonSubmission, classification, publishedAt }` (`mark` is `null` for a non-submission, which the page shows as "NS").
 - Everything else - a draft, a withheld mark, or no mark yet - is exactly `{ status: "NOT_AVAILABLE", assessment: { id, title, module } }`: no mark, no classification, no release status and no reason, so a student cannot tell a withheld result from one that has not been entered. Withdrawn and other students keep seeing their own published results. Only the signed-in student's marks are read; staff are 403, no session is 401.
+
+### Student fees (`/api/me/fees`, settled in M15)
+
+- `GET /api/me/fees` answers `{ now, summary, charges, payments, overdue }`. `now` is the server's clock (ISO), the moment the summary was worked out for. Only the signed-in student's rows are read; staff are 403, no session is 401, and any `studentId` or other id in the query is ignored.
+- **Summary:** the staff summary of the Students "Shapes" block without `ageingBucket` (a Registry grouping): `{ charged, waived, paid, balance, credit, overdueAmount, oldestOverdueDays, nextDueDate, feeState }`. `balance` is negative and `credit` positive when the student is in credit; `nextDueDate` is the first uncovered charge due today or later.
+- **Charges** (oldest due date first, waivers included): `{ id, kind, academicYear, description, amount, dueDate }`. A waiver (`kind: "WAIVER"`) has a negative `amount`, as stored. `createdBy` and `createdAt` are not sent, so a student never sees which staff member added an adjustment or waiver.
+- **Payments** (newest first): `{ id, amount, method, paidAt, reference }`, only payments that are not voided. A voided payment is not read at all: neither it, its reason, nor `recordedBy`, `recordedAt`, `voidedBy` or `voidedAt` of any payment reach the student.
+- **Overdue:** `null`, or `{ amount, days, message }` exactly when `feeState` is `overdue`. `message` is the sentence the pages show: `Overdue by 12 days. Please contact the Registry office.` (`1 day` in the singular).
 
 ## Exports (Could)
 

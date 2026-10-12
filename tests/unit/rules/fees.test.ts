@@ -3,6 +3,7 @@ import {
   AGEING_BUCKETS,
   ageingBucketFor,
   feeSummary,
+  overdueNotice,
   type FeeChargeInput,
   type PaymentInput,
 } from "@/lib/services/rules/fees";
@@ -350,5 +351,15 @@ describe("feeSummary: fee state", () => {
   it("is credit when overpaid and paid when exactly settled", () => {
     expect(feeSummary([fee("100", offset(-1))], [pay("101")], TODAY).feeState).toBe("credit");
     expect(feeSummary([fee("100", offset(-1))], [pay("100")], TODAY).feeState).toBe("paid");
+  });
+});
+
+describe("overdueNotice", () => {
+  it("states the days and sends the student to the Registry office", () => {
+    expect(overdueNotice(12)).toBe("Overdue by 12 days. Please contact the Registry office.");
+  });
+
+  it("uses the singular for one day", () => {
+    expect(overdueNotice(1)).toBe("Overdue by 1 day. Please contact the Registry office.");
   });
 });

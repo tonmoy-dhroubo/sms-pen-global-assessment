@@ -25,7 +25,7 @@ waiting on a decision.
 | M12 | Assessments (staff) | M09 | Done | m12-assessments-staff | [#13](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/13) |
 | M13 | Submissions (student upload flow) | M12 | Done | m13-student-submissions | [#14](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/14) |
 | M14 | Marksheet and results | M13 | Done | m14-marksheet-results | [#15](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/15) |
-| M15 | Student portal | M14 | Not started | | |
+| M15 | Student portal | M14 | In review | m15-student-portal | [#16](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/16) |
 | M16 | Activity timeline and extras | M15 | Not started | | |
 | M17 | Quality pass | M16 | Not started | | |
 | M18 | README, demo tour and submission | M17 | Not started | | |
@@ -490,10 +490,10 @@ Acceptance criteria and edge cases: all Marks and results items ticked, includin
 **References:** pages.md (Student), api.md (`/api/me`).
 
 Tasks:
-- [ ] `/api/me`, `/api/me/fees`, `/api/me/assessments`, `/api/me/results` completed.
-- [ ] UI: overview, fees, assessments (from M13), results (published only; "Not yet available" otherwise); notices
+- [x] `/api/me`, `/api/me/fees`, `/api/me/assessments`, `/api/me/results` completed.
+- [x] UI: overview, fees, assessments (from M13), results (published only; "Not yet available" otherwise); notices
       for deferred/withdrawn students.
-- [ ] Access tests: for every student-facing endpoint, using another student's IDs returns 404; staff-only
+- [x] Access tests: for every student-facing endpoint, using another student's IDs returns 404; staff-only
       endpoints return 403 for students.
 
 Acceptance criteria: the cross-cutting access-control item in edge-cases.md ticked.

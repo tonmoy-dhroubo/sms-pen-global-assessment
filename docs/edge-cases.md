@@ -62,7 +62,7 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 ## Cross-cutting
 
-- [ ] **M** — Access control test: a student cannot read another student's data by changing an ID in the URL or API call.
+- [x] **M** — Access control test: a student cannot read another student's data by changing an ID in the URL or API call.
 - [ ] **M** — Two staff editing the same record: the second save gets a "changed, reload" conflict, not a silent overwrite.
 - [ ] **M** — Empty states, loading states, and keyboard-accessible forms with labels.
 

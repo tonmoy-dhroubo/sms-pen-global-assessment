@@ -1,6 +1,14 @@
 import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/api/errors";
+import { systemClock } from "@/lib/services/clock";
+import type { Clock } from "@/lib/services/clock";
+import { getMyFees } from "@/lib/services/fees";
+import type { MyFees } from "@/lib/services/fees";
+import { getMyResults } from "@/lib/services/marks";
+import type { MyResultItem } from "@/lib/services/marks";
 import type { EnrolmentStatus } from "@/lib/services/rules/types";
+import { listMyAssessments } from "@/lib/services/submissions";
+import type { MyAssessment } from "@/lib/services/submissions";
 
 // The signed-in student's own view of themselves (api.md "Student self-service"). Always scoped to one id taken
 // from the session, never from the request.
@@ -53,5 +61,67 @@ export async function getMyProfile(studentId: string): Promise<MyProfile> {
     academicYear: student.academicYear,
     yearOfStudy: student.yearOfStudy,
     status: student.status,
+  };
+}
+
+// --- The overview page ----------------------------------------------------------------------------------------------
+
+/** How many upcoming deadlines and latest results the overview shows. */
+export const OVERVIEW_ITEMS = 3;
+
+export type PublishedResult = Extract<MyResultItem, { status: "PUBLISHED" }>;
+
+/** Everything `/student` shows, for the signed-in student only. */
+export interface MyOverview {
+  /** The server's "now" (ISO), shared by the fee date maths and the deadline countdowns. */
+  now: string;
+  profile: MyProfile;
+  canSubmit: CanSubmit;
+  fees: MyFees;
+  /** The next open assessments by the student's own deadline, nearest first. */
+  deadlines: MyAssessment[];
+  /** The most recently published results, newest first. Draft and withheld marks never appear. */
+  latestResults: PublishedResult[];
+}
+
+/**
+ * The overview: fee position, the next three open deadlines and the latest three published results. "Open" is the
+ * student's own `state` (their extension counted): the deadline is ahead and uploads are not closed.
+ */
+export async function getMyOverview(
+  studentId: string,
+  clock: Clock = systemClock,
+): Promise<MyOverview> {
+  const now = clock();
+  const [profile, fees, assessments, results] = await Promise.all([
+    getMyProfile(studentId),
+    getMyFees(studentId, () => now),
+    listMyAssessments(studentId, () => now),
+    getMyResults(studentId),
+  ]);
+
+  const deadlines = assessments.items
+    .filter((item) => item.state === "open")
+    .sort(
+      (a, b) =>
+        new Date(a.deadline).getTime() - new Date(b.deadline).getTime() || a.id.localeCompare(b.id),
+    )
+    .slice(0, OVERVIEW_ITEMS);
+  const latestResults = results.items
+    .filter((item): item is PublishedResult => item.status === "PUBLISHED")
+    .sort(
+      (a, b) =>
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime() ||
+        a.assessment.id.localeCompare(b.assessment.id),
+    )
+    .slice(0, OVERVIEW_ITEMS);
+
+  return {
+    now: now.toISOString(),
+    profile,
+    canSubmit: canSubmitFor(profile.status),
+    fees,
+    deadlines,
+    latestResults,
   };
 }
