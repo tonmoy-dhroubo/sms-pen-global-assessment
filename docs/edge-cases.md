@@ -52,13 +52,13 @@ Split accepted (D-024). Each item is built in the milestone named in [milestones
 
 - [x] **M** — Mark must be 0–100 with at most one decimal; classification rounds half-up first (DB-019), covered by
   tests at 39.4 / 39.5 / 40 / 59.4 / 59.5 / 60 / 69.4 / 69.5 / 70.
-- [ ] **M** — Work never submitted: explicit non-submission (NS), not a silent 0.
-- [ ] **M** — Late flag visible to staff while marking; no automatic penalty.
-- [ ] **M** — Changing a published mark requires a reason; recorded in `MARK_CHANGE`.
-- [ ] **M** — Un-publishing a result is allowed, with a reason.
-- [ ] **M** — Students see withheld or unpublished results as "Not yet available" — no mark, no reason.
-- [ ] **M** — Publishing for a student with overdue fees shows a warning (DB-012).
-- [ ] **S** — Bulk publish preview: "Publish 18 marks — 2 students have overdue fees, 3 marks missing" before confirming.
+- [x] **M** — Work never submitted: explicit non-submission (NS), not a silent 0.
+- [x] **M** — Late flag visible to staff while marking; no automatic penalty.
+- [x] **M** — Changing a published mark requires a reason; recorded in `MARK_CHANGE`.
+- [x] **M** — Un-publishing a result is allowed, with a reason.
+- [x] **M** — Students see withheld or unpublished results as "Not yet available" — no mark, no reason.
+- [x] **M** — Publishing for a student with overdue fees shows a warning (DB-012).
+- [x] **S** — Bulk publish preview: "Publish 18 marks — 2 students have overdue fees, 3 marks missing" before confirming.
 
 ## Cross-cutting
 

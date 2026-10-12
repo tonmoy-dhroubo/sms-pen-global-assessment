@@ -469,15 +469,15 @@ Acceptance criteria and edge cases: all Submissions items in edge-cases.md ticke
 edge-cases.md (Marks and results).
 
 Tasks:
-- [ ] Services and endpoints: marksheet rows, upsert mark (validation, NS, version, reason when published,
+- [x] Services and endpoints: marksheet rows, upsert mark (validation, NS, version, reason when published,
       MARK_CHANGE entries), publish (dry run preview + real run with warnings), withhold (reason), unpublish (reason),
       student results for staff.
-- [ ] UI: Marksheet tab grid (keyboard navigation, live classification, NS toggle, late flag visible, unsaved
+- [x] UI: Marksheet tab grid (keyboard navigation, live classification, NS toggle, late flag visible, unsaved
       changes warning, per-row save state), publish preview dialog, withhold/unpublish/change-reason dialogs;
       Results section on the student record with history.
-- [ ] Extend the M12 module-change rule: an assessment's module cannot change once it has submissions **or marks**
-      (422 `ASSESSMENT_HAS_SUBMISSIONS` → rename to `ASSESSMENT_HAS_ACTIVITY` or add `ASSESSMENT_HAS_MARKS`; D-035).
-- [ ] Integration tests: boundaries through the API, NS, reason enforcement, publish preview counts, overdue-fee
+- [x] Extend the M12 module-change rule: an assessment's module cannot change once it has submissions **or marks**
+      (422 `ASSESSMENT_HAS_ACTIVITY`, replacing `ASSESSMENT_HAS_SUBMISSIONS`; D-035).
+- [x] Integration tests: boundaries through the API, NS, reason enforcement, publish preview counts, overdue-fee
       warning, withheld hidden from the student API.
 
 Acceptance criteria and edge cases: all Marks and results items ticked, including the bulk publish preview (S).
