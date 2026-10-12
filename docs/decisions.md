@@ -490,3 +490,21 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   arrival times; client components resync when the server refreshes; component tests fail on hydration errors.
 - Why: Two findings threaten the integrity of submitted files (the core promise of the receipt). The rest are
   boundary and timing cases our tests didn't cover — the review showed where the test suite was blind.
+
+## D-043: Upload integrity design after the review (M18R)
+
+- Date: 2026-10-13
+- Decision (from the M18R pull request, all seven review findings fixed with fail-before/pass-after tests):
+  - Upload links write only to `pending/…` keys; confirm copies the object to a server-only `submissions/…` key,
+    conditional on the ETag seen at HEAD (a swap in between → 400 "changed while being checked"); inspection,
+    SHA-256, the recorded key and downloads all use the copy. Reusing an upload link after confirm can no longer
+    change a submitted file.
+  - Confirm re-checks expiry inside its transaction (422 `UPLOAD_EXPIRED` if the 15 minutes ran out mid-confirm);
+    an overtaken double confirm returns the same receipt.
+  - Cleanup touches only `pending/` keys, with a 10-minute grace after expiry.
+  - Fee ageing and the next due date both reset when the running total falls back to what is paid, so charges
+    cleared by waivers (or payments plus waivers) no longer count.
+  - Component tests fail on any `console.error` (hydration and DOM-nesting errors included); allow-list empty.
+- Accepted leftovers: a failed delete of the pending object after a successful confirm is only logged; if a confirm
+  transaction throws, its final copy is kept (deleting it could destroy a confirmed file if the commit actually
+  succeeded); old unconfirmed pending objects under the former key layout are not cleaned up.

@@ -235,3 +235,16 @@ delegated the remaining open choices.
 - Decision: Migration `20261012200000_submission_last_submitted_index` indexes `submissions.last_submitted_at` for
   the dashboard's 14-day late-submission window. A query-count test proves 11 services issue the same number of
   statements for 3 and 30 students.
+
+## DB-027: Submission file versions and final keys (M18R)
+
+- Status: Accepted
+- Date: 2026-10-13
+- Decision: Migration `20261013090000_confirmed_file_keys_and_versions`:
+  - `submission_files.version` (1, 2, 3… per submission; unique with `submission_id`; backfilled by `uploaded_at`,
+    `id`). Versions are ordered by it; `uploaded_at` is always the real arrival time (no more 1 ms nudge) and
+    `last_submitted_at` is the newest version's arrival time.
+  - `pending_uploads.final_object_key` (unique): each confirm attempt copies to its own random final key, so racing
+    confirms can't overwrite each other's copy, and a repeated confirm can find its receipt. Already-confirmed rows
+    were backfilled with `final_object_key = object_key`; unconfirmed pending rows were deleted (DB-025 precedent).
+- Why: Fixes review findings #1, #2 and #4 (D-042, D-043).
