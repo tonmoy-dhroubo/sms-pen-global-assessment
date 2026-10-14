@@ -83,7 +83,7 @@ export function OverdueTable({ overdue }: { overdue: Dashboard["overdue"] }) {
                   <TableHead>Student</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Overdue</TableHead>
-                  <TableHead>For</TableHead>
+                  <TableHead>Overdue for</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
