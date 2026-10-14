@@ -20,7 +20,7 @@ candidate and the optional hosted deployment (M19). To pick up later.
 Plan: [milestones.md](milestones.md) (M20), D-044. A coder-agent pass that audits the UI and fixes generic patterns inside
 the shadcn system; the PR needs the candidate's review (compare before/after screenshots, light and dark).
 
-- [ ] Review and merge the M20 pull request.
+- [x] Review and merge the M20 pull request (merged 2026-10-14).
 
 ## 2. M19 — hosted demo on Vercel (optional)
 
