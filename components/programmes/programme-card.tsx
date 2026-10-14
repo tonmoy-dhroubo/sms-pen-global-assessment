@@ -79,7 +79,7 @@ export function ProgrammeCard({ programme, addableSessions }: ProgrammeCardProps
               </p>
             ) : (
               programme.feeSchedules.map((schedule) => (
-                <div key={schedule.academicYear} className="space-y-2 rounded-xl border p-4">
+                <div key={schedule.academicYear} className="space-y-2 border-t pt-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h4 className="font-medium">Session {schedule.academicYear}</h4>
@@ -97,7 +97,7 @@ export function ProgrammeCard({ programme, addableSessions }: ProgrammeCardProps
                       schedule={schedule}
                     />
                   </div>
-                  <div className="overflow-x-auto rounded-lg border">
+                  <div className="overflow-x-auto">
                     <Table>
                       <caption className="sr-only">
                         {programme.name} fee schedule for {schedule.academicYear}
