@@ -129,7 +129,7 @@ export function FeeScheduleDialog(props: FeeScheduleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant={editing ? "outline" : "default"} size="sm">
+        <Button type="button" variant="outline" size="sm">
           {editing ? (
             <PencilIcon data-icon="inline-start" aria-hidden="true" />
           ) : (

@@ -34,7 +34,7 @@ function AssessmentItem({ assessment }: { assessment: MyAssessment }) {
   const { submission } = assessment;
   const [current, ...earlier] = submission?.versions ?? [];
   return (
-    <li className="space-y-3 rounded-xl border p-4" data-slot="student-submission">
+    <li className="space-y-3 py-5 first:pt-0 last:pb-0" data-slot="student-submission">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-0.5">
           <h3 className="text-sm font-medium break-words">
@@ -124,7 +124,7 @@ export function StudentSubmissionsCard({ studentName, assessments }: StudentSubm
             description={`Assessments for ${studentName}'s programme modules appear here once staff create them.`}
           />
         ) : (
-          <ul className="space-y-3" aria-label={`Submissions by ${studentName}`}>
+          <ul className="divide-y" aria-label={`Submissions by ${studentName}`}>
             {assessments.map((assessment) => (
               <AssessmentItem key={assessment.id} assessment={assessment} />
             ))}

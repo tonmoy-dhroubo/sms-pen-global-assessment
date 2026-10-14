@@ -67,7 +67,7 @@ export function RoleSwitcher({ current }: { current: CurrentIdentity | null }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" aria-haspopup="listbox" className="max-w-[14rem] gap-1.5">
-          <span className="sr-only whitespace-nowrap sm:not-sr-only sm:text-muted-foreground">
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap sm:text-muted-foreground">
             Viewing as:
           </span>
           <span className="truncate font-medium max-sm:max-w-24">{label}</span>

@@ -91,7 +91,7 @@ export function RolePicker({ initial }: { initial: SessionOptions }) {
             <ul
               aria-label="Matching students"
               aria-busy={status === "loading"}
-              className="divide-y rounded-lg border"
+              className="max-h-80 divide-y overflow-y-auto border-y"
             >
               {students.map((student) => (
                 <li key={student.id}>
