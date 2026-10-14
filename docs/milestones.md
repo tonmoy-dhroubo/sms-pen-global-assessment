@@ -31,7 +31,7 @@ waiting on a decision.
 | M18 | README, demo tour and submission | M17 | Done | m18-readme-submission | [#19](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/19) |
 | M18R | Code-review fixes | M18 | Done | m18r-review-fixes | [#20](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/20) |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
-| M20 | UI polish with impeccable | M18R | Not started | | |
+| M20 | UI polish with impeccable | M18R | In progress | m20-ui-polish | |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
 
