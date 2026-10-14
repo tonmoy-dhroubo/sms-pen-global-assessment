@@ -982,7 +982,9 @@ describe("close and reopen", () => {
     const assessment = await createAssessment({
       moduleId: mod.id,
       createdById: person.id,
-      deadline: at(2 * DAY),
+      // The route judges "open" by the real clock, so the deadline must be far from now (it was pinned to NOW + 2 days,
+      // which ran out on 14 Oct 2026).
+      deadline: new Date(Date.now() + 30 * DAY),
       closedAt: at(-HOUR),
     });
 
