@@ -31,7 +31,7 @@ waiting on a decision.
 | M18 | README, demo tour and submission | M17 | Done | m18-readme-submission | [#19](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/19) |
 | M18R | Code-review fixes | M18 | Done | m18r-review-fixes | [#20](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/20) |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
-| M20 | UI polish with impeccable | M18R | In progress | m20-ui-polish | |
+| M20 | UI polish with impeccable | M18R | In review | m20-ui-polish | PR_PLACEHOLDER |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
 
@@ -622,17 +622,17 @@ not rewritten; `--brand` and the single-accent theme unchanged; same routes, API
 `adapt`, `quieter`.
 
 Tasks:
-- [ ] **Baseline.** `npx impeccable detect --json app components`, then critique and audit each surface: role picker
+- [x] **Baseline.** `npx impeccable detect --json app components`, then critique and audit each surface: role picker
       `/`, staff dashboard, students list / new-edit form / record, fees, programmes, assessments list and detail,
       marksheet, student Overview / Assessments / Fees / Results, error and 404 pages. Record every finding in
       `docs/ui-review.md` (surface, finding, severity, fixed or waived with the reason).
-- [ ] **Fix by area**, one Conventional Commit each: shell and layout, dashboard, students, fees and programmes,
+- [x] **Fix by area**, one Conventional Commit each: shell and layout, dashboard, students, fees and programmes,
       assessments and marksheet, student portal. Reuse the shared pieces (`StatusBadge`, `components/format/*`,
       `components/shared/*`, `DataTable`).
-- [ ] **Waivers.** Findings that are a shadcn default or a recorded decision are waived with
+- [x] **Waivers.** Findings that are a shadcn default or a recorded decision are waived with
       `impeccable ignores add-value ... --reason` and listed in `docs/ui-review.md`.
-- [ ] Re-run `npx impeccable detect app components` until nothing is left outside the recorded waivers.
-- [ ] Refresh the README screenshots if pages visibly changed; add an `ai-usage.md` row.
+- [x] Re-run `npx impeccable detect app components` until nothing is left outside the recorded waivers.
+- [x] Refresh the README screenshots if pages visibly changed; add an `ai-usage.md` row.
 
 Acceptance criteria: `package.json`, `package-lock.json` and `components/ui/*` unchanged (or a justified shadcn-CLI
 addition); `--brand`, fonts and tone pairs unchanged (or any tone change still passes the contrast test); lint,
