@@ -90,7 +90,15 @@ export default async function MyAssessmentPage({ params }: { params: Promise<{ i
                 <span className="text-muted-foreground"> &middot; extended for you</span>
               ) : null}
             </Detail>
-            <Detail label={assessment.closedAt ? "Closed" : "Time left"}>
+            <Detail
+              label={
+                assessment.closedAt
+                  ? "Closed"
+                  : assessment.state === "open"
+                    ? "Time left"
+                    : "Status"
+              }
+            >
               {assessment.closedAt ? (
                 <>
                   <RelativeTime value={assessment.closedAt} now={now} /> (

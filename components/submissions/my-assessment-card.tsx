@@ -63,7 +63,7 @@ export function MyAssessmentCard({ assessment, serverNow }: MyAssessmentCardProp
         </div>
         <div className="min-w-0">
           <dt className="text-xs text-muted-foreground">
-            {assessment.state === "closed" ? "Status" : "Time left"}
+            {assessment.state === "open" ? "Time left" : "Status"}
           </dt>
           <dd className="mt-0.5 text-sm">
             {assessment.state === "closed" ? (
