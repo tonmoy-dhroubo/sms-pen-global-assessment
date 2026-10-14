@@ -92,14 +92,22 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
 
       <Card>
         <CardHeader>
-          <CardTitle>Deadline</CardTitle>
+          <CardTitle>Deadline and progress</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
             <Detail label={`Deadline (${APP_TIME_ZONE})`}>
               <DateTime value={assessment.deadline} />
             </Detail>
-            <Detail label={assessment.closedAt ? "Closed" : "Time left"}>
+            <Detail
+              label={
+                assessment.closedAt
+                  ? "Closed"
+                  : assessment.state === "open"
+                    ? "Time left"
+                    : "Status"
+              }
+            >
               {assessment.closedAt ? (
                 <>
                   Closed <RelativeTime value={assessment.closedAt} now={serverNow} /> (
