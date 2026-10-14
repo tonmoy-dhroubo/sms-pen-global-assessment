@@ -508,3 +508,33 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Accepted leftovers: a failed delete of the pending object after a successful confirm is only logged; if a confirm
   transaction throws, its final copy is kept (deleting it could destroy a confirmed file if the commit actually
   succeeded); old unconfirmed pending objects under the former key layout are not cleaned up.
+
+## D-044: Use impeccable as dev-time design tooling to un-slop the UI (M20)
+
+- Date: 2026-10-14
+- Context: The UI is stock shadcn/ui built by agents, and it has the generic "AI-generated" look. The open-source
+  [impeccable](https://github.com/pbakaus/impeccable) design skill (v4.5.2, Apache-2.0) gives Claude Code design
+  commands and a deterministic anti-slop detector (`npx impeccable detect`).
+- Decision:
+  - Install it **user-global** (`~/.claude/skills/impeccable`), not in the repo. The detector hook is enabled for this
+    project only, through the machine-local `.claude/settings.local.json`. `PRODUCT.md`, `DESIGN.md`, `.impeccable/`
+    and `.claude/settings.local.json` are listed in `.git/info/exclude` and are not committed (the user's choice).
+    Telemetry is off.
+  - Use it for one milestone, M20: audit every surface, record findings in `docs/ui-review.md`, and fix them by area.
+    Depth is an audit plus targeted fixes, not a visual-identity change.
+  - **Boundary.** The brief prefers shadcn and D-016 fixes shadcn/ui and its ecosystem. impeccable may change how we
+    *use* shadcn components, Tailwind tokens and copy. It may not add an npm dependency or a UI library, add or change
+    fonts (IBM Plex stays), rewrite `components/ui/*`, change the `--brand` token or the single-accent theme, or
+    change behaviour. `package.json` and `package-lock.json` must end unchanged. Tone changes must still pass the
+    contrast test (D-017, D-040).
+  - **Allowed commands:** `detect`, `critique`, `audit`, `polish`, `layout`, `typeset` (inside the Plex scale),
+    `clarify`, `harden`, `distill`, `adapt`, `quieter`.
+  - **Excluded commands:** `craft`, `shape`, `extract`, `bolder`, `colorize`, `animate`, `delight`, `overdrive`,
+    `onboard`, `live`, `generate`.
+  - A detector finding that is really a shadcn default or a recorded decision (the Plex fonts, the `--brand` green)
+    is waived with `npx impeccable ignores add-value ... --reason "D-0xx"` and listed in `docs/ui-review.md`; the
+    primitive is not rewritten to silence it.
+- Why: A deterministic detector and a structured review find the generic patterns that were never checked by the
+  axe, contrast and responsive scripts, and keep the fixes inside the system we already chose.
+- Alternatives: Committing the skill to the repo (adds vendored tooling and many files to a graded repository); a fuller
+  visual refresh with new fonts, colours or components (crosses D-016 and the brief's shadcn preference).

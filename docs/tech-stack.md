@@ -21,6 +21,7 @@ The agreed stack and how the pieces fit. The reasoning behind each choice is in 
 | Tests | Vitest (+ Testing Library for components) | Domain rules first; Playwright only if time allows |
 | Lint/format | ESLint + Prettier | |
 | Package manager | npm | |
+| Design tooling | impeccable (user-global Claude skill) | Dev-time review only, not an app dependency; nothing installed in the repo (D-044) |
 | Deployment | Local (Docker) for submission; Vercel for a hosted demo | Deploy once features work |
 
 ## Environments

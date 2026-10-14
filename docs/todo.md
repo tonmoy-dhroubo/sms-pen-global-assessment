@@ -15,6 +15,13 @@ candidate and the optional hosted deployment (M19). To pick up later.
 - [ ] Optional: follow the README's "Run locally" steps in a fresh clone and walk the demo tour. (~15–20 min)
 - [ ] Optional: decide the accent colour (currently dark green `#2F6B3F`, the `--brand` token in `app/globals.css`).
 
+## 1b. M20 — UI polish with impeccable
+
+Plan: [milestones.md](milestones.md) (M20), D-044. A coder-agent pass that audits the UI and fixes generic patterns inside
+the shadcn system; the PR needs the candidate's review (compare before/after screenshots, light and dark).
+
+- [ ] Review and merge the M20 pull request.
+
 ## 2. M19 — hosted demo on Vercel (optional)
 
 Plan: [milestones.md](milestones.md) (M19), [discussions.md](discussions.md) ("Hosted setup"), D-011 to D-014,
