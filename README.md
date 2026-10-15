@@ -108,13 +108,17 @@ If you have PostgreSQL but not Docker, set `STORAGE_DRIVER=filesystem`: uploaded
 setup uses 18). The `unaccent` and `pg_trgm` extensions must be available: they ship with PostgreSQL itself, but on
 Debian/Ubuntu they are in the separate `postgresql-contrib` package (the Windows and macOS installers, Homebrew and the
 official `postgres` Docker images include them). The migrations run `CREATE EXTENSION` for both, so the database user must
-be a superuser or, on PostgreSQL 13 and newer, the owner of the database (both extensions are marked trusted).
+be a superuser or, on PostgreSQL 13 and newer, the owner of the database (both extensions are marked trusted). `db:reset`
+also drops and re-creates the `public` schema, so that user must own it (a superuser does; otherwise see the `ALTER SCHEMA`
+lines below, which PostgreSQL 14 needs and 15 and newer do not).
 
 ```bash
 # 1. A database user and the two databases (run as a PostgreSQL superuser; adjust the user name to your install)
 psql -U postgres -c "CREATE ROLE sms LOGIN PASSWORD 'sms'"
 psql -U postgres -c "CREATE DATABASE sms OWNER sms"
 psql -U postgres -c "CREATE DATABASE sms_test OWNER sms"     # only needed for npm run test:integration
+psql -U postgres -d sms -c "ALTER SCHEMA public OWNER TO sms"            # PostgreSQL 14: the new user must own the schema
+psql -U postgres -d sms_test -c "ALTER SCHEMA public OWNER TO sms"
 
 # 2. The app
 git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
@@ -136,11 +140,12 @@ npm run dev               # http://localhost:3000
 itself (a signed, 15-minute, one-file link standing in for an S3 presigned URL) and downloads stream through a similar signed
 link, so there is no CORS to set up. `./storage` is gitignored; `db:reset` empties and refills it, and the app refuses a
 `FILE_STORAGE_DIR` that already holds other files. `STORAGE_DRIVER=filesystem npm run test:integration` runs the integration
-suite against a scratch folder (`./storage-test`) with no MinIO.
+suite (PowerShell: `$env:STORAGE_DRIVER="filesystem"; npm run test:integration`) against a scratch folder (`./storage-test`) with no MinIO.
 
 | Problem                                                             | Fix                                                                                                                            |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `extension "unaccent" is not available`                             | Install the contrib package (Debian/Ubuntu: `sudo apt install postgresql-contrib`).                                            |
+| `must be owner of schema public` (`db:reset`)                      | PostgreSQL 14: `ALTER SCHEMA public OWNER TO sms` in each database (the two lines above).                                      |
 | `permission denied to create extension`                             | Use a superuser, or make the user the database owner (`ALTER DATABASE sms OWNER TO sms`; PostgreSQL 13+).                      |
 | `... is not empty and was not created by this app`                  | Point `FILE_STORAGE_DIR` at a new or empty folder.                                                                             |
 

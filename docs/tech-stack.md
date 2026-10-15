@@ -38,7 +38,8 @@ Only environment variables differ between the two. Expected variables (final lis
 - `DATABASE_URL` — app connection (Neon: pooled URL)
 - `DIRECT_URL` — migrations (Neon: direct URL; locally the same as `DATABASE_URL`)
 - `TEST_DATABASE_URL` — separate database for integration tests (local and CI only)
-- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
+- `STORAGE_DRIVER` (`s3` default, or `filesystem`) and `FILE_STORAGE_DIR` (filesystem driver only)
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (required only for `s3`)
 - `S3_PUBLIC_ENDPOINT` — browser-reachable storage host for presigned URLs, if different from `S3_ENDPOINT`
 - `S3_FORCE_PATH_STYLE` — `true` for both MinIO and Supabase
 - `APP_TIMEZONE` — `Asia/Dhaka`; used to display dates and judge deadlines (D-018)
@@ -76,6 +77,7 @@ app/                 pages (Server Components) and app/api/* Route Handlers
 
 The same code runs against MinIO locally and Supabase Storage on Vercel (D-012, D-013).
 
+- **No Docker?** `STORAGE_DRIVER=filesystem` swaps the S3 adapter for one over a folder (`FILE_STORAGE_DIR`, default `./storage`) behind the same `Storage` interface; upload and download links become signed `/api/uploads/{token}` URLs served by the app itself (D-045). Local use only; the README has the "Run without Docker" steps.
 - The bucket is **private**; nothing is publicly readable. CORS allows only the app's origin to `PUT`/`GET`
   (server-wide on MinIO, per bucket on Supabase).
 - **Upload, step 1:** the browser asks a Route Handler for an upload URL. The server checks the role, the assessment
