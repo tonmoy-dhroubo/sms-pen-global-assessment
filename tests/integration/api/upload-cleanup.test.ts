@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
+import { createTestStorage } from "../../support/test-storage";
 import { CLEANUP_GRACE_MS, cleanupExpiredUploads } from "@/lib/services/upload-cleanup";
-import { createStorage } from "@/lib/storage-core";
 import { deleteObject, deletePrefix, headObject, putObject } from "@/lib/storage";
 import {
   createAssessment,
@@ -176,14 +176,7 @@ describe("cleanupExpiredUploads", () => {
   it("works with a storage client built the way the command line builds it", async () => {
     const ctx = await context();
     const { row, objectKey } = await pending(ctx, { expiresIn: LONG_AGO });
-    const storage = createStorage({
-      endpoint: process.env.S3_ENDPOINT!,
-      region: process.env.S3_REGION!,
-      bucket: process.env.S3_BUCKET!,
-      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-      forcePathStyle: true,
-    });
+    const storage = createTestStorage();
     expect((await cleanupExpiredUploads({ prisma: db, storage, now: new Date() })).removed).toBe(1);
     expect(await db.pendingUpload.findUnique({ where: { id: row.id } })).toBeNull();
     expect(await headObject(objectKey)).toBeNull();

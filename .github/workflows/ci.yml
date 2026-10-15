@@ -249,3 +249,48 @@ jobs:
           echo "first:  $first"
           echo "second: $second"
           test -n "$first" && test "$first" = "$second"
+
+  integration-tests-filesystem:
+    name: Integration tests, filesystem storage, no MinIO (PostgreSQL ${{ matrix.postgres }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The "run without Docker" path (D-045): the oldest PostgreSQL verified (14) and the one the Docker setup uses.
+        postgres: ["14-alpine", "18.6-alpine"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: sms
+          POSTGRES_PASSWORD: sms
+          POSTGRES_DB: sms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sms -d sms_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Same harness as the job above, but STORAGE_DRIVER=filesystem: files go to ./storage-test, no S3_* variables are
+      # set, and there is no MinIO at all.
+      STORAGE_DRIVER: filesystem
+      TEST_DATABASE_URL: postgresql://sms:sms@localhost:5432/sms_test
+      DATABASE_URL: postgresql://sms:sms@localhost:5432/sms_test
+      DIRECT_URL: postgresql://sms:sms@localhost:5432/sms_test
+      SESSION_SECRET: ci-placeholder-session-secret-at-least-32-chars
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run test:integration
+      # The seed writes its demo files through the same adapter; db:reset runs the seed's self-check.
+      - name: Reset and seed on the filesystem driver (includes the self-check)
+        run: npm run db:reset

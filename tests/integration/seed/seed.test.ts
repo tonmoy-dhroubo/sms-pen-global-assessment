@@ -4,20 +4,13 @@ import { runSeed } from "@/db/seed/run";
 import { createTimeline } from "@/db/seed/timeline";
 import { db } from "@/lib/db";
 import { fixedClock } from "@/lib/services/clock";
-import { createStorage } from "@/lib/storage-core";
 import { testDatabaseUrl, truncateAll, withClient } from "../../support/test-db";
+import { createTestStorage } from "../../support/test-storage";
 
 // The whole seed against the real test database and the `submissions-test` bucket: it must pass its own self-check at
 // any moment of the year (including the awkward ones), and two runs on the same day must produce the same content.
 
-const storage = createStorage({
-  endpoint: process.env.S3_ENDPOINT!,
-  region: process.env.S3_REGION!,
-  bucket: process.env.S3_BUCKET!,
-  accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  forcePathStyle: true,
-});
+const storage = createTestStorage();
 
 const seedAt = (iso: string) => runSeed({ prisma: db, storage, clock: fixedClock(iso) });
 const wipeDatabase = () => withClient(testDatabaseUrl(), truncateAll);

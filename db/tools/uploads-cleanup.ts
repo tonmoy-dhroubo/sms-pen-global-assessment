@@ -1,5 +1,5 @@
 import { assertLocalTargets } from "./database";
-import { createPrisma, createStorageFromEnv, fail, loadEnv, print } from "../seed/context";
+import { createPrisma, createStorageFromEnv, fail, loadEnv, print, storageTargets } from "../seed/context";
 import { cleanupExpiredUploads } from "@/lib/services/upload-cleanup";
 
 // `npm run uploads:cleanup`: delete expired, unconfirmed pending uploads and their stray objects (DB-017). It deletes
@@ -10,22 +10,23 @@ async function main() {
   const env = loadEnv();
   const force = process.argv.includes("--force");
   assertLocalTargets(
-    { DATABASE_URL: env.DATABASE_URL, S3_ENDPOINT: env.S3_ENDPOINT },
+    { DATABASE_URL: env.DATABASE_URL, ...storageTargets(env) },
     force,
     "clean up uploads",
   );
 
   const prisma = createPrisma(env.DATABASE_URL);
   try {
+    const storage = createStorageFromEnv(env);
     const report = await cleanupExpiredUploads({
       prisma,
-      storage: createStorageFromEnv(env),
+      storage,
       now: new Date(),
     });
     print(
       report.expired === 0
         ? "No expired uploads to clean up."
-        : `Cleaned up ${report.removed} of ${report.expired} expired uploads in bucket "${env.S3_BUCKET}".`,
+        : `Cleaned up ${report.removed} of ${report.expired} expired uploads in storage "${storage.bucket}".`,
     );
     for (const failure of report.failed) {
       print(`  could not delete ${failure.objectKey}: ${failure.message}`);

@@ -2,7 +2,9 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 import { type Env, parseEnv } from "@/lib/env-schema";
-import { createStorage, type Storage } from "@/lib/storage-core";
+import { createStorageFromEnv } from "@/lib/storage-factory";
+
+export { createStorageFromEnv };
 
 // What the command-line scripts need: the validated environment, a Prisma client and a storage client. They cannot use
 // `lib/db` and `lib/storage` (those import `server-only`, which only works inside Next.js), so they build their own
@@ -16,16 +18,9 @@ export function createPrisma(connectionString: string): PrismaClient {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
-export function createStorageFromEnv(env: Env): Storage {
-  return createStorage({
-    endpoint: env.S3_ENDPOINT,
-    publicEndpoint: env.S3_PUBLIC_ENDPOINT,
-    region: env.S3_REGION,
-    bucket: env.S3_BUCKET,
-    accessKeyId: env.S3_ACCESS_KEY_ID,
-    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-    forcePathStyle: env.S3_FORCE_PATH_STYLE,
-  });
+/** The storage endpoint the local-only guard must check: S3 only (the filesystem driver is local by definition). */
+export function storageTargets(env: Env): Record<string, string> {
+  return env.S3_ENDPOINT ? { S3_ENDPOINT: env.S3_ENDPOINT } : {};
 }
 
 /** Writes a line to stdout (the scripts' only output channel). */

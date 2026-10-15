@@ -47,6 +47,10 @@ async function waitForText(page: Page, text: string, ms = 15000) {
   return false;
 }
 
+interface MySubmission {
+  assessment: { submission: { currentFile: { id: string; sizeBytes: number } } | null };
+}
+
 interface MyFees {
   summary: { balance: string };
   payments: Array<{ reference: string; amount: string }>;
@@ -115,6 +119,27 @@ async function main() {
       await page.click("button", "Upload");
       check(await waitForText(page, "SHA-256"), "the student gets a receipt with a fingerprint");
       page.close();
+    }
+    {
+      // Staff download the stored file through the access-checked link, whichever storage driver is configured.
+      const mine = await api<MySubmission>(
+        student,
+        `/api/me/assessments/${proposal.id}/submission`,
+      );
+      const fileId = mine.assessment.submission?.currentFile.id;
+      check(fileId !== undefined, "the student's submission has a current file");
+      if (fileId) {
+        const link = await api<{ url: string }>(staff, `/api/files/${fileId}/download`);
+        const downloaded = await fetch(new URL(link.url, BASE_URL));
+        const bytes = Buffer.from(await downloaded.arrayBuffer());
+        check(
+          downloaded.ok &&
+            bytes.subarray(0, 5).toString("latin1") === "%PDF-" &&
+            bytes.length === mine.assessment.submission?.currentFile.sizeBytes &&
+            /^attachment;/.test(downloaded.headers.get("content-disposition") ?? ""),
+          `staff download the uploaded PDF intact (${bytes.length} bytes)`,
+        );
+      }
     }
     {
       const page = await browser.newPage();

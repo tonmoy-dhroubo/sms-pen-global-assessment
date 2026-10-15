@@ -145,4 +145,53 @@ describe("parseEnv", () => {
       expect(message).toContain(".env.example");
     }
   });
+
+  describe("storage driver (D-045)", () => {
+    const { S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, ...base } =
+      valid;
+    void [S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY];
+
+    it("defaults to s3 with the default directory", () => {
+      const env = parseEnv(valid);
+      expect(env.STORAGE_DRIVER).toBe("s3");
+      expect(env.FILE_STORAGE_DIR).toBe("./storage");
+    });
+
+    it("requires the S3 variables for s3, whether the driver is spelled out or not", () => {
+      for (const driver of [undefined, "s3"]) {
+        expect(problemsFor({ ...base, STORAGE_DRIVER: driver })).toEqual([
+          "S3_ENDPOINT: is missing",
+          "S3_REGION: is missing",
+          "S3_BUCKET: is missing",
+          "S3_ACCESS_KEY_ID: is missing",
+          "S3_SECRET_ACCESS_KEY: is missing",
+        ]);
+      }
+    });
+
+    it("needs no S3 variables for the filesystem driver", () => {
+      const env = parseEnv({ ...base, STORAGE_DRIVER: "filesystem", FILE_STORAGE_DIR: "./files" });
+      expect(env.STORAGE_DRIVER).toBe("filesystem");
+      expect(env.FILE_STORAGE_DIR).toBe("./files");
+      expect(env.S3_ENDPOINT).toBeUndefined();
+    });
+
+    it("still validates S3 values that are given under the filesystem driver", () => {
+      expect(
+        problemsFor({ ...base, STORAGE_DRIVER: "filesystem", S3_ENDPOINT: "not a url" }),
+      ).toEqual(["S3_ENDPOINT: must be a valid URL"]);
+    });
+
+    it("rejects an unknown driver", () => {
+      expect(problemsFor({ ...valid, STORAGE_DRIVER: "ftp" })).toEqual([
+        'STORAGE_DRIVER: must be "s3" or "filesystem"',
+      ]);
+    });
+
+    it("lists problems from both the general and the S3 checks together", () => {
+      const problems = problemsFor({ ...base, DATABASE_URL: undefined });
+      expect(problems).toContain("DATABASE_URL: is missing");
+      expect(problems).toContain("S3_ENDPOINT: is missing");
+    });
+  });
 });

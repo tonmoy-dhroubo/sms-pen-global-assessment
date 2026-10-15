@@ -32,3 +32,7 @@ test-results/
 
 # Generated Prisma client (created by `npm install` via postinstall / `npm run db:generate`)
 lib/generated/
+
+# Filesystem storage driver (D-045): uploaded files and the integration-test scratch directory
+/storage/
+/storage-test/

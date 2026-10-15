@@ -29,6 +29,7 @@ import {
   createSubmissionFile,
   linkModule,
 } from "../../support/factories";
+import { isFilesystemRun } from "../../support/test-storage";
 import { buildDocx, buildMacroDocx } from "../../support/zip";
 
 // The student upload flow end to end (api.md "Submissions and files", D-013, D-023): real Postgres, real MinIO, the Route
@@ -173,7 +174,10 @@ describe("POST /api/assessments/{id}/submission/upload-url", () => {
     const expiresIn = new Date(issued.expiresAt).getTime() - before;
     expect(expiresIn).toBeGreaterThan(14 * 60_000);
     expect(expiresIn).toBeLessThan(16 * 60_000);
-    expect(new URL(issued.uploadUrl).searchParams.get("X-Amz-Expires")).toBe("900");
+    // S3 states the lifetime in the URL; the filesystem driver keeps it inside the signed token.
+    if (!isFilesystemRun()) {
+      expect(new URL(issued.uploadUrl).searchParams.get("X-Amz-Expires")).toBe("900");
+    }
 
     const pending = await pendingRow(issued.pendingUploadId);
     expect(pending).toMatchObject({

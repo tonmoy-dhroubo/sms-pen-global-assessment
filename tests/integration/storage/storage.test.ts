@@ -19,9 +19,15 @@ import {
   sha256,
 } from "@/lib/storage";
 import { createStorage } from "@/lib/storage-core";
+import { isFilesystemRun } from "../../support/test-storage";
 
-// Real MinIO (the `submissions-test` bucket, see tests/support/test-storage.ts). Browser uploads are simulated with
-// plain `fetch` and only the headers the API hands out, which is all a browser would send.
+// Real MinIO (the `submissions-test` bucket, see tests/support/test-storage.ts), or with STORAGE_DRIVER=filesystem the
+// filesystem adapter on a scratch directory (D-045): the same behaviours, minus what is specific to S3 (SigV4
+// signatures, bucket policy, the SDK's checksums), which `skipOnFilesystem` leaves out; tests/integration/storage/
+// filesystem.test.ts covers the filesystem's own token and path rules. Browser uploads are simulated with plain
+// `fetch` and only the headers the API hands out, which is all a browser would send.
+const FILESYSTEM = isFilesystemRun();
+const skipOnFilesystem = { skip: FILESYSTEM };
 
 const RUN = randomUUID();
 const ASSESSMENT = randomUUID();
@@ -107,7 +113,7 @@ describe("put, head, read, hash, delete", () => {
 
 describe("presigned PUT from outside the SDK", () => {
   it("accepts a plain fetch sending only the Content-Type, and the object is then readable", async () => {
-    const key = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
     const upload = await presignPut(key, "application/pdf", PDF.length, 300);
     expect(upload.headers).toEqual({ "Content-Type": "application/pdf" });
 
@@ -128,25 +134,25 @@ describe("presigned PUT from outside the SDK", () => {
   });
 
   it("rejects a different Content-Type than the one declared", async () => {
-    const key = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
     const upload = await presignPut(key, "application/pdf", PDF.length, 300);
     const response = await browserPut(upload, PDF, { "Content-Type": "text/html" });
     expect(response.status).toBe(403);
-    expect(await response.text()).toContain("SignatureDoesNotMatch");
+    if (!FILESYSTEM) expect(await response.text()).toContain("SignatureDoesNotMatch");
     expect(await headObject(key)).toBeNull();
   });
 
   it("rejects a body of a different size than the one declared", async () => {
-    const key = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
     const upload = await presignPut(key, "application/pdf", PDF.length - 1, 300);
     const response = await browserPut(upload, PDF);
     expect(response.status).toBe(403);
     expect(await headObject(key)).toBeNull();
   });
 
-  it("cannot be redirected to another key", async () => {
-    const key = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
-    const other = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+  it("cannot be redirected to another key", skipOnFilesystem, async () => {
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
+    const other = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
     const upload = await presignPut(key, "application/pdf", PDF.length, 300);
     const redirected = { ...upload, url: upload.url.replace(key, other) };
     expect((await browserPut(redirected, PDF)).status).toBe(403);
@@ -154,7 +160,7 @@ describe("presigned PUT from outside the SDK", () => {
   });
 
   it("stops working after it expires", async () => {
-    const key = buildSubmissionKey(ASSESSMENT, STUDENT, "pdf");
+    const key = buildPendingKey(ASSESSMENT, STUDENT, "pdf");
     const upload = await presignPut(key, "application/pdf", PDF.length, 1);
     await new Promise((resolve) => setTimeout(resolve, 2200));
     const response = await browserPut(upload, PDF);
@@ -162,7 +168,7 @@ describe("presigned PUT from outside the SDK", () => {
     expect(await response.text()).toContain("expired");
   });
 
-  it("works with a client signing for a different public endpoint", async () => {
+  it("works with a client signing for a different public endpoint", skipOnFilesystem, async () => {
     // The server reaches storage on `localhost`; the browser is told `127.0.0.1`. The URL must be signed for the
     // host the browser will call.
     const server = new URL(process.env.S3_ENDPOINT!);
@@ -188,30 +194,33 @@ describe("presigned PUT from outside the SDK", () => {
   });
 });
 
-describe("the SDK's default checksum behaviour (why requestChecksumCalculation is WHEN_REQUIRED)", () => {
-  it("embeds the CRC32 of an empty body in a presigned PUT URL when left at the default", async () => {
-    const defaultClient = new S3Client({
-      endpoint: process.env.S3_ENDPOINT,
-      region: process.env.S3_REGION,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-      },
+describe.skipIf(FILESYSTEM)(
+  "the SDK's default checksum behaviour (why requestChecksumCalculation is WHEN_REQUIRED)",
+  () => {
+    it("embeds the CRC32 of an empty body in a presigned PUT URL when left at the default", async () => {
+      const defaultClient = new S3Client({
+        endpoint: process.env.S3_ENDPOINT,
+        region: process.env.S3_REGION,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+        },
+      });
+      const url = await getSignedUrl(
+        defaultClient,
+        new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET,
+          Key: scratch("crc.pdf"),
+          ContentType: "application/pdf",
+        }),
+        { expiresIn: 60 },
+      );
+      // AAAAAA== is the base64 CRC32 of zero bytes: wrong for any real upload, hence our override.
+      expect(new URL(url).searchParams.get("x-amz-checksum-crc32")).toBe("AAAAAA==");
     });
-    const url = await getSignedUrl(
-      defaultClient,
-      new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET,
-        Key: scratch("crc.pdf"),
-        ContentType: "application/pdf",
-      }),
-      { expiresIn: 60 },
-    );
-    // AAAAAA== is the base64 CRC32 of zero bytes: wrong for any real upload, hence our override.
-    expect(new URL(url).searchParams.get("x-amz-checksum-crc32")).toBe("AAAAAA==");
-  });
-});
+  },
+);
 
 describe("presigned GET", () => {
   it("downloads under the original file name, including a Bengali one", async () => {
@@ -231,7 +240,7 @@ describe("presigned GET", () => {
     expect(decodeURIComponent(/filename\*=UTF-8''(\S+)$/.exec(header)![1]!)).toBe("প্রতিবেদন.pdf");
   });
 
-  it("denies anonymous access to the object and to the bucket", async () => {
+  it("denies anonymous access to the object and to the bucket", skipOnFilesystem, async () => {
     const key = scratch("private.pdf");
     await putObject(key, PDF, "application/pdf");
     const base = `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}`;
@@ -239,7 +248,7 @@ describe("presigned GET", () => {
     expect((await fetch(`${base}/?list-type=2`)).status).toBe(403);
   });
 
-  it("is denied when the signature is tampered with", async () => {
+  it("is denied when the signature is tampered with", skipOnFilesystem, async () => {
     const key = scratch("tamper.pdf");
     await putObject(key, PDF, "application/pdf");
     const { url } = await presignGet(key, "a.pdf", 300);
@@ -260,11 +269,13 @@ describe("copyObject (confirm copies a pending upload to a final key, D-042)", (
 
     const copy = await copyObject(source, destination);
 
-    expect(copy.etag).toBe(head!.etag);
+    // S3's ETag is a hash of the content, so a copy has the source's; the filesystem's identifies one stored file
+    // (size, mtime, inode), so a copy has its own.
+    if (!FILESYSTEM) expect(copy.etag).toBe(head!.etag);
     expect(await headObject(destination)).toMatchObject({
       sizeBytes: PDF.length,
       contentType: "application/pdf",
-      etag: head!.etag,
+      etag: copy.etag,
     });
     expect(await sha256(destination)).toBe(createHash("sha256").update(PDF).digest("hex"));
     expect(await headObject(source)).not.toBeNull();

@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { mkdir, rm } from "node:fs/promises";
+import path from "node:path";
 import {
   CreateBucketCommand,
   DeleteObjectsCommand,
@@ -6,9 +8,30 @@ import {
   ListObjectsV2Command,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { parseEnv } from "@/lib/env-schema";
+import type { Storage } from "@/lib/storage-core";
+import { createStorageFromEnv } from "@/lib/storage-factory";
 
 // Object-storage plumbing for the integration harness, mirroring test-db.ts: the suite gets its own bucket, creates
 // it if needed, empties it before the run, and refuses to touch anything that is not clearly a throw-away bucket.
+//
+// The suite runs against either storage adapter (D-045): `npm run test:integration` uses MinIO (the default), and
+// `STORAGE_DRIVER=filesystem npm run test:integration` uses a throw-away directory and needs no MinIO.
+
+/** Which adapter this run exercises. */
+export const isFilesystemRun = (): boolean => process.env.STORAGE_DRIVER === "filesystem";
+
+/** The only directory the filesystem runs use; the dev directory (`./storage`) is never touched. */
+export const TEST_STORAGE_DIR = path.resolve("storage-test");
+
+function assertTestDir(dir: string): string {
+  if (!path.basename(dir).endsWith("-test")) {
+    throw new Error(
+      `Refusing to use directory "${dir}": the test storage directory name must end with "-test".`,
+    );
+  }
+  return dir;
+}
 
 /** The only bucket the integration tests use. The dev bucket (`submissions`) is never touched. */
 export const TEST_S3_BUCKET = "submissions-test";
@@ -29,6 +52,11 @@ export function assertTestBucket(bucket: string): string {
  * local MinIO / the CI service container.
  */
 export function applyStorageTestEnv(): void {
+  if (isFilesystemRun()) {
+    // Overwritten on purpose, like S3_BUCKET below: whatever .env says, tests never touch the dev directory.
+    process.env.FILE_STORAGE_DIR = assertTestDir(TEST_STORAGE_DIR);
+    return;
+  }
   const defaults: Record<string, string> = {
     S3_ENDPOINT: "http://localhost:9000",
     S3_REGION: "us-east-1",
@@ -56,6 +84,12 @@ function adminClient(): S3Client {
 /** Creates the test bucket if it does not exist (private, which is the default) and deletes everything in it. */
 export async function prepareTestBucket(): Promise<void> {
   applyStorageTestEnv();
+  if (isFilesystemRun()) {
+    const dir = assertTestDir(process.env.FILE_STORAGE_DIR!);
+    await rm(dir, { recursive: true, force: true });
+    await mkdir(dir, { recursive: true });
+    return;
+  }
   const Bucket = assertTestBucket(process.env.S3_BUCKET!);
   const client = adminClient();
   try {
@@ -87,4 +121,9 @@ export async function prepareTestBucket(): Promise<void> {
   } finally {
     client.destroy();
   }
+}
+
+/** A storage client for the adapter this run uses, built the way the app and the command-line scripts build theirs. */
+export function createTestStorage(): Storage {
+  return createStorageFromEnv(parseEnv(process.env));
 }
