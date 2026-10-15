@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import {
+  assertHasTables,
   assertLocalTargets,
   databaseNameFromUrl,
   ensureDatabase,
@@ -66,6 +67,18 @@ describe("ensureDatabase (real PostgreSQL)", () => {
     const url = testDatabaseUrl();
     await ensureDatabase(url, assertTestDatabase);
     expect(await databaseExists(databaseNameFromUrl(url))).toBe(true);
+  });
+  it("assertHasTables: fails on an empty database, passes once there is a table", async () => {
+    const name = scratchName();
+    created.push(name);
+    const url = withDatabase(testDatabaseUrl(), name);
+    await ensureDatabase(url, assertTestDatabase);
+
+    await expect(assertHasTables(url)).rejects.toThrow(/no tables yet.*npm run db:reset/);
+    await withClient(url, async (client) => {
+      await client.query("CREATE TABLE some_table (id int)");
+    });
+    await expect(assertHasTables(url)).resolves.toBeUndefined();
   });
 
   it("creates nothing when the guard refuses", async () => {

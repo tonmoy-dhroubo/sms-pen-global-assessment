@@ -115,6 +115,22 @@ export function migrateDeploy(url: string): void {
   }
 }
 
+/** Throws unless the `public` schema has application tables (e.g. a database `ensureDatabase` has just created is empty). */
+export async function assertHasTables(url: string): Promise<void> {
+  const count = await withClient(url, async (client) => {
+    const { rows } = await client.query<{ count: string }>(
+      `SELECT count(*) AS count FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`,
+    );
+    return Number(rows[0]?.count ?? 0);
+  });
+  if (count === 0) {
+    throw new Error(
+      "The database has no tables yet. Run `npm run db:reset` (it applies the migrations and seeds) — or " +
+        "`npx prisma migrate deploy` first, then `npm run db:seed`.",
+    );
+  }
+}
+
 /** Empties every application table (all of `public` except Prisma's own migration table). */
 export async function truncateAll(client: Client): Promise<void> {
   const { rows } = await client.query<{ tablename: string }>(
