@@ -538,3 +538,28 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   axe, contrast and responsive scripts, and keep the fixes inside the system we already chose.
 - Alternatives: Committing the skill to the repo (adds vendored tooling and many files to a graded repository); a fuller
   visual refresh with new fonts, colours or components (crosses D-016 and the brief's shadcn preference).
+
+## D-045: Filesystem storage adapter for running without Docker (M21)
+
+- Date: 2026-10-15
+- Context: Reviewers very likely have PostgreSQL installed but may not have Docker. Postgres runs natively; MinIO is
+  the only part that needs Docker (its official images and binaries are gone, D-027).
+- Decision:
+  - Add a second storage adapter, selected by `STORAGE_DRIVER=s3|filesystem` (default `s3`, so the Docker path and the
+    hosted plan are unchanged). The filesystem adapter implements the same `Storage` interface as
+    `lib/storage-core.ts`, stores files under `FILE_STORAGE_DIR` (default `./storage`, gitignored) and keeps the same
+    key layout (`pending/…`, `submissions/…`). Services, pages and the browser upload code do not change.
+  - Upload URLs become an app route, `PUT /api/uploads/{token}`: an HMAC-signed token (with `SESSION_SECRET`) that
+    names one `pending/` key, the declared content type and length, and a 15-minute expiry. The route streams the body
+    to a temporary file, enforces the declared length and type, then renames it into place.
+  - Confirm keeps the D-043 guarantees: the copy from `pending/` to the final key is conditional on the version seen at
+    inspection (an ETag derived from size and mtime), so a later PUT with the same token can never change a confirmed
+    file. Downloads stream through the existing access-checked download route, using a signed short-lived URL.
+  - Cleanup touches only `pending/` keys, as now.
+  - The storage and submission integration tests run against both adapters; CI gains a filesystem run.
+  - README gains a "Run without Docker" path (native PostgreSQL with `unaccent` and `pg_trgm`, the minimum version
+    verified, filesystem storage).
+- Why: It makes the app runnable with nothing but Node and PostgreSQL, and the adapter seam already exists.
+- Alternatives: a hosted demo (M19; still deferred, needs accounts and live credentials); a native S3 server
+  (SeaweedFS, Garage — another install for the reviewer); writing files through the existing routes without an
+  adapter (forks the service layer and loses the tested integrity design).

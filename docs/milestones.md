@@ -32,6 +32,7 @@ waiting on a decision.
 | M18R | Code-review fixes | M18 | Done | m18r-review-fixes | [#20](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/20) |
 | M19 | Hosted deployment (deferred) | M18 | Deferred | | |
 | M20 | UI polish with impeccable | M18R | Done | m20-ui-polish | [#21](https://github.com/tonmoy-dhroubo/sms-pen-global-assessment/pull/21) |
+| M21 | Filesystem storage, run without Docker | M20 | In progress | m21-filesystem-storage | |
 
 Order is sequential even where the dependency column would allow parallel work; one milestone at a time.
 
@@ -638,3 +639,21 @@ Acceptance criteria: `package.json`, `package-lock.json` and `components/ui/*` u
 addition); `--brand`, fonts and tone pairs unchanged (or any tone change still passes the contrast test); lint,
 typecheck, unit and integration tests, `a11y`, `keyboard`, `responsive` and `e2e` pass; every finding in
 `docs/ui-review.md` is fixed or waived with a reason.
+
+## M21 — Filesystem storage, run without Docker
+
+**Goal:** a second storage adapter so the app runs with only Node and a native PostgreSQL (D-045). The Docker/MinIO
+path stays exactly as it is and remains the default.
+**References:** D-045, D-043, D-030, D-027, tech-stack.md, api.md.
+
+Tasks:
+- [ ] `STORAGE_DRIVER` and `FILE_STORAGE_DIR` in `lib/env.ts` and `.env.example` (S3 variables only required for `s3`).
+- [ ] Filesystem adapter implementing the `Storage` interface, same key layout; `./storage` gitignored.
+- [ ] `PUT /api/uploads/{token}`: HMAC-signed, expiring, one pending key, length and type enforced, temp file + rename.
+- [ ] Confirm, downloads and cleanup keep the D-043 guarantees on the filesystem.
+- [ ] Storage and submission integration tests run against both adapters; a CI filesystem run.
+- [ ] README "Run without Docker", walked from a fresh clone with Docker stopped; minimum PostgreSQL version verified.
+- [ ] api.md, tech-stack.md and ai-usage.md updated.
+
+Acceptance criteria: both adapters pass lint, typecheck, unit and integration tests; the e2e upload flow works on the
+filesystem adapter; the Docker path is unchanged; the fresh-clone run without Docker works end to end.
