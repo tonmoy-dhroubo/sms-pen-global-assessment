@@ -65,45 +65,37 @@ Both give the same app, the same demo data and the same [demo tour](#demo-tour) 
 **Prerequisites**
 
 - **Node.js 24** (see `.nvmrc`; `package.json` requires `24.x`) and npm 11
-- **PostgreSQL 14 or newer**, running (14 and 18 were tested). The `unaccent` and `pg_trgm` extensions must be available:
-  they ship with PostgreSQL, but on Debian/Ubuntu they are in the separate `postgresql-contrib` package (the Windows and
-  macOS installers and Homebrew include them).
-- The database user must be able to run `CREATE EXTENSION` (a superuser, or on PostgreSQL 13 and newer the owner of the
-  database; both extensions are marked trusted), and must own the `public` schema, because `db:reset` re-creates it. A
-  superuser does both; otherwise run the `ALTER SCHEMA` lines below (needed on PostgreSQL 14, not on 15 and newer).
+- **PostgreSQL 14 or newer**, running (14 and 18 were tested), and the login details of a superuser (usually `postgres`).
+  The `unaccent` and `pg_trgm` extensions must be available: they ship with PostgreSQL, but on Debian/Ubuntu they are in
+  the separate `postgresql-contrib` package (the Windows and macOS installers and Homebrew include them).
 - Free port **3000**, and a current Chrome, Firefox or Edge.
 
 **Steps**
 
 ```bash
-# 1. A database user and the two databases (run as a PostgreSQL superuser; adjust the user name to your install)
-psql -U postgres -c "CREATE ROLE sms LOGIN PASSWORD 'sms'"
-psql -U postgres -c "CREATE DATABASE sms OWNER sms"
-psql -U postgres -c "CREATE DATABASE sms_test OWNER sms"     # only needed for npm run test:integration
-psql -U postgres -d sms -c "ALTER SCHEMA public OWNER TO sms"            # PostgreSQL 14: the new user must own the schema
-psql -U postgres -d sms_test -c "ALTER SCHEMA public OWNER TO sms"
-
-# 2. The app
 git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
 cd sms-pen-global-assessment
 npm ci                    # install dependencies (also generates the Prisma client)
 cp .env.example .env      # on Windows PowerShell: Copy-Item .env.example .env
-npm run db:reset          # create the tables, then fill them with the demo data and files (written to ./storage)
+#                           then edit .env: put your PostgreSQL superuser and password in DATABASE_URL, e.g.
+#                           DATABASE_URL="postgresql://postgres:<your-password>@localhost:5432/sms"
+#                           (and the same user in TEST_DATABASE_URL if you will run npm run test:integration)
+npm run db:reset          # creates the "sms" database if it does not exist, then the tables, the demo data and files (./storage)
 npm run dev               # http://localhost:3000
 ```
 
-If you created the `sms` user as above, `.env` works as it is. If your PostgreSQL is not on port 5432, or you used another
-user or password, change them in `DATABASE_URL` and `TEST_DATABASE_URL` in `.env` before `db:reset`.
+You do not create the database yourself: `db:reset` (and `db:seed`) create `sms`, and the integration tests create
+`sms_test`, when they are missing. If your PostgreSQL is not on port 5432, change the port in the URLs too.
 
 > [!WARNING]
 > **`npm run db:reset` wipes the target database.** It runs `DROP SCHEMA public CASCADE`, so every table and row in the
 > `public` schema of the database in `DIRECT_URL` (or `DATABASE_URL`) is deleted before the demo data is loaded, and it
-> empties the file storage. Point it only at a database created for this app. It refuses anything that is not on this
-> machine unless you add `--force`.
+> empties the file storage. Point it only at a database used for this app (a missing database is created for you; an
+> existing one is wiped). It refuses anything that is not on this machine unless you add `--force`.
 >
 > - To load the demo data **without** dropping anything, apply the migrations and seed instead:
->   `npx prisma migrate deploy` then `npm run db:seed`. The seed only fills an empty database and refuses one that
->   already has data.
+>   `npx prisma migrate deploy` then `npm run db:seed` (the database must already exist for `migrate deploy`). The seed
+>   only fills an empty database and refuses one that already has data.
 > - Passing `--force` through npm: `npm run db:reset -- --force` in bash/cmd. PowerShell swallows the `--`, so there use
 >   `npx tsx db/seed/reset.ts --force` (same for the seed: `npx tsx db/seed/index.ts --force`).
 > - Hosted PostgreSQL such as Neon: set `DIRECT_URL` to the direct (non-pooled) connection; the reset and the migrations
@@ -114,7 +106,7 @@ a student. That is the whole login.
 
 **What to expect**
 
-- `db:reset` drops and re-creates the schema, applies the migrations, empties the file storage, seeds, and finishes with a
+- `db:reset` creates the database if it is missing, drops and re-creates the schema, applies the migrations, empties the file storage, seeds, and finishes with a
   **self-check** that recomputes the key facts with the same rule functions the app uses ("Self-check passed", then a
   fingerprint line). It takes a few seconds.
 - The app validates `.env` at start-up and prints every missing or invalid variable if something is wrong.
@@ -126,14 +118,33 @@ a student. That is the whole login.
 - `npm run test:integration` runs the integration suite against the `sms_test` database and a scratch folder
   (`./storage-test`), with no MinIO.
 
+**Least-privilege setup (optional)**
+
+If you would rather not put a superuser in `.env`, create a dedicated user and the databases once, as a superuser, and
+use `sms` in the URLs (`postgresql://sms:sms@localhost:5432/sms` and `.../sms_test`):
+
+```bash
+psql -U postgres -c "CREATE ROLE sms LOGIN PASSWORD 'sms'"
+psql -U postgres -c "CREATE DATABASE sms OWNER sms"
+psql -U postgres -c "CREATE DATABASE sms_test OWNER sms"     # only needed for npm run test:integration
+psql -U postgres -d sms -c "ALTER SCHEMA public OWNER TO sms"            # PostgreSQL 14: the new user must own the schema
+psql -U postgres -d sms_test -c "ALTER SCHEMA public OWNER TO sms"
+```
+
+`sms` can then reset and seed its own databases but cannot create new ones (without `CREATEDB`), which is why the
+databases are created above. `db:reset` also needs the user to be able to `CREATE EXTENSION` (a superuser, or on
+PostgreSQL 13 and newer the database owner; both extensions are marked trusted) and to own the `public` schema.
+
 **Troubleshooting**
 
 | Problem                                                             | Fix                                                                                                                            |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `extension "unaccent" is not available`                             | Install the contrib package (Debian/Ubuntu: `sudo apt install postgresql-contrib`).                                            |
-| `must be owner of schema public` (`db:reset`)                       | PostgreSQL 14: `ALTER SCHEMA public OWNER TO sms` in each database (the two lines above).                                      |
+| `must be owner of schema public` (`db:reset`)                       | You are using a non-superuser on PostgreSQL 14: use a superuser in `.env`, or `ALTER SCHEMA public OWNER TO sms` in each database ([least-privilege setup](#run-without-docker)). |
 | `permission denied to create extension`                             | Use a superuser, or make the user the database owner (`ALTER DATABASE sms OWNER TO sms`; PostgreSQL 13+).                      |
-| `password authentication failed` / `connection refused`             | Match the user, password and port in `DATABASE_URL` and `TEST_DATABASE_URL` to your PostgreSQL.                                |
+| `... could not be created automatically (permission denied to create database)` | The user in `.env` is not a superuser and lacks `CREATEDB`. Use your superuser in `DATABASE_URL`, or create the database once: `psql -U postgres -c "CREATE DATABASE sms"`. |
+| `P1003` (database does not exist) from `npx prisma migrate deploy`, or "The database has no tables yet" from `db:seed` | The database or its tables were never created. Run `npm run db:reset` once (creates the database, applies the migrations and seeds), or `npx prisma migrate deploy` and then `npm run db:seed`. If the automatic creation was refused, see the row above. |
+| `password authentication failed` / `connection refused`             | Put your PostgreSQL superuser, its password and the port in `DATABASE_URL` and `TEST_DATABASE_URL`, and make sure PostgreSQL is running. |
 | `... is not empty and was not created by this app`                  | Point `FILE_STORAGE_DIR` at a new or empty folder.                                                                             |
 | Port 3000 is busy                                                   | `npm run dev -- -p 3001`.                                                                                                      |
 | Safari (or a browser that treats `http://localhost` as insecure) loops back to the role picker with `npm start` | The role cookie is `Secure` in production mode (D-029). Use `npm run dev`, or Chrome, Firefox or Edge, which accept it on `localhost`. |
@@ -193,9 +204,9 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 
 | Variable               | Required?                               | Default (local)                                  | What it does                                                                                                                       |
 | ---------------------- | --------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | Yes                                     | `postgresql://sms:sms@localhost:5432/sms`        | The app's PostgreSQL connection. Hosted (Neon): the pooled connection string.                                                      |
+| `DATABASE_URL`         | Yes                                     | `postgresql://sms:sms@localhost:5432/sms`        | The app's PostgreSQL connection. Without Docker, `.env.example` uses `postgres:postgres`: put your superuser's password there. The database is created if missing. Hosted (Neon): the pooled connection string. |
 | `DIRECT_URL`           | No (falls back to `DATABASE_URL`)       | same as `DATABASE_URL`                           | Connection used by Prisma migrations and `db:reset`. Hosted (Neon): the direct, non-pooled URL.                                    |
-| `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created in the steps above, or by `docker/postgres/init` with Docker) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
+| `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created automatically if missing; by `docker/postgres/init` with Docker) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
 | `STORAGE_DRIVER`       | No                                      | `filesystem` in `.env.example`; `s3` if unset   | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
 | `FILE_STORAGE_DIR`     | No (`filesystem` driver only)           | `./storage`                                      | Folder for uploaded files, relative to the project root. Created on first use; must be new or empty (or one this app created).     |
 | `S3_ENDPOINT`          | With `STORAGE_DRIVER=s3`                | `http://localhost:9000`                          | Where the Next.js server reaches the storage service.                                                                              |

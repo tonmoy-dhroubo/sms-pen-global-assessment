@@ -1,4 +1,4 @@
-import { assertLocalTargets } from "../tools/database";
+import { assertHasTables, assertLocalTargets, ensureDatabase } from "../tools/database";
 import { createPrisma, createStorageFromEnv, fail, loadEnv, print, storageTargets } from "./context";
 import { printSeedReport } from "./report";
 import { runSeed } from "./run";
@@ -16,6 +16,11 @@ async function main() {
     force,
     "seed (it empties the submissions bucket)",
   );
+
+  await ensureDatabase(env.DATABASE_URL, (url) =>
+    assertLocalTargets({ DATABASE_URL: url }, force, "create the database"),
+  );
+  await assertHasTables(env.DATABASE_URL);
 
   const prisma = createPrisma(env.DATABASE_URL);
   try {

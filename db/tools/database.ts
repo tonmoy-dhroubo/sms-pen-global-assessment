@@ -36,6 +36,73 @@ export async function dropAndRecreateSchema(url: string, guard: DatabaseGuard): 
   });
 }
 
+// A conservative whitelist for the one identifier that is interpolated into SQL (`CREATE DATABASE` cannot take a
+// bind parameter). Anything fancier (spaces, quotes, dots, unicode) is refused rather than escaped.
+const DATABASE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]{0,62}$/;
+
+/** The database name in a PostgreSQL connection URL (percent-decoded). */
+export function databaseNameFromUrl(url: string): string {
+  return decodeURIComponent(new URL(url).pathname.replace(/^\//, ""));
+}
+
+/** The same server and credentials, pointed at another database (default: the `postgres` maintenance database). */
+export function withDatabase(url: string, database: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = `/${encodeURIComponent(database)}`;
+  return parsed.toString();
+}
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+/**
+ * Creates the database named in `url` if it does not exist yet, by connecting to the same server's `postgres`
+ * maintenance database with the same credentials. `guard` runs first (local-only for reset/seed, `_test` for the
+ * harness). If the maintenance database cannot be used (a managed host such as Neon, or a user without CREATEDB) the
+ * call succeeds silently when the target database already exists and otherwise fails with an instruction to create it.
+ * Returns true when this call created the database.
+ */
+export async function ensureDatabase(url: string, guard: DatabaseGuard): Promise<boolean> {
+  guard(url);
+  const name = databaseNameFromUrl(url);
+  if (!DATABASE_NAME_PATTERN.test(name)) {
+    throw new Error(
+      `Refusing to create the database "${name}": a database name may only contain letters, digits, "_" and "-", ` +
+        "must start with a letter or underscore and be at most 63 characters.",
+    );
+  }
+
+  let reason: string;
+  try {
+    return await withClient(withDatabase(url, "postgres"), async (client) => {
+      const { rowCount } = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [name]);
+      if (rowCount) return false;
+      try {
+        await client.query(`CREATE DATABASE "${name}"`);
+      } catch (error) {
+        if ((error as { code?: string }).code !== "42P04") throw error; // 42P04: created concurrently, fine
+        return false;
+      }
+      return true;
+    });
+  } catch (error) {
+    reason = messageOf(error);
+  }
+
+  // Could not use the maintenance database (or the CREATE failed): fine if the target is already reachable.
+  try {
+    await withClient(url, async (client) => {
+      await client.query("SELECT 1");
+    });
+    return false;
+  } catch (error) {
+    throw new Error(
+      `The database "${name}" does not exist or cannot be reached, and it could not be created automatically (${reason}). ` +
+        `Create it yourself (for example: CREATE DATABASE "${name}";) or check the user, password, host and port in the connection string (${messageOf(error)}).`,
+    );
+  }
+}
+
 /** Applies the committed migrations with the Prisma CLI (no shell, so it behaves the same on every OS). */
 export function migrateDeploy(url: string): void {
   const prismaCli = path.resolve("node_modules/prisma/build/index.js");
@@ -45,6 +112,22 @@ export function migrateDeploy(url: string): void {
   });
   if (result.status !== 0) {
     throw new Error(`prisma migrate deploy failed:\n${result.stdout}\n${result.stderr}`);
+  }
+}
+
+/** Throws unless the `public` schema has application tables (e.g. a database `ensureDatabase` has just created is empty). */
+export async function assertHasTables(url: string): Promise<void> {
+  const count = await withClient(url, async (client) => {
+    const { rows } = await client.query<{ count: string }>(
+      `SELECT count(*) AS count FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`,
+    );
+    return Number(rows[0]?.count ?? 0);
+  });
+  if (count === 0) {
+    throw new Error(
+      "The database has no tables yet. Run `npm run db:reset` (it applies the migrations and seeds) — or " +
+        "`npx prisma migrate deploy` first, then `npm run db:seed`.",
+    );
   }
 }
 
