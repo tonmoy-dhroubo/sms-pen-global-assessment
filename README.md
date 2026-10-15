@@ -12,7 +12,8 @@ seed fills it with 30 students built around the edge cases a Registry team actua
 [demo tour](#demo-tour)).
 
 > **Quick links:** [**How I used AI**](#how-i-used-ai) · [Run locally](#run-locally) (no Docker needed) ·
-> [Demo tour](#demo-tour) · [Decision log](docs/decisions.md) · [Known limitations](#known-limitations)
+> [Demo tour](#demo-tour) · [Edge cases](docs/edge-cases.md) · [Decision log](docs/decisions.md) ·
+> [Known limitations](#known-limitations)
 
 | Staff dashboard                                       | Student record (fees, overdue ageing)                   |
 | ----------------------------------------------------- | ------------------------------------------------------- |
