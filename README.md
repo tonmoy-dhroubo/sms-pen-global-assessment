@@ -294,7 +294,7 @@ completed), ৳17,55,000 outstanding across 10 students, **8 overdue students** 
 app/                      pages (Server Components) and app/api/* Route Handlers (38 routes)
   └─ calls ─▶ lib/services/   business rules: balances, ageing, deadlines, classification, student IDs, publish
                  ├─ rules/    pure functions (no database, no clock): unit-tested to 100 %
-                 └─ uses ─▶ lib/db (Prisma), lib/storage (S3 / MinIO)
+                 └─ uses ─▶ lib/db (Prisma), lib/storage (S3 / MinIO, or a local folder)
 ```
 
 - **Reads** go from Server Components straight to `lib/services`; **writes** go through Route Handlers in `app/api/`,
@@ -335,10 +335,10 @@ Details: [docs/api.md](docs/api.md) (the API contract), [docs/pages.md](docs/pag
 
 Time-zone independence is tested by running the unit tests under two zones in CI.
 
-**CI** (`.github/workflows/ci.yml`, on every pull request and push to `main`) has five jobs: _check_ (`prisma validate`, lint, type-check, Prettier,
+**CI** (`.github/workflows/ci.yml`, on every pull request and push to `main`) has six jobs: _check_ (`prisma validate`, lint, type-check, Prettier,
 tests, production build); _unit tests and coverage_ under `TZ=UTC` and `TZ=America/New_York`; _migrations_ (applied twice
 to an empty database, then a drift check against `db/schema.prisma`); _integration tests_ (Postgres service container and
-MinIO); and _seed_ (reset twice, refuse a populated database, identical content fingerprint).
+MinIO); _integration tests, filesystem storage_ (no MinIO, on PostgreSQL 14 and 18, then a seed reset); and _seed_ (reset twice, refuse a populated database, identical content fingerprint).
 
 ## How I used AI
 
@@ -362,14 +362,14 @@ final UI review. It was installed on my machine only, so nothing from it is in t
 1. **Decide and write down first.** Before any code there were the requirements summary, the tech stack, an edge-case
    checklist with Must/Should/Could priorities, a database design with its own decision log, a 30-persona seed plan, the
    API contract, the page list and a 20-milestone tracker. Choices that were not obvious from code went into
-   [docs/decisions.md](docs/decisions.md) (44 decisions) and [db/decisions.md](db/decisions.md) (27), with the
+   [docs/decisions.md](docs/decisions.md) (45 decisions) and [db/decisions.md](db/decisions.md) (27), with the
    alternatives that were rejected. The coder is told that decisions are settled and to stop and ask when the docs
    do not cover behaviour, so product decisions did not leak into code.
-2. **One milestone, one branch, one PR.** Every built milestone (`M00` to `M20`; M19 hosting is deferred) was a
+2. **One milestone, one branch, one PR.** Every built milestone (`M00` to `M21`; M19 hosting is deferred) was a
    branch (`mNN-slug`), a Conventional-Commit history, a PR from a template with a verification table and screenshots,
    and a CI run (lint, type-check, format, unit, coverage, migrations, integration, seed). The coder stopped after each report; nothing was built in one shot.
 3. **Review loop.** The main session reviewed each milestone PR against its acceptance criteria and the Definition of
-   Done, requested changes, and recorded what the report revealed as new decisions (D-026 to D-044, DB-021 to DB-027).
+   Done, requested changes, and recorded what the report revealed as new decisions (D-026 to D-045, DB-021 to DB-027).
 4. **Verification by running things.** The coder was expected to run the real app, not just the tests: screenshots were
    captured from headless Chrome and the seed ends with a self-check against the plan.
 5. **A second model reviews the first.** Once the build was feature-complete, I had OpenAI Codex review the whole
@@ -394,7 +394,8 @@ final UI review. It was installed on my machine only, so nothing from it is in t
   any of that work can be audited after the fact.
   <!-- TODO(Dhrubo): say in your own words what you reviewed yourself after coming back (PRs, decisions D-025 to D-041). -->
 - Also mine: commissioning the independent code review and fixing every finding before submission rather than arguing
-  severity (D-042), and running the final UI pass inside a fixed boundary (D-044).
+  severity (D-042), running the final UI pass inside a fixed boundary (D-044), and adding a way to run the app
+  without Docker, because reviewers are likely to have PostgreSQL but may not have Docker (D-045, M21).
 - Delegated to the AI, then accepted: library choices inside the shadcn ecosystem, the edge-case priorities (D-024),
   the status-badge conventions, database details such as keys, audit columns and indexes, and the many technical
   decisions recorded from milestone reports (D-026 to D-041, D-043).
