@@ -7,8 +7,12 @@ balances and overdue ageing), **assessment submission** (deadlines, direct-to-bu
 late flags, versions) and **marksheet and results** (marks 0-100 with classification, publish, withhold, appeals and
 history). A **Staff view** and a **Student view** sit on top of the same data; a header role switcher stands in for
 real authentication (the brief makes auth optional) while roles are still enforced on the server. Everything reads
-from a real PostgreSQL database and real S3-compatible storage, and the seed fills it with 30 students built around
-the edge cases a Registry team actually meets (see the [demo tour](#demo-tour)).
+from a real PostgreSQL database and real file storage (a local folder, or S3-compatible storage with Docker), and the
+seed fills it with 30 students built around the edge cases a Registry team actually meets (see the
+[demo tour](#demo-tour)).
+
+> **Quick links:** [**How I used AI**](#how-i-used-ai) · [Run locally](#run-locally) (no Docker needed) ·
+> [Demo tour](#demo-tour) · [Decision log](docs/decisions.md) · [Known limitations](#known-limitations)
 
 | Staff dashboard                                       | Student record (fees, overdue ageing)                   |
 | ----------------------------------------------------- | ------------------------------------------------------- |
