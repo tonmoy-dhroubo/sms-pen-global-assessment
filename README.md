@@ -35,7 +35,7 @@ _Dark mode is a global toggle in the header of both views. More screenshots per 
 | --------- | ----------------------------------------------------------------------------------------------- |
 | Framework | Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS v4, shadcn/ui, next-themes |
 | Database  | PostgreSQL 18 via Prisma 7 (`db/schema.prisma` and migrations committed)                        |
-| Files     | S3-compatible storage through the AWS SDK v3: MinIO in Docker locally (Supabase Storage planned for hosting) |
+| Files     | S3-compatible storage through the AWS SDK v3: MinIO in Docker locally (Supabase Storage planned for hosting); or plain files in a folder with `STORAGE_DRIVER=filesystem`, so Docker is optional |
 | Forms     | react-hook-form + Zod, with the same Zod schemas validating the API                             |
 | Tables    | TanStack Table v8                                                                               |
 | Tests     | Vitest (+ Testing Library), real Postgres and MinIO for integration tests, axe-core, Chrome DevTools Protocol scripts |
@@ -46,7 +46,8 @@ Why each choice was made, and what was rejected: [docs/tech-stack.md](docs/tech-
 
 ## Run locally
 
-Everything runs on your machine; no accounts are needed.
+Everything runs on your machine; no accounts are needed. There are two ways to run it: with Docker (Postgres and MinIO in
+containers, below), or [without Docker](#run-without-docker) on a PostgreSQL you already have, keeping files in a folder.
 
 **Prerequisites**
 
@@ -98,6 +99,51 @@ a student. That is the whole login.
 | Demo data looks stale or you tried the write flows                   | `npm run db:reset` restores the same registry (see [Demo data](#demo-data)).                                                                                          |
 | You want a completely clean machine state                            | `npm run services:reset` deletes the Postgres and MinIO volumes and starts fresh; follow it with `npm run db:reset`. `npm run services:down` stops the containers and keeps data. |
 
+### Run without Docker
+
+If you have PostgreSQL but not Docker, set `STORAGE_DRIVER=filesystem`: uploaded files are then kept in a folder
+(`./storage`) instead of MinIO. Everything else is identical (D-045).
+
+**Prerequisites:** Node.js 24 and npm 11, and **PostgreSQL 14 or newer** running locally (14 and 18 were tested; the Docker
+setup uses 18). The `unaccent` and `pg_trgm` extensions must be available: they ship with PostgreSQL itself, but on
+Debian/Ubuntu they are in the separate `postgresql-contrib` package (the Windows and macOS installers, Homebrew and the
+official `postgres` Docker images include them). The migrations run `CREATE EXTENSION` for both, so the database user must
+be a superuser or, on PostgreSQL 13 and newer, the owner of the database (both extensions are marked trusted).
+
+```bash
+# 1. A database user and the two databases (run as a PostgreSQL superuser; adjust the user name to your install)
+psql -U postgres -c "CREATE ROLE sms LOGIN PASSWORD 'sms'"
+psql -U postgres -c "CREATE DATABASE sms OWNER sms"
+psql -U postgres -c "CREATE DATABASE sms_test OWNER sms"     # only needed for npm run test:integration
+
+# 2. The app
+git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
+cd sms-pen-global-assessment
+npm ci
+cp .env.example .env      # on Windows PowerShell: Copy-Item .env.example .env
+```
+
+Then edit `.env`: uncomment `STORAGE_DRIVER="filesystem"`, and if your PostgreSQL is not on port 5432 or the user or
+password differ, change the port or credentials in `DATABASE_URL`, `DIRECT_URL` and `TEST_DATABASE_URL`. Leave the `S3_*` lines
+alone; they are ignored.
+
+```bash
+npm run db:reset          # create the tables, then fill them with the demo data and files (written to ./storage)
+npm run dev               # http://localhost:3000
+```
+
+"What to expect" above and the [demo tour](#demo-tour) apply unchanged. Uploads go to `PUT /api/uploads/{token}` on the app
+itself (a signed, 15-minute, one-file link standing in for an S3 presigned URL) and downloads stream through a similar signed
+link, so there is no CORS to set up. `./storage` is gitignored; `db:reset` empties and refills it, and the app refuses a
+`FILE_STORAGE_DIR` that already holds other files. `STORAGE_DRIVER=filesystem npm run test:integration` runs the integration
+suite against a scratch folder (`./storage-test`) with no MinIO.
+
+| Problem                                                             | Fix                                                                                                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `extension "unaccent" is not available`                             | Install the contrib package (Debian/Ubuntu: `sudo apt install postgresql-contrib`).                                            |
+| `permission denied to create extension`                             | Use a superuser, or make the user the database owner (`ALTER DATABASE sms OWNER TO sms`; PostgreSQL 13+).                      |
+| `... is not empty and was not created by this app`                  | Point `FILE_STORAGE_DIR` at a new or empty folder.                                                                             |
+
 ## Environment variables
 
 Copy `.env.example` to `.env`. The values below are exactly the ones in `.env.example`; the app's own variables are
@@ -108,12 +154,14 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | `DATABASE_URL`         | Yes                                     | `postgresql://sms:sms@localhost:5432/sms`        | The app's PostgreSQL connection. Hosted (Neon): the pooled connection string.                                                      |
 | `DIRECT_URL`           | No (falls back to `DATABASE_URL`)       | same as `DATABASE_URL`                           | Connection used by Prisma migrations and `db:reset`. Hosted (Neon): the direct, non-pooled URL.                                    |
 | `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created by `docker/postgres/init`) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
-| `S3_ENDPOINT`          | Yes                                     | `http://localhost:9000`                          | Where the Next.js server reaches the storage service.                                                                              |
+| `STORAGE_DRIVER`       | No                                      | `s3` (commented out in `.env.example`)           | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
+| `FILE_STORAGE_DIR`     | No (`filesystem` driver only)           | `./storage`                                      | Folder for uploaded files, relative to the project root. Created on first use; must be new or empty (or one this app created).     |
+| `S3_ENDPOINT`          | With `STORAGE_DRIVER=s3`                | `http://localhost:9000`                          | Where the Next.js server reaches the storage service.                                                                              |
 | `S3_PUBLIC_ENDPOINT`   | No                                      | empty                                            | Host embedded in presigned URLs for the browser. Leave empty when the browser can reach `S3_ENDPOINT` (as locally).                |
-| `S3_REGION`            | Yes                                     | `us-east-1`                                      | Region passed to the S3 client (MinIO ignores the value but the SDK needs one).                                                    |
-| `S3_BUCKET`            | Yes                                     | `submissions`                                    | Private bucket for submission files. Created by `minio-init` (and by the seed if missing).                                         |
-| `S3_ACCESS_KEY_ID`     | Yes                                     | `minioadmin`                                     | Storage access key. Locally it is also MinIO's root user in `docker-compose.yml`.                                                  |
-| `S3_SECRET_ACCESS_KEY` | Yes                                     | `minioadmin`                                     | Storage secret key; MinIO's root password locally. Development value only.                                                         |
+| `S3_REGION`            | With `STORAGE_DRIVER=s3`                | `us-east-1`                                      | Region passed to the S3 client (MinIO ignores the value but the SDK needs one).                                                    |
+| `S3_BUCKET`            | With `STORAGE_DRIVER=s3`                | `submissions`                                    | Private bucket for submission files. Created by `minio-init` (and by the seed if missing).                                         |
+| `S3_ACCESS_KEY_ID`     | With `STORAGE_DRIVER=s3`                | `minioadmin`                                     | Storage access key. Locally it is also MinIO's root user in `docker-compose.yml`.                                                  |
+| `S3_SECRET_ACCESS_KEY` | With `STORAGE_DRIVER=s3`                | `minioadmin`                                     | Storage secret key; MinIO's root password locally. Development value only.                                                         |
 | `S3_FORCE_PATH_STYLE`  | No                                      | `true`                                           | `true` puts the bucket in the URL path instead of the host name. Correct for both MinIO and Supabase.                              |
 | `APP_TIMEZONE`         | No                                      | `Asia/Dhaka`                                     | IANA time zone used to show dates and judge deadlines, "today" and overdue (D-018).                                                |
 | `SESSION_SECRET`       | Yes (at least 32 characters)            | a development placeholder                        | Signs the role cookie (HMAC). Generate a real one for anything hosted: `openssl rand -base64 48`.                                  |
@@ -135,7 +183,7 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | `npm run lint` / `typecheck` / `format` / `format:check`     | ESLint, `tsc --noEmit`, Prettier (write / check)                                                                      |
 | `npm test` / `test:watch`                                    | Unit and component tests (Vitest), no services needed                                                                 |
 | `npm run test:coverage`                                      | Unit tests with coverage; fails if `lib/services/rules` drops below 95 %                                              |
-| `npm run test:integration`                                   | API, database and storage tests against the throw-away `sms_test` database and `submissions-test` bucket (needs `services:up`) |
+| `npm run test:integration`                                   | API, database and storage tests against the throw-away `sms_test` database and `submissions-test` bucket (needs `services:up`). `STORAGE_DRIVER=filesystem npm run test:integration` runs the same suite on a scratch folder, no MinIO |
 | `npm run services:up` / `down` / `reset`                     | Start the Docker services, wait until healthy and create the bucket / stop them (data kept) / **delete all data** and start fresh        |
 | `npm run db:reset`                                           | Drop the schema, migrate, empty the bucket and seed with a self-check (local only; `--force` for anything else)       |
 | `npm run db:seed`                                            | Fill an **empty** database and the bucket with the demo data (refuses a populated database)                           |
@@ -276,7 +324,7 @@ Details: [docs/api.md](docs/api.md) (the API contract), [docs/pages.md](docs/pag
 | ------------------------ | -------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Unit and component       | `npm test`                 | 1,100 tests in 60 files (about 25 s) | Domain rules (money, Dhaka time, student IDs, status matrix, fee ageing, deadlines, upload rules, marks and boundaries, publish preview), Zod schemas, session cookie, CSV, env validation, seed helpers, jsdom tests for forms, dialogs, the marksheet grid and the timeline |
 | Rules coverage gate      | `npm run test:coverage`    | 100 % lines and branches on `lib/services/rules` (gate: 95 %) | The pure rule functions                                                                                                      |
-| Integration              | `npm run test:integration` | 800 tests in 29 files (about 3.5 min) | Real PostgreSQL and MinIO: schema constraints, every endpoint, access control for every route, the upload edge cases with real presigned PUTs, races (simultaneous payments, voids, confirms, Student IDs), query counts, the seed and the dashboard figures |
+| Integration              | `npm run test:integration` | 805 tests in 30 files (about 2 min); the same suite also runs with `STORAGE_DRIVER=filesystem` (812 tests, no MinIO) | Real PostgreSQL and MinIO (or a scratch folder): schema constraints, every endpoint, access control for every route, the upload edge cases with real presigned PUTs, races (simultaneous payments, voids, confirms, Student IDs), query counts, the seed and the dashboard figures |
 | Accessibility            | `npm run a11y`             | 0 axe violations on 23 page states, light and dark | Run against a production build                                                                                                |
 | Responsive, keyboard, e2e | `npm run responsive` / `keyboard` / `e2e` | scripts | No page scrolls sideways at 375/768/1280 px; five workflows by keyboard alone; three staff/student hand-offs in a real browser          |
 
@@ -416,6 +464,8 @@ final UI review. It was installed on my machine only, so nothing from it is in t
   `prisma` peer of `@prisma/client`; the only offered fix is a breaking downgrade, so it is accepted (D-040).
 - **The end-to-end check is local-only.** `npm run e2e`, `a11y`, `keyboard` and `responsive` need Chrome or Edge and a running
   production build, so they are not part of CI; CI runs lint, types, unit, integration, migrations and the seed check.
+- **The filesystem driver is for running locally.** `STORAGE_DRIVER=filesystem` keeps files on one machine's disk, so it is not
+  meant for a hosted or multi-instance deployment (use S3 there, D-045).
 - **MinIO images come from the community Silo fork** (`pgsty/minio`, `pgsty/mc`), because the official images are no longer
   published (D-027).
 - **Scale:** the fee-state filter on the student list applies the overdue rule in memory (about 100 ms for 1,000 students,
