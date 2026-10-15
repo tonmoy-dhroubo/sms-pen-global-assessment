@@ -127,9 +127,8 @@ npm ci
 cp .env.example .env      # on Windows PowerShell: Copy-Item .env.example .env
 ```
 
-Then edit `.env`: uncomment `STORAGE_DRIVER="filesystem"`, and if your PostgreSQL is not on port 5432 or the user or
-password differ, change the port or credentials in `DATABASE_URL`, `DIRECT_URL` and `TEST_DATABASE_URL`. Leave the `S3_*` lines
-alone; they are ignored.
+Then edit `.env`: comment out part 1 ("with Docker") and uncomment part 2 ("without Docker"). If your PostgreSQL is not
+on port 5432, or you used another user or password, change them in `DATABASE_URL` and `TEST_DATABASE_URL`.
 
 ```bash
 npm run db:reset          # create the tables, then fill them with the demo data and files (written to ./storage)
@@ -151,7 +150,8 @@ suite (PowerShell: `$env:STORAGE_DRIVER="filesystem"; npm run test:integration`)
 
 ## Environment variables
 
-Copy `.env.example` to `.env`. The values below are exactly the ones in `.env.example`; the app's own variables are
+Copy `.env.example` to `.env`. It holds only what you must set, in two parts: with Docker and without Docker. Everything
+else in this table has a default and can be added to `.env` when you need to change it. The app's own variables are
 validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committed.
 
 | Variable               | Required?                               | Default (local)                                  | What it does                                                                                                                       |
@@ -159,7 +159,7 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | `DATABASE_URL`         | Yes                                     | `postgresql://sms:sms@localhost:5432/sms`        | The app's PostgreSQL connection. Hosted (Neon): the pooled connection string.                                                      |
 | `DIRECT_URL`           | No (falls back to `DATABASE_URL`)       | same as `DATABASE_URL`                           | Connection used by Prisma migrations and `db:reset`. Hosted (Neon): the direct, non-pooled URL.                                    |
 | `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created by `docker/postgres/init`) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
-| `STORAGE_DRIVER`       | No                                      | `s3` (commented out in `.env.example`)           | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
+| `STORAGE_DRIVER`       | No                                      | `s3` (`filesystem` in part 2 of `.env.example`)  | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
 | `FILE_STORAGE_DIR`     | No (`filesystem` driver only)           | `./storage`                                      | Folder for uploaded files, relative to the project root. Created on first use; must be new or empty (or one this app created).     |
 | `S3_ENDPOINT`          | With `STORAGE_DRIVER=s3`                | `http://localhost:9000`                          | Where the Next.js server reaches the storage service.                                                                              |
 | `S3_PUBLIC_ENDPOINT`   | No                                      | empty                                            | Host embedded in presigned URLs for the browser. Leave empty when the browser can reach `S3_ENDPOINT` (as locally).                |
