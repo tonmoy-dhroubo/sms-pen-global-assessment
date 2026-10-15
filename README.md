@@ -364,25 +364,20 @@ AI wrote the application code in this repository. My job was product owner, deci
 was designed so that every choice and every AI contribution leaves a trace. The running log is
 [docs/ai-usage.md](docs/ai-usage.md) (one row per piece of work); this section is its summary.
 
-**Tools.** [Claude Code](https://claude.com/claude-code) (desktop app) throughout, with **Claude Opus 5.5** as the main
+### **Tools.** 
+- **Claude Code** (desktop app) throughout, with **Claude Opus 5.5** as the main
 session, and two subagents defined in [`.claude/agents/`](.claude/agents/): a **`planner`** (Opus 5.5, high effort) for
 decisions, trade-offs and everything in `docs/`, which never writes app code, and a **`coder`** (**Claude Sonnet 5.5**, high
-effort) that implements recorded decisions, writes tests, and raises questions instead of deciding. In practice the
-planning conversation happened with the main session directly (it had all the context), so the `planner` agent was
-defined but not used; every milestone was built by a fresh `coder` agent. **Claude Design**
-produced a three-screen mockup (staff dashboard, student record, student view) used as a layout reference only.
-**OpenAI Codex** did an independent whole-system code review, so the code was not judged only by the model that wrote it.
-The open-source **[impeccable](https://github.com/pbakaus/impeccable)** design skill was used as dev-time tooling for a
+effort) that implements recorded decisions, writes tests, and raises questions instead of deciding. 
+- **OpenAI Codex** did an independent whole-system code review, so the code was not judged only by the model that wrote it.
+- The open-source **[impeccable](https://github.com/pbakaus/impeccable)** design skill was used as dev-time tooling for a
 final UI review. It was installed on my machine only, so nothing from it is in this repository.
 
-**Workflow.**
+### AI Usage Workflow.
 
 1. **Decide and write down first.** Before any code there were the requirements summary, the tech stack, an edge-case
    checklist with Must/Should/Could priorities, a database design with its own decision log, a 30-persona seed plan, the
-   API contract, the page list and a 20-milestone tracker. Choices that were not obvious from code went into
-   [docs/decisions.md](docs/decisions.md) (45 decisions) and [db/decisions.md](db/decisions.md) (27), with the
-   alternatives that were rejected. The coder is told that decisions are settled and to stop and ask when the docs
-   do not cover behaviour, so product decisions did not leak into code.
+   API contract, the page list and a 20-milestone tracker. 
 2. **One milestone, one branch, one PR.** Every built milestone (`M00` to `M21`; M19 hosting is deferred) was a
    branch (`mNN-slug`), a Conventional-Commit history, a PR from a template with a verification table and screenshots,
    and a CI run (lint, type-check, format, unit, coverage, migrations, integration, seed). The coder stopped after each report; nothing was built in one shot.
@@ -391,89 +386,8 @@ final UI review. It was installed on my machine only, so nothing from it is in t
 4. **Verification by running things.** The coder was expected to run the real app, not just the tests: screenshots were
    captured from headless Chrome and the seed ends with a self-check against the plan.
 5. **A second model reviews the first.** Once the build was feature-complete, I had OpenAI Codex review the whole
-   system independently ([docs/code-reviews/](docs/code-reviews/)). Claude checked every finding against the code before
-   accepting it (D-042). All seven were real, and they were fixed in their own milestone, M18R. Each fix came with a
-   regression test that was written first and confirmed to fail on the old code (D-043).
-6. **A design pass at the end.** M20 used the impeccable skill to look for the generic "AI-generated" look. A detector
-   ran on the source and on every rendered page at desktop and phone width, alongside a screenshot review in both
-   themes. The boundary was fixed in advance (D-044): stay inside shadcn/ui, which the brief prefers; no new
-   dependencies, fonts or colours; no behaviour change. Every finding and its outcome is in
-   [docs/ui-review.md](docs/ui-review.md).
-
-**What I decided, and what I delegated.**
-
-- Mine: the stack (npm, Docker with MinIO, Neon and Supabase Storage for hosting later, the shadcn ecosystem), dark mode
-  with a global toggle, Bangladesh locale (Asia/Dhaka, BDT with lakh grouping), the seed's size and shape, the header
-  role switcher instead of real auth, the planner/coder split and model choice, milestone-by-milestone delivery with a
-  PR each, the PNG of the ER diagram, and keeping the community MinIO images when the official ones disappeared (D-027).
-  I also chose to let work continue overnight (D-025): the main session reviewed and squash-merged milestone PRs once CI
-  and the acceptance criteria were green. When I came back I read the status summary and the open questions,
-  answered them, and told it to keep going (D-039). Every merged PR keeps its report, verification table and CI run, so
-  any of that work can be audited after the fact.
-  <!-- TODO(Dhrubo): say in your own words what you reviewed yourself after coming back (PRs, decisions D-025 to D-041). -->
-- Also mine: commissioning the independent code review and fixing every finding before submission rather than arguing
-  severity (D-042), running the final UI pass inside a fixed boundary (D-044), and adding a way to run the app
-  without Docker, because reviewers are likely to have PostgreSQL but may not have Docker (D-045, M21).
-- Delegated to the AI, then accepted: library choices inside the shadcn ecosystem, the edge-case priorities (D-024),
-  the status-badge conventions, database details such as keys, audit columns and indexes, and the many technical
-  decisions recorded from milestone reports (D-026 to D-041, D-043).
-
-**Where AI output was corrected or rejected.**
-
-- _M01 review:_ the Next.js 16 scaffold led to a recorded decision that Cache Components stay off because every page is
-  per-user and dynamic, and that agents consult the version-matched docs bundled with Next.js 16 instead of relying on
-  memory (D-026).
-- _M02:_ the official MinIO images turned out not to be published any more; the coder verified that and proposed the
-  community fork, and MinIO's lack of per-bucket CORS meant CORS had to be set server-wide (D-027). I confirmed the fork.
-- _M10 review:_ the review asked for who-did-what audit columns (`payments.voided_by_id`, `fee_charges.created_by_id`), a
-  partial unique index so a voided payment frees its reference number, and a warning when a waiver exceeds the balance;
-  they landed as a second commit and migration on the same PR (DB-024, D-033).
-- _M12 and M14:_ the rule that an assessment's module cannot change was extended from "has submissions" to "has submissions
-  or marks" (D-035, D-036).
-- _M16:_ the review found the Submissions section of the staff student record still a "Coming in M13" placeholder; it was
-  added to M17 as a named gap and delivered there (D-038).
-- _Defects the AI found in its own work by running it:_ table sort buttons that never rendered (M09, caught in M10),
-  clipped "Record payment" buttons and amounts hidden at 375 px (M11), real contrast and heading problems found by the axe
-  run (M17), a seed ordering bug caught by the seed's self-check on an early-July run date (M07), lateness assertions that
-  needed slack because storage stamps whole seconds (M13), and a stale server that looked like a layout bug (M17). One AI
-  slip survived to review: a rename that damaged strings in the assessment integration tests, fixed within the same PR.
-- _Checked rather than trusted:_ `Intl` on Node 24 cannot produce `৳1,25,000.00` or "Sep", so lakh grouping and month names
-  are hand-written and covered by tests (M04). A test caught that stripping all Unicode combining marks would corrupt
-  Bengali names.
-- _Guard respected:_ Prisma blocks `migrate reset` for AI agents. The coder did not work around it; the reset and the test
-  harness drop the schema themselves and run `migrate deploy`, and both refuse any non-local or non-`_test` database.
-- _Scope cut on purpose:_ per-student deadline extensions (a Could item) were dropped in M17 rather than half-built;
-  the schema and rules support them, but no endpoint or screen creates one (D-040).
-- _Found by the independent review, missed by the Claude pipeline (M18R):_
-  - Two defects threatened submitted files. A student could reuse a still-valid upload link to replace a file after it
-    had been confirmed. The cleanup script could also race a confirm and delete a confirmed file. Confirmed uploads are
-    now copied to a server-only key that no upload link can write.
-  - Fee ageing kept counting a charge that a waiver had already cleared.
-  - File versions were ordered by a nudged timestamp instead of a real version number.
-  - Two client components kept stale data after the server refreshed.
-  - There was a heading-nesting error. Component tests now fail on any React console error, so a hydration problem
-    can't pass silently again.
-
-  All of these sat in the gaps between our tests. That showed where the suite was blind, not just what was broken.
-- _M20 UI review:_ the automated detector found almost nothing on this codebase. Most of the value came from reviewing
-  the screenshots: a header label that wrapped, boxes nested inside boxes, and a timer still labelled "Time left" after
-  the deadline. Of 16 findings, 8 were fixed and 8 were waived, each waiver with its reason. One attempted fix made a
-  table scroll sideways, so it was reverted and waived. The same milestone found a date-dependent integration test that
-  only failed once the real clock passed a pinned date. It would have failed CI on every branch, and it was fixed.
-
-**Limitations and risks I noticed.**
-
-- Most milestone PRs were reviewed by the main Claude session rather than line by line by me. I relied on CI, the
-  integration tests that hit real services, the seed self-check and the accessibility, keyboard and responsive scripts,
-  and I did not independently re-verify every claim in the reports.
-- The process had a couple of slips: a usage-limit interruption part-way through the build (the tracker and one-PR-per-
-  milestone made resuming simple) and a git slip when two sessions shared one working tree, which was noticed and corrected.
-- Automated accessibility checks (axe, keyboard walkthrough) do not replace a screen-reader pass, and the browser scripts
-  only drive Chrome.
-- Written specs make the AI confidently consistent: where a decision was wrong, it was implemented faithfully and
-  tested. The decision log is where to look for the reasoning behind any behaviour.
-- One model reviewing its own work has blind spots. The Claude review loop passed code that a second model then showed
-  to have seven real defects. A different reviewer, human or AI, is worth more than another pass by the same one.
+   system independently ([docs/code-reviews/](docs/code-reviews/)).
+6. **A design pass at the end.** M20 used the impeccable skill to look for the generic "AI-generated" look. 
 
 ## Known limitations
 
