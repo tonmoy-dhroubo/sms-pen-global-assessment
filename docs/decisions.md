@@ -567,3 +567,18 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
   database owner does not own the `public` schema, so the README adds `ALTER SCHEMA public OWNER TO <user>`. A bad
   or tampered link answers 404 (as if it never existed) and an expired link 403. Filesystem upload and download
   links are relative URLs. The filesystem ETag identifies one stored file, not its content, so copies differ.
+
+## D-046: Simple local database setup — databases are created automatically
+
+- Date: 2026-10-15
+- Decision: `db:reset`, `db:seed` and the integration-test setup call `ensureDatabase`, which connects to the same
+  server's `postgres` maintenance database and runs `CREATE DATABASE` when the target is missing (name checked against
+  a conservative pattern; same local-only / `--force` guard as the reset, and the `_test` guard for tests). On a host
+  that forbids this (e.g. a managed service), it carries on if the database already exists and otherwise asks the user
+  to create it. `db:seed` stops with "the database has no tables yet — run `npm run db:reset`" on an empty schema.
+- Setup becomes: put your PostgreSQL superuser's connection string in `.env` (`.env.example` uses
+  `postgres:postgres`), then `npm run db:reset`. The dedicated `sms` role with `ALTER SCHEMA public OWNER` (D-045)
+  moves to an optional "least-privilege setup" in the README. The README also warns that `db:reset` drops the
+  `public` schema, and shows how to pass `--force` from PowerShell (`npx tsx db/seed/reset.ts --force`).
+- Why: Requested by the user after a fresh-clone run; reviewers should need one connection string, not a list of
+  `psql` commands. Delivered in PR #23.
