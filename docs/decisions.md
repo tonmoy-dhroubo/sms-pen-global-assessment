@@ -563,3 +563,7 @@ One entry per decision, newest at the bottom. Keep each short: context, decision
 - Alternatives: a hosted demo (M19; still deferred, needs accounts and live credentials); a native S3 server
   (SeaweedFS, Garage — another install for the reviewer); writing files through the existing routes without an
   adapter (forks the service layer and loses the tested integrity design).
+- Outcome (M21, PR #22): built as specified, minimum PostgreSQL verified is 14. On PostgreSQL 14 a non-superuser
+  database owner does not own the `public` schema, so the README adds `ALTER SCHEMA public OWNER TO <user>`. A bad
+  or tampered link answers 404 (as if it never existed) and an expired link 403. Filesystem upload and download
+  links are relative URLs. The filesystem ETag identifies one stored file, not its content, so copies differ.
