@@ -35,82 +35,40 @@ _Dark mode is a global toggle in the header of both views. More screenshots per 
 | --------- | ----------------------------------------------------------------------------------------------- |
 | Framework | Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS v4, shadcn/ui, next-themes |
 | Database  | PostgreSQL 18 via Prisma 7 (`db/schema.prisma` and migrations committed)                        |
-| Files     | S3-compatible storage through the AWS SDK v3: MinIO in Docker locally (Supabase Storage planned for hosting); or plain files in a folder with `STORAGE_DRIVER=filesystem`, so Docker is optional |
+| Files     | Plain files in a folder (`STORAGE_DRIVER=filesystem`, no Docker needed), or S3-compatible storage through the AWS SDK v3: MinIO in Docker locally, Supabase Storage planned for hosting |
 | Forms     | react-hook-form + Zod, with the same Zod schemas validating the API                             |
 | Tables    | TanStack Table v8                                                                               |
 | Tests     | Vitest (+ Testing Library), real Postgres and MinIO for integration tests, axe-core, Chrome DevTools Protocol scripts |
 | CI        | GitHub Actions                                                                                  |
 
 Why each choice was made, and what was rejected: [docs/tech-stack.md](docs/tech-stack.md) and
-[docs/decisions.md](docs/decisions.md) (40 decisions) plus [db/decisions.md](db/decisions.md) (26 database decisions).
+[docs/decisions.md](docs/decisions.md) (45 decisions) plus [db/decisions.md](db/decisions.md) (27 database decisions).
 
 ## Run locally
 
-Everything runs on your machine; no accounts are needed. There are two ways to run it: with Docker (Postgres and MinIO in
-containers, below), or [without Docker](#run-without-docker) on a PostgreSQL you already have, keeping files in a folder.
+Everything runs on your machine; no accounts are needed. There are two ways to run it:
+
+- **[Without Docker](#run-without-docker)**: Node.js and a PostgreSQL you already have. Uploaded files are kept in a
+  folder (`./storage`). This is what `.env.example` is set up for.
+- **[With Docker](#run-with-docker)**: PostgreSQL and MinIO (S3-compatible storage) run in containers, started with one
+  command.
+
+Both give the same app, the same demo data and the same [demo tour](#demo-tour) (D-045).
+
+### Run without Docker
 
 **Prerequisites**
 
 - **Node.js 24** (see `.nvmrc`; `package.json` requires `24.x`) and npm 11
-- **Docker Desktop** (or Docker Engine with the Compose plugin), running
-- Free ports **3000** (app), **5432** (Postgres), **9000** and **9001** (MinIO API and console). Each can be changed, see
-  troubleshooting below.
-- A current Chrome, Firefox or Edge. (The browser scripts under `npm run a11y` and friends need Chrome or Edge.)
+- **PostgreSQL 14 or newer**, running (14 and 18 were tested). The `unaccent` and `pg_trgm` extensions must be available:
+  they ship with PostgreSQL, but on Debian/Ubuntu they are in the separate `postgresql-contrib` package (the Windows and
+  macOS installers and Homebrew include them).
+- The database user must be able to run `CREATE EXTENSION` (a superuser, or on PostgreSQL 13 and newer the owner of the
+  database; both extensions are marked trusted), and must own the `public` schema, because `db:reset` re-creates it. A
+  superuser does both; otherwise run the `ALTER SCHEMA` lines below (needed on PostgreSQL 14, not on 15 and newer).
+- Free port **3000**, and a current Chrome, Firefox or Edge.
 
-**From a fresh clone**
-
-```bash
-git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
-cd sms-pen-global-assessment
-
-npm ci                    # install dependencies (also generates the Prisma client)
-cp .env.example .env      # the defaults work as they are; on Windows PowerShell: Copy-Item .env.example .env
-npm run services:up       # start Postgres + MinIO in Docker and wait until they are healthy
-npm run db:reset          # create the tables, then fill them with the demo data and files
-npm run dev               # http://localhost:3000
-```
-
-Open <http://localhost:3000>. You land on the **role picker**: choose a staff member (for example Kamrul Hasan) or search for
-a student. That is the whole login.
-
-**What to expect**
-
-- `services:up` starts `postgres` (databases `sms` and `sms_test`), `minio` (console at <http://localhost:9001>, login
-  `minioadmin` / `minioadmin`) and `minio-init`, a one-shot container that creates the private `submissions` bucket and
-  exits. The first run downloads the images.
-- `db:reset` drops and re-creates the schema, applies the migrations, empties the bucket, seeds, and finishes with a
-  **self-check** that recomputes the key facts with the same rule functions the app uses ("Self-check passed", then a
-  fingerprint line). It takes a few seconds.
-- The app validates `.env` at start-up and prints every missing or invalid variable if something is wrong.
-- `npm run dev` compiles each page the first time you open it, so the first visit is slower. For a production build
-  use `npm run build && npm start`.
-
-**Troubleshooting**
-
-| Problem                                                              | Fix                                                                                                                                                                   |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Cannot connect to the Docker daemon` / `services:up` hangs          | Start Docker Desktop and wait until it says it is running, then retry.                                                                                                |
-| A port is already in use (5432, 9000, 9001)                          | Change `POSTGRES_PORT`, `MINIO_API_PORT` or `MINIO_CONSOLE_PORT` in `.env` **and** the matching port in `DATABASE_URL`, `DIRECT_URL`, `TEST_DATABASE_URL` or `S3_ENDPOINT`; run `npm run services:up` again. |
-| Port 3000 is busy                                                    | `npm run dev -- -p 3001`, and set `APP_ORIGIN="http://localhost:3001"` in `.env`, then `npm run services:up` so MinIO accepts uploads from that origin (its CORS is set from `APP_ORIGIN`). |
-| Safari (or a browser that treats `http://localhost` as insecure) loops back to the role picker with `npm start` | The role cookie is `Secure` in production mode (D-029). Use `npm run dev`, or Chrome, Firefox or Edge, which accept it on `localhost`. |
-| `db:reset` says it refuses to run                                    | It is destructive, so it only runs when the database and the storage endpoint are on this machine (`localhost`, `127.0.0.1`, `::1`). Pass `--force` only for a database you mean to wipe. |
-| Uploads fail in the browser with a network or CORS error             | `APP_ORIGIN` in `.env` must be the exact origin you browse (scheme, host and port). Fix it and run `npm run services:up` to recreate MinIO with the new value.         |
-| "Invalid environment variables" at start-up                          | You skipped `cp .env.example .env`, or edited a value; the message names each variable.                                                                               |
-| Demo data looks stale or you tried the write flows                   | `npm run db:reset` restores the same registry (see [Demo data](#demo-data)).                                                                                          |
-| You want a completely clean machine state                            | `npm run services:reset` deletes the Postgres and MinIO volumes and starts fresh; follow it with `npm run db:reset`. `npm run services:down` stops the containers and keeps data. |
-
-### Run without Docker
-
-If you have PostgreSQL but not Docker, set `STORAGE_DRIVER=filesystem`: uploaded files are then kept in a folder
-(`./storage`) instead of MinIO. Everything else is identical (D-045).
-
-**Prerequisites:** Node.js 24 and npm 11, and **PostgreSQL 14 or newer** running locally (14 and 18 were tested; the Docker
-setup uses 18). The `unaccent` and `pg_trgm` extensions must be available: they ship with PostgreSQL itself, but on
-Debian/Ubuntu they are in the separate `postgresql-contrib` package (the Windows and macOS installers, Homebrew and the
-official `postgres` Docker images include them). The migrations run `CREATE EXTENSION` for both, so the database user must
-be a superuser or, on PostgreSQL 13 and newer, the owner of the database (both extensions are marked trusted). `db:reset`
-also drops and re-creates the `public` schema, so that user must own it (a superuser does; otherwise see the `ALTER SCHEMA`
-lines below, which PostgreSQL 14 needs and 15 and newer do not).
+**Steps**
 
 ```bash
 # 1. A database user and the two databases (run as a PostgreSQL superuser; adjust the user name to your install)
@@ -123,34 +81,90 @@ psql -U postgres -d sms_test -c "ALTER SCHEMA public OWNER TO sms"
 # 2. The app
 git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
 cd sms-pen-global-assessment
-npm ci
+npm ci                    # install dependencies (also generates the Prisma client)
 cp .env.example .env      # on Windows PowerShell: Copy-Item .env.example .env
-```
-
-Then edit `.env`: comment out part 1 ("with Docker") and uncomment part 2 ("without Docker"). If your PostgreSQL is not
-on port 5432, or you used another user or password, change them in `DATABASE_URL` and `TEST_DATABASE_URL`.
-
-```bash
 npm run db:reset          # create the tables, then fill them with the demo data and files (written to ./storage)
 npm run dev               # http://localhost:3000
 ```
 
-"What to expect" above and the [demo tour](#demo-tour) apply unchanged. Uploads go to `PUT /api/uploads/{token}` on the app
-itself (a signed, 15-minute, one-file link standing in for an S3 presigned URL) and downloads stream through a similar signed
-link, so there is no CORS to set up. `./storage` is gitignored; `db:reset` empties and refills it, and the app refuses a
-`FILE_STORAGE_DIR` that already holds other files. `STORAGE_DRIVER=filesystem npm run test:integration` runs the integration
-suite (PowerShell: `$env:STORAGE_DRIVER="filesystem"; npm run test:integration`) against a scratch folder (`./storage-test`) with no MinIO.
+If you created the `sms` user as above, `.env` works as it is. If your PostgreSQL is not on port 5432, or you used another
+user or password, change them in `DATABASE_URL` and `TEST_DATABASE_URL` in `.env` before `db:reset`.
+
+Open <http://localhost:3000>. You land on the **role picker**: choose a staff member (for example Kamrul Hasan) or search for
+a student. That is the whole login.
+
+**What to expect**
+
+- `db:reset` drops and re-creates the schema, applies the migrations, empties the file storage, seeds, and finishes with a
+  **self-check** that recomputes the key facts with the same rule functions the app uses ("Self-check passed", then a
+  fingerprint line). It takes a few seconds.
+- The app validates `.env` at start-up and prints every missing or invalid variable if something is wrong.
+- `npm run dev` compiles each page the first time you open it, so the first visit is slower. For a production build
+  use `npm run build && npm start`.
+- Uploads go to `PUT /api/uploads/{token}` on the app itself (a signed, 15-minute, one-file link standing in for an S3
+  presigned URL) and downloads stream through a similar signed link, so there is no CORS to set up. `./storage` is
+  gitignored; `db:reset` empties and refills it, and the app refuses a `FILE_STORAGE_DIR` that already holds other files.
+- `npm run test:integration` runs the integration suite against the `sms_test` database and a scratch folder
+  (`./storage-test`), with no MinIO.
+
+**Troubleshooting**
 
 | Problem                                                             | Fix                                                                                                                            |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `extension "unaccent" is not available`                             | Install the contrib package (Debian/Ubuntu: `sudo apt install postgresql-contrib`).                                            |
-| `must be owner of schema public` (`db:reset`)                      | PostgreSQL 14: `ALTER SCHEMA public OWNER TO sms` in each database (the two lines above).                                      |
+| `must be owner of schema public` (`db:reset`)                       | PostgreSQL 14: `ALTER SCHEMA public OWNER TO sms` in each database (the two lines above).                                      |
 | `permission denied to create extension`                             | Use a superuser, or make the user the database owner (`ALTER DATABASE sms OWNER TO sms`; PostgreSQL 13+).                      |
+| `password authentication failed` / `connection refused`             | Match the user, password and port in `DATABASE_URL` and `TEST_DATABASE_URL` to your PostgreSQL.                                |
 | `... is not empty and was not created by this app`                  | Point `FILE_STORAGE_DIR` at a new or empty folder.                                                                             |
+| Port 3000 is busy                                                   | `npm run dev -- -p 3001`.                                                                                                      |
+| Safari (or a browser that treats `http://localhost` as insecure) loops back to the role picker with `npm start` | The role cookie is `Secure` in production mode (D-029). Use `npm run dev`, or Chrome, Firefox or Edge, which accept it on `localhost`. |
+| `db:reset` says it refuses to run                                   | It is destructive, so it only runs when the database is on this machine (`localhost`, `127.0.0.1`, `::1`). Pass `--force` only for a database you mean to wipe. |
+| "Invalid environment variables" at start-up                         | You skipped `cp .env.example .env`, or edited a value; the message names each variable.                                        |
+| Demo data looks stale or you tried the write flows                  | `npm run db:reset` restores the same registry (see [Demo data](#demo-data)).                                                   |
+
+### Run with Docker
+
+**Prerequisites**
+
+- **Node.js 24** and npm 11, as above
+- **Docker Desktop** (or Docker Engine with the Compose plugin), running
+- Free ports **3000** (app), **5432** (Postgres), **9000** and **9001** (MinIO API and console). Each can be changed, see
+  troubleshooting below.
+
+**Steps**
+
+```bash
+git clone https://github.com/tonmoy-dhroubo/sms-pen-global-assessment.git
+cd sms-pen-global-assessment
+
+npm ci                    # install dependencies (also generates the Prisma client)
+cp .env.example .env      # on Windows PowerShell: Copy-Item .env.example .env
+#                           then in .env: comment out part 1 and uncomment part 2 ("with Docker")
+npm run services:up       # start Postgres + MinIO in Docker and wait until they are healthy
+npm run db:reset          # create the tables, then fill them with the demo data and files
+npm run dev               # http://localhost:3000
+```
+
+**What to expect** is as [above](#run-without-docker), plus: `services:up` starts `postgres` (databases `sms` and
+`sms_test`), `minio` (console at <http://localhost:9001>, login `minioadmin` / `minioadmin`) and `minio-init`, a one-shot
+container that creates the private `submissions` bucket and exits. The first run downloads the images. Uploads go
+straight from the browser to MinIO through presigned URLs.
+
+**Troubleshooting**
+
+| Problem                                                              | Fix                                                                                                                                                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Cannot connect to the Docker daemon` / `services:up` hangs          | Start Docker Desktop and wait until it says it is running, then retry.                                                                                                |
+| A port is already in use (5432, 9000, 9001)                          | Add `POSTGRES_PORT`, `MINIO_API_PORT` or `MINIO_CONSOLE_PORT` to `.env` **and** change the matching port in `DATABASE_URL`, `TEST_DATABASE_URL` or `S3_ENDPOINT`; run `npm run services:up` again. |
+| Port 3000 is busy                                                    | `npm run dev -- -p 3001`, and set `APP_ORIGIN="http://localhost:3001"` in `.env`, then `npm run services:up` so MinIO accepts uploads from that origin (its CORS is set from `APP_ORIGIN`). |
+| Uploads fail in the browser with a network or CORS error             | `APP_ORIGIN` in `.env` must be the exact origin you browse (scheme, host and port). Fix it and run `npm run services:up` to recreate MinIO with the new value.         |
+| You want a completely clean machine state                            | `npm run services:reset` deletes the Postgres and MinIO volumes and starts fresh; follow it with `npm run db:reset`. `npm run services:down` stops the containers and keeps data. |
+
+The other problems in the table [above](#run-without-docker) apply here too.
 
 ## Environment variables
 
-Copy `.env.example` to `.env`. It holds only what you must set, in two parts: with Docker and without Docker. Everything
+Copy `.env.example` to `.env`. It holds only what you must set, in two parts: without Docker (active) and with Docker (commented out). Everything
 else in this table has a default and can be added to `.env` when you need to change it. The app's own variables are
 validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committed.
 
@@ -158,8 +172,8 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | ---------------------- | --------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`         | Yes                                     | `postgresql://sms:sms@localhost:5432/sms`        | The app's PostgreSQL connection. Hosted (Neon): the pooled connection string.                                                      |
 | `DIRECT_URL`           | No (falls back to `DATABASE_URL`)       | same as `DATABASE_URL`                           | Connection used by Prisma migrations and `db:reset`. Hosted (Neon): the direct, non-pooled URL.                                    |
-| `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created by `docker/postgres/init`) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
-| `STORAGE_DRIVER`       | No                                      | `s3` (`filesystem` in part 2 of `.env.example`)  | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
+| `TEST_DATABASE_URL`    | Only for `npm run test:integration`     | `postgresql://sms:sms@localhost:5432/sms_test`   | A separate database (created in the steps above, or by `docker/postgres/init` with Docker) that the integration tests drop and re-create. The harness refuses any name not ending in `_test`. |
+| `STORAGE_DRIVER`       | No                                      | `filesystem` in `.env.example`; `s3` if unset   | `s3` (MinIO or any S3-compatible service; the default) or `filesystem` (files in `FILE_STORAGE_DIR`, no Docker; see [Run without Docker](#run-without-docker)). |
 | `FILE_STORAGE_DIR`     | No (`filesystem` driver only)           | `./storage`                                      | Folder for uploaded files, relative to the project root. Created on first use; must be new or empty (or one this app created).     |
 | `S3_ENDPOINT`          | With `STORAGE_DRIVER=s3`                | `http://localhost:9000`                          | Where the Next.js server reaches the storage service.                                                                              |
 | `S3_PUBLIC_ENDPOINT`   | No                                      | empty                                            | Host embedded in presigned URLs for the browser. Leave empty when the browser can reach `S3_ENDPOINT` (as locally).                |
@@ -188,7 +202,7 @@ validated by `lib/env-schema.ts` when it starts. Only `.env.example` is committe
 | `npm run lint` / `typecheck` / `format` / `format:check`     | ESLint, `tsc --noEmit`, Prettier (write / check)                                                                      |
 | `npm test` / `test:watch`                                    | Unit and component tests (Vitest), no services needed                                                                 |
 | `npm run test:coverage`                                      | Unit tests with coverage; fails if `lib/services/rules` drops below 95 %                                              |
-| `npm run test:integration`                                   | API, database and storage tests against the throw-away `sms_test` database and `submissions-test` bucket (needs `services:up`). `STORAGE_DRIVER=filesystem npm run test:integration` runs the same suite on a scratch folder, no MinIO |
+| `npm run test:integration`                                   | API, database and storage tests against the throw-away `sms_test` database. Without Docker the files go to a scratch folder (`./storage-test`); with Docker to a `submissions-test` bucket (needs `services:up`) |
 | `npm run services:up` / `down` / `reset`                     | Start the Docker services, wait until healthy and create the bucket / stop them (data kept) / **delete all data** and start fresh        |
 | `npm run db:reset`                                           | Drop the schema, migrate, empty the bucket and seed with a self-check (local only; `--force` for anything else)       |
 | `npm run db:seed`                                            | Fill an **empty** database and the bucket with the demo data (refuses a populated database)                           |
