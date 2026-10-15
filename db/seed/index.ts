@@ -1,5 +1,5 @@
 import { assertLocalTargets } from "../tools/database";
-import { createPrisma, createStorageFromEnv, fail, loadEnv, print } from "./context";
+import { createPrisma, createStorageFromEnv, fail, loadEnv, print, storageTargets } from "./context";
 import { printSeedReport } from "./report";
 import { runSeed } from "./run";
 
@@ -12,7 +12,7 @@ async function main() {
   const env = loadEnv();
   const force = process.argv.includes("--force");
   assertLocalTargets(
-    { DATABASE_URL: env.DATABASE_URL, S3_ENDPOINT: env.S3_ENDPOINT },
+    { DATABASE_URL: env.DATABASE_URL, ...storageTargets(env) },
     force,
     "seed (it empties the submissions bucket)",
   );

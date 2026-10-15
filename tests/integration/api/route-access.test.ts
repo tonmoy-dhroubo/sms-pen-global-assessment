@@ -63,6 +63,9 @@ const EXPECTED_ACCESS: Record<string, Access> = {
   "GET /api/students/[id]/results": "staff",
   "POST /api/students/[id]/status": "staff",
   "GET /api/students/[id]/timeline": "staff",
+  // The filesystem storage driver's presigned-URL stand-ins (D-045): the signed token is the capability, no session.
+  "GET /api/uploads/[token]": "public",
+  "PUT /api/uploads/[token]": "public",
 };
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;

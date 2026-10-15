@@ -199,7 +199,52 @@ function isInvalidRange(error: unknown): boolean {
   return e?.name === "InvalidRange" || e?.$metadata?.httpStatusCode === 416;
 }
 
-export function createStorage(config: StorageConfig) {
+/**
+ * What the app needs from file storage. Two adapters implement it: `createStorage` below (S3-compatible: MinIO,
+ * Supabase) and `createFilesystemStorage` in `storage-fs.ts` (a directory on disk, D-045). Services only see this.
+ */
+export interface Storage {
+  /** The bucket name (S3) or the storage directory (filesystem). For messages. */
+  readonly bucket: string;
+  /** A URL the browser PUTs the file to, valid for `expiresIn` seconds. Signs the content type and size. */
+  presignPut(
+    key: string,
+    contentType: string,
+    sizeBytes: number,
+    expiresIn: number,
+  ): Promise<PresignedUpload>;
+  /** A URL that downloads the object under `downloadName`, valid for `expiresIn` seconds. */
+  presignGet(key: string, downloadName: string, expiresIn: number): Promise<PresignedDownload>;
+  /** Size, type and arrival time of an object, or `null` if it does not exist. */
+  headObject(key: string): Promise<ObjectInfo | null>;
+  /**
+   * Copies an object, on the storage side. `ifMatch` is the ETag the caller examined: if the source has a different
+   * ETag by now, nothing is copied and `ObjectChangedError` is thrown. A missing source is `ObjectNotFoundError`.
+   */
+  copyObject(
+    sourceKey: string,
+    destinationKey: string,
+    options?: { ifMatch?: string | null },
+  ): Promise<{ etag: string | null; lastModified: Date }>;
+  /** `length` bytes from `offset` (fewer if the object ends first). `ObjectNotFoundError` for a missing key. */
+  readRange(key: string, offset: number, length: number): Promise<Buffer>;
+  /** The first `n` bytes (fewer if the object is shorter). */
+  readFirstBytes(key: string, n: number): Promise<Buffer>;
+  /** Lower-case hex SHA-256 of the whole object, hashed as it streams. */
+  sha256(key: string): Promise<string>;
+  /** Server-side upload (seed data, tests). Browsers use `presignPut` instead. */
+  putObject(key: string, body: Buffer | Uint8Array, contentType: string): Promise<void>;
+  /** Deletes one object. Deleting a key that does not exist is not an error. */
+  deleteObject(key: string): Promise<void>;
+  /** Deletes every object whose key starts with `prefix`. Returns how many. */
+  deletePrefix(prefix: string): Promise<number>;
+  /** Creates the bucket (or directory) if it does not exist yet. For scripts that set up a fresh environment. */
+  ensureBucket(): Promise<void>;
+  /** Throws unless storage is reachable (and, for the filesystem, writable). Used by the health check. */
+  checkBucket(timeoutMs: number): Promise<void>;
+}
+
+export function createStorage(config: StorageConfig): Storage {
   const credentials = {
     accessKeyId: config.accessKeyId,
     secretAccessKey: config.secretAccessKey,
@@ -227,7 +272,7 @@ export function createStorage(config: StorageConfig) {
       : client;
   const Bucket = config.bucket;
 
-  return {
+  const storage: Storage = {
     bucket: config.bucket,
 
     /**
@@ -365,7 +410,7 @@ export function createStorage(config: StorageConfig) {
     /** The first `n` bytes (fewer if the object is shorter), read with a ranged GET. For signature checks. */
     async readFirstBytes(key: string, n: number): Promise<Buffer> {
       if (!Number.isInteger(n) || n < 1) throw new RangeError("n must be a positive whole number");
-      return this.readRange(key, 0, n);
+      return storage.readRange(key, 0, n);
     },
 
     /** Lower-case hex SHA-256 of the whole object, hashed as it streams (never held in memory). */
@@ -447,6 +492,5 @@ export function createStorage(config: StorageConfig) {
       });
     },
   };
+  return storage;
 }
-
-export type Storage = ReturnType<typeof createStorage>;

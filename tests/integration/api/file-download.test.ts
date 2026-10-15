@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { deletePrefix, putObject } from "@/lib/storage";
 import { DOWNLOAD_LINK_SECONDS } from "@/lib/services/files";
 import { asStaff, asStudent, call } from "../../support/api";
+import { isFilesystemRun } from "../../support/test-storage";
 import {
   createAssessment,
   createModule,
@@ -74,7 +75,10 @@ describe("GET /api/files/{fileId}/download", () => {
     expect(DOWNLOAD_LINK_SECONDS).toBe(300);
     expect(expiresIn).toBeGreaterThan(290_000);
     expect(expiresIn).toBeLessThan(310_000);
-    expect(new URL(result.body.url).searchParams.get("X-Amz-Expires")).toBe("300");
+    // S3 states the lifetime in the URL; the filesystem driver keeps it inside the signed token (relative URL).
+    if (!isFilesystemRun()) {
+      expect(new URL(result.body.url).searchParams.get("X-Amz-Expires")).toBe("300");
+    }
 
     const fetched = await fetch(result.body.url);
     expect(fetched.status).toBe(200);

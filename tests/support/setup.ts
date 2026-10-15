@@ -3,7 +3,8 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach } from "vitest";
 import { TEST_SESSION_SECRET } from "./constants";
 import { testDatabaseUrl, truncateAll } from "./test-db";
-import { applyStorageTestEnv } from "./test-storage";
+import { installStorageFetch } from "./storage-fetch";
+import { applyStorageTestEnv, isFilesystemRun } from "./test-storage";
 
 // Runs in every integration test file before the file's own code.
 //
@@ -20,6 +21,8 @@ process.env.SESSION_SECRET = TEST_SESSION_SECRET;
 // 3. Point the app at the test bucket (never the dev one) and fill in local-MinIO defaults when .env is absent (as in
 //    CI). The bucket itself is created and emptied once per run by global-setup.ts.
 applyStorageTestEnv();
+// ... and with the filesystem driver, let `fetch` reach the app's own upload URLs (there is no server to call).
+if (isFilesystemRun()) installStorageFetch();
 
 // 4. Empty every table before each test.
 let client: Client;

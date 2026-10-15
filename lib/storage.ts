@@ -1,11 +1,13 @@
 import "server-only";
 import { env } from "./env";
-import { createStorage } from "./storage-core";
 import type { Storage } from "./storage-core";
+import { createStorageFromEnv } from "./storage-factory";
+import type { FilesystemStorage } from "./storage-fs";
 
-// The app's storage client, configured from the validated environment (S3_*). Created on first use, so importing
-// this module never fails (or connects) on its own; a missing variable surfaces from `lib/env` when it is needed.
-// Callers use the functions below; the S3 details stay in `storage-core.ts`.
+// The app's storage client, configured from the validated environment: S3_* for `STORAGE_DRIVER=s3` (the default), or
+// `FILE_STORAGE_DIR` for `filesystem` (D-045). Created on first use, so importing this module never fails (or
+// connects) on its own; a missing variable surfaces from `lib/env` when it is needed. Callers use the functions
+// below; the details stay in `storage-core.ts` (S3) and `storage-fs.ts` (filesystem).
 
 export {
   ObjectChangedError,
@@ -30,16 +32,15 @@ export type {
 let instance: Storage | undefined;
 
 function storage(): Storage {
-  instance ??= createStorage({
-    endpoint: env.S3_ENDPOINT,
-    publicEndpoint: env.S3_PUBLIC_ENDPOINT,
-    region: env.S3_REGION,
-    bucket: env.S3_BUCKET,
-    accessKeyId: env.S3_ACCESS_KEY_ID,
-    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-    forcePathStyle: env.S3_FORCE_PATH_STYLE,
-  });
+  instance ??= createStorageFromEnv(env);
   return instance;
+}
+
+/** The filesystem adapter, for the `/api/uploads` route; `null` when the app is configured for S3. */
+export function filesystemStorage(): FilesystemStorage | null {
+  if (env.STORAGE_DRIVER !== "filesystem") return null;
+  // `createStorageFromEnv` returned the filesystem adapter for this driver.
+  return storage() as FilesystemStorage;
 }
 
 export const presignPut: Storage["presignPut"] = (...args) => storage().presignPut(...args);

@@ -1,21 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { runSeed } from "@/db/seed/run";
 import { db } from "@/lib/db";
+import { createTestStorage } from "../../support/test-storage";
 import { fixedClock } from "@/lib/services/clock";
 import { getDashboard } from "@/lib/services/dashboard";
-import { createStorage } from "@/lib/storage-core";
 
 // The staff dashboard over the seeded demo: every figure must match the "What each dashboard figure should show after
 // seeding" table in db/seed-plan.md (milestone M11's acceptance criterion).
 
-const storage = createStorage({
-  endpoint: process.env.S3_ENDPOINT!,
-  region: process.env.S3_REGION!,
-  bucket: process.env.S3_BUCKET!,
-  accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  forcePathStyle: true,
-});
+const storage = createTestStorage();
 
 const SLOW = 120_000;
 const SEED_MOMENT = "2026-10-12T04:00:00Z"; // 10:00 in Dhaka

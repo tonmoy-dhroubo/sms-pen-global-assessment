@@ -1,3 +1,4 @@
+import fsp from "node:fs/promises";
 import { S3Client } from "@aws-sdk/client-s3";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET as getHealth } from "@/app/api/health/route";
@@ -5,6 +6,7 @@ import { GET as getMe } from "@/app/api/me/route";
 import { db } from "@/lib/db";
 import { asStaff, asStudent, call } from "../../support/api";
 import { createProgramme, createStaff, createStudent } from "../../support/factories";
+import { isFilesystemRun } from "../../support/test-storage";
 
 type ErrorBody = { error: { code: string; message: string } };
 
@@ -28,7 +30,10 @@ describe("GET /api/health", () => {
 
   it("answers 503 when the storage check fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(S3Client.prototype, "send").mockRejectedValueOnce(new Error("connection refused"));
+    const failure = new Error("connection refused");
+    // The S3 check is a HeadBucket call; the filesystem check writes (and removes) a small probe file.
+    if (isFilesystemRun()) vi.spyOn(fsp, "writeFile").mockRejectedValueOnce(failure);
+    else vi.spyOn(S3Client.prototype, "send").mockRejectedValueOnce(failure);
     const { status, body } = await call(getHealth, { path: "/api/health" });
     expect(status).toBe(503);
     expect(body).toEqual({ db: "ok", storage: "down" });
