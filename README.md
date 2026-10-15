@@ -463,7 +463,7 @@ final UI review. It was installed on my machine only, so nothing from it is in t
   data.
 - **Per-student deadline extensions are not exposed.** The table and the deadline rules support them, but there is no endpoint
   or screen (dropped in M17, D-040).
-- **Hosted deployment is deferred.** The submission runs locally (Docker). A Vercel + Neon + Supabase Storage demo (M19) was
+- **Hosted deployment is deferred.** The submission runs locally, with Docker or without it ([filesystem storage](#run-without-docker)). A Vercel + Neon + Supabase Storage demo (M19) was
   planned and designed for (presigned uploads, `S3_PUBLIC_ENDPOINT`, `DEMO_MODE`), but is not deployed.
 - **`npm audit`** reports four high-severity findings in `npm audit --omit=dev`, all arriving through Prisma's optional
   `prisma` peer of `@prisma/client`; the only offered fix is a breaking downgrade, so it is accepted (D-040).
