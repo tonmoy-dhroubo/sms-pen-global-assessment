@@ -95,6 +95,20 @@ npm run dev               # http://localhost:3000
 If you created the `sms` user as above, `.env` works as it is. If your PostgreSQL is not on port 5432, or you used another
 user or password, change them in `DATABASE_URL` and `TEST_DATABASE_URL` in `.env` before `db:reset`.
 
+> [!WARNING]
+> **`npm run db:reset` wipes the target database.** It runs `DROP SCHEMA public CASCADE`, so every table and row in the
+> `public` schema of the database in `DIRECT_URL` (or `DATABASE_URL`) is deleted before the demo data is loaded, and it
+> empties the file storage. Point it only at a database created for this app. It refuses anything that is not on this
+> machine unless you add `--force`.
+>
+> - To load the demo data **without** dropping anything, apply the migrations and seed instead:
+>   `npx prisma migrate deploy` then `npm run db:seed`. The seed only fills an empty database and refuses one that
+>   already has data.
+> - Passing `--force` through npm: `npm run db:reset -- --force` in bash/cmd. PowerShell swallows the `--`, so there use
+>   `npx tsx db/seed/reset.ts --force` (same for the seed: `npx tsx db/seed/index.ts --force`).
+> - Hosted PostgreSQL such as Neon: set `DIRECT_URL` to the direct (non-pooled) connection; the reset and the migrations
+>   run through it.
+
 Open <http://localhost:3000>. You land on the **role picker**: choose a staff member (for example Kamrul Hasan) or search for
 a student. That is the whole login.
 
@@ -123,7 +137,7 @@ a student. That is the whole login.
 | `... is not empty and was not created by this app`                  | Point `FILE_STORAGE_DIR` at a new or empty folder.                                                                             |
 | Port 3000 is busy                                                   | `npm run dev -- -p 3001`.                                                                                                      |
 | Safari (or a browser that treats `http://localhost` as insecure) loops back to the role picker with `npm start` | The role cookie is `Secure` in production mode (D-029). Use `npm run dev`, or Chrome, Firefox or Edge, which accept it on `localhost`. |
-| `db:reset` says it refuses to run                                   | It is destructive, so it only runs when the database is on this machine (`localhost`, `127.0.0.1`, `::1`). Pass `--force` only for a database you mean to wipe. |
+| `db:reset` says it refuses to run                                   | It is destructive (it drops the `public` schema), so it only runs when the database is on this machine (`localhost`, `127.0.0.1`, `::1`). For a database you mean to wipe: `npm run db:reset -- --force` (bash/cmd) or `npx tsx db/seed/reset.ts --force` (PowerShell). |
 | "Invalid environment variables" at start-up                         | You skipped `cp .env.example .env`, or edited a value; the message names each variable.                                        |
 | Demo data looks stale or you tried the write flows                  | `npm run db:reset` restores the same registry (see [Demo data](#demo-data)).                                                   |
 
@@ -149,6 +163,10 @@ npm run services:up       # start Postgres + MinIO in Docker and wait until they
 npm run db:reset          # create the tables, then fill them with the demo data and files
 npm run dev               # http://localhost:3000
 ```
+
+> [!WARNING]
+> `npm run db:reset` drops the `public` schema of the target database and empties the bucket before seeding — see the
+> [warning above](#run-without-docker). With Docker it targets the container's own `sms` database.
 
 **What to expect** is as [above](#run-without-docker), plus: `services:up` starts `postgres` (databases `sms` and
 `sms_test`), `minio` (console at <http://localhost:9001>, login `minioadmin` / `minioadmin`) and `minio-init`, a one-shot
