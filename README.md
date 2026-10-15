@@ -300,22 +300,34 @@ effort) that implements recorded decisions, writes tests, and raises questions i
 planning conversation happened with the main session directly (it had all the context), so the `planner` agent was
 defined but not used; every milestone was built by a fresh `coder` agent. **Claude Design**
 produced a three-screen mockup (staff dashboard, student record, student view) used as a layout reference only.
+**OpenAI Codex** did an independent whole-system code review, so the code was not judged only by the model that wrote it.
+The open-source **[impeccable](https://github.com/pbakaus/impeccable)** design skill was used as dev-time tooling for a
+final UI review. It was installed on my machine only, so nothing from it is in this repository.
 
 **Workflow.**
 
 1. **Decide and write down first.** Before any code there were the requirements summary, the tech stack, an edge-case
    checklist with Must/Should/Could priorities, a database design with its own decision log, a 30-persona seed plan, the
    API contract, the page list and a 20-milestone tracker. Choices that were not obvious from code went into
-   [docs/decisions.md](docs/decisions.md) (40 decisions) and [db/decisions.md](db/decisions.md) (26), with the
+   [docs/decisions.md](docs/decisions.md) (44 decisions) and [db/decisions.md](db/decisions.md) (27), with the
    alternatives that were rejected. The coder is told that decisions are settled and to stop and ask when the docs
    do not cover behaviour, so product decisions did not leak into code.
-2. **One milestone, one branch, one PR.** `M00` to `M17` were each a branch (`mNN-slug`), a Conventional-Commit history,
-   a PR from a template with a verification table and screenshots, and a CI run (lint, type-check, format, unit,
-   coverage, migrations, integration, seed). The coder stopped after each report; nothing was built in one shot.
+2. **One milestone, one branch, one PR.** Every built milestone (`M00` to `M20`; M19 hosting is deferred) was a
+   branch (`mNN-slug`), a Conventional-Commit history, a PR from a template with a verification table and screenshots,
+   and a CI run (lint, type-check, format, unit, coverage, migrations, integration, seed). The coder stopped after each report; nothing was built in one shot.
 3. **Review loop.** The main session reviewed each milestone PR against its acceptance criteria and the Definition of
-   Done, requested changes, and recorded what the report revealed as new decisions (D-026 to D-040, DB-021 to DB-026).
+   Done, requested changes, and recorded what the report revealed as new decisions (D-026 to D-044, DB-021 to DB-027).
 4. **Verification by running things.** The coder was expected to run the real app, not just the tests: screenshots were
    captured from headless Chrome and the seed ends with a self-check against the plan.
+5. **A second model reviews the first.** Once the build was feature-complete, I had OpenAI Codex review the whole
+   system independently ([docs/code-reviews/](docs/code-reviews/)). Claude checked every finding against the code before
+   accepting it (D-042). All seven were real, and they were fixed in their own milestone, M18R. Each fix came with a
+   regression test that was written first and confirmed to fail on the old code (D-043).
+6. **A design pass at the end.** M20 used the impeccable skill to look for the generic "AI-generated" look. A detector
+   ran on the source and on every rendered page at desktop and phone width, alongside a screenshot review in both
+   themes. The boundary was fixed in advance (D-044): stay inside shadcn/ui, which the brief prefers; no new
+   dependencies, fonts or colours; no behaviour change. Every finding and its outcome is in
+   [docs/ui-review.md](docs/ui-review.md).
 
 **What I decided, and what I delegated.**
 
@@ -325,10 +337,14 @@ produced a three-screen mockup (staff dashboard, student record, student view) u
   PR each, the PNG of the ER diagram, and keeping the community MinIO images when the official ones disappeared (D-027).
   I also chose to let work continue overnight (D-025): the main session reviewed and squash-merged milestone PRs once CI
   and the acceptance criteria were green. When I came back I read the status summary and the open questions,
-  answered them, and told it to keep going (D-039); the merged PRs and their reports remain for me to review.
+  answered them, and told it to keep going (D-039). Every merged PR keeps its report, verification table and CI run, so
+  any of that work can be audited after the fact.
+  <!-- TODO(Dhrubo): say in your own words what you reviewed yourself after coming back (PRs, decisions D-025 to D-041). -->
+- Also mine: commissioning the independent code review and fixing every finding before submission rather than arguing
+  severity (D-042), and running the final UI pass inside a fixed boundary (D-044).
 - Delegated to the AI, then accepted: library choices inside the shadcn ecosystem, the edge-case priorities (D-024),
   the status-badge conventions, database details such as keys, audit columns and indexes, and the many technical
-  decisions recorded from milestone reports (D-026 to D-040).
+  decisions recorded from milestone reports (D-026 to D-041, D-043).
 
 **Where AI output was corrected or rejected.**
 
@@ -356,6 +372,22 @@ produced a three-screen mockup (staff dashboard, student record, student view) u
   harness drop the schema themselves and run `migrate deploy`, and both refuse any non-local or non-`_test` database.
 - _Scope cut on purpose:_ per-student deadline extensions (a Could item) were dropped in M17 rather than half-built;
   the schema and rules support them, but no endpoint or screen creates one (D-040).
+- _Found by the independent review, missed by the Claude pipeline (M18R):_
+  - Two defects threatened submitted files. A student could reuse a still-valid upload link to replace a file after it
+    had been confirmed. The cleanup script could also race a confirm and delete a confirmed file. Confirmed uploads are
+    now copied to a server-only key that no upload link can write.
+  - Fee ageing kept counting a charge that a waiver had already cleared.
+  - File versions were ordered by a nudged timestamp instead of a real version number.
+  - Two client components kept stale data after the server refreshed.
+  - There was a heading-nesting error. Component tests now fail on any React console error, so a hydration problem
+    can't pass silently again.
+
+  All of these sat in the gaps between our tests. That showed where the suite was blind, not just what was broken.
+- _M20 UI review:_ the automated detector found almost nothing on this codebase. Most of the value came from reviewing
+  the screenshots: a header label that wrapped, boxes nested inside boxes, and a timer still labelled "Time left" after
+  the deadline. Of 16 findings, 8 were fixed and 8 were waived, each waiver with its reason. One attempted fix made a
+  table scroll sideways, so it was reverted and waived. The same milestone found a date-dependent integration test that
+  only failed once the real clock passed a pinned date. It would have failed CI on every branch, and it was fixed.
 
 **Limitations and risks I noticed.**
 
@@ -368,6 +400,8 @@ produced a three-screen mockup (staff dashboard, student record, student view) u
   only drive Chrome.
 - Written specs make the AI confidently consistent: where a decision was wrong, it was implemented faithfully and
   tested. The decision log is where to look for the reasoning behind any behaviour.
+- One model reviewing its own work has blind spots. The Claude review loop passed code that a second model then showed
+  to have seven real defects. A different reviewer, human or AI, is worth more than another pass by the same one.
 
 ## Known limitations
 
@@ -382,7 +416,6 @@ produced a three-screen mockup (staff dashboard, student record, student view) u
   `prisma` peer of `@prisma/client`; the only offered fix is a breaking downgrade, so it is accepted (D-040).
 - **The end-to-end check is local-only.** `npm run e2e`, `a11y`, `keyboard` and `responsive` need Chrome or Edge and a running
   production build, so they are not part of CI; CI runs lint, types, unit, integration, migrations and the seed check.
-- **Accent colour is a placeholder** (`#2F6B3F`, one token `--brand`) until a brand colour is chosen.
 - **MinIO images come from the community Silo fork** (`pgsty/minio`, `pgsty/mc`), because the official images are no longer
   published (D-027).
 - **Scale:** the fee-state filter on the student list applies the overdue rule in memory (about 100 ms for 1,000 students,
